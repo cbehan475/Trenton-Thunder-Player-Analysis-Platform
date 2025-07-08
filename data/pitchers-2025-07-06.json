@@ -1,0 +1,18 @@
+{
+  "Joe Ariola": {
+    "1st": [
+      {"pitchNum": 10, "type": "4-Seam", "velo": 91, "spin": 2204, "ivb": 20.09, "hb": -10.02},
+      {"pitchNum": 11, "type": "4-Seam", "velo": 92, "spin": 2221, "ivb": 19.56, "hb": -7.48},
+      {"pitchNum": 12, "type": "4-Seam", "velo": 92, "spin": 2226, "ivb": 19.87, "hb": -8.77},
+      {"pitchNum": 13, "type": "Split-Change", "velo": 85, "spin": 1137, "ivb": 12.86, "hb": 2.38},
+      {"pitchNum": 14, "type": "Cutter", "velo": 86, "spin": 2259, "ivb": 9.27, "hb": -1.36},
+      {"pitchNum": 15, "type": "4-Seam", "velo": 92, "spin": 2212, "ivb": 17.86, "hb": -3.17},
+      {"pitchNum": 16, "type": "4-Seam", "velo": 92, "spin": 2242, "ivb": 21.08, "hb": -3.82},
+      {"pitchNum": 17, "type": "Curveball", "velo": 83, "spin": 1500, "ivb": 7.31, "hb": -2.84},
+      {"pitchNum": 18, "type": "4-Seam", "velo": 91, "spin": 2023, "ivb": 13.48, "hb": -3.55},
+      {"pitchNum": 19, "type": "Curveball", "velo": 89, "spin": 2322, "ivb": 0.32, "hb": 2.4},
+      {"pitchNum": 20, "type": "4-Seam", "velo": 91, "spin": 2028, "ivb": 13.48, "hb": -4.5},
+      {"pitchNum": 21, "type": "Curveball", "velo": 85, "spin": 2268, "ivb": -1.18, "hb": -1.1}
+    ]
+  }
+}
