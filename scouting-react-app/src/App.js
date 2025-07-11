@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { Container, Grid, Card, CardContent, Typography, Box, useTheme } from '@mui/material';
 import BoltIcon from '@mui/icons-material/Bolt';
 import GameDateSelector from './components/GameDateSelector';
@@ -7,23 +8,23 @@ import HittersTable from './components/HittersTable';
 
 const GAME_DATES = ['2025-07-06']; // Add more dates as you add files
 
-function App() {
+function Home() {
   const theme = useTheme();
-  // Colors
   const navy = '#102542';
   const gold = '#FFD600';
-  // Card data
   const cards = [
-    { label: 'Pitching Game Logs' },
-    { label: 'Hitting Game Logs' },
-    { label: 'Player Comparison to MLB Averages' },
-    { label: 'Player Development Plans' },
+    { label: 'Pitching Game Logs', path: '/pitching' },
+    { label: 'Hitting Game Logs', path: '/hitting' },
+    { label: 'Player Comparison to MLB Averages', path: '/comparison' },
+    { label: 'Player Development Plans', path: '/development' },
   ];
   const [selectedDate, setSelectedDate] = useState(GAME_DATES[0]);
   const [hittersData, setHittersData] = useState([]);
   const [pitchersData, setPitchersData] = useState({});
   const [selectedPitcher, setSelectedPitcher] = useState('');
   const [selectedInning, setSelectedInning] = useState('');
+  const navigate = useNavigate();
+
 
   // Load data on date change
   useEffect(() => {
@@ -114,7 +115,7 @@ function App() {
         {cards.map((card, idx) => (
           <Grid item xs={12} sm={6} md={3} key={card.label}>
             <Card
-              onClick={() => console.log(card.label)}
+              onClick={() => navigate(card.path)}
               sx={{
                 cursor: 'pointer',
                 minHeight: 160,
@@ -157,4 +158,45 @@ function App() {
   );
 }
 
-export default App;
+function PitchingLogsPage() {
+  return (
+    <Box sx={{ minHeight: '100vh', bgcolor: '#102542', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Typography variant="h3" sx={{ color: '#FFD600', fontWeight: 700 }}>Pitching Logs Page</Typography>
+    </Box>
+  );
+}
+function HittingLogsPage() {
+  return (
+    <Box sx={{ minHeight: '100vh', bgcolor: '#102542', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Typography variant="h3" sx={{ color: '#FFD600', fontWeight: 700 }}>Hitting Logs Page</Typography>
+    </Box>
+  );
+}
+function ComparisonPage() {
+  return (
+    <Box sx={{ minHeight: '100vh', bgcolor: '#102542', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Typography variant="h3" sx={{ color: '#FFD600', fontWeight: 700 }}>Player Comparison to MLB Averages Page</Typography>
+    </Box>
+  );
+}
+function DevelopmentPage() {
+  return (
+    <Box sx={{ minHeight: '100vh', bgcolor: '#102542', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Typography variant="h3" sx={{ color: '#FFD600', fontWeight: 700 }}>Player Development Plans Page</Typography>
+    </Box>
+  );
+}
+
+export default function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/pitching" element={<PitchingLogsPage />} />
+        <Route path="/hitting" element={<HittingLogsPage />} />
+        <Route path="/comparison" element={<ComparisonPage />} />
+        <Route path="/development" element={<DevelopmentPage />} />
+      </Routes>
+    </Router>
+  );
+}
