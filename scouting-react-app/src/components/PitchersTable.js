@@ -1,8 +1,47 @@
 import React, { useMemo } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
-import { FormControl, InputLabel, Select, MenuItem, Box } from '@mui/material';
+import { FormControl, InputLabel, Select, MenuItem, Box, Card, CardContent } from '@mui/material';
 
-export default function PitchersTable({ pitchersData, selectedPitcher, selectedInning, onPitcherChange, onInningChange }) {
+export function PitcherDropdown({ pitchersData, selectedPitcher, onPitcherChange }) {
+  const pitcherNames = Object.keys(pitchersData || {});
+  return (
+    <FormControl fullWidth size="small" sx={{ minWidth: 180, '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#102542' } }}>
+      <InputLabel id="pitcher-label">Pitcher</InputLabel>
+      <Select
+        labelId="pitcher-label"
+        value={selectedPitcher || ''}
+        label="Pitcher"
+        onChange={e => onPitcherChange(e.target.value)}
+      >
+        {pitcherNames.map(name => (
+          <MenuItem key={name} value={name}>{name}</MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  );
+}
+
+export function InningDropdown({ pitchersData, selectedPitcher, selectedInning, onInningChange }) {
+  const innings = selectedPitcher && pitchersData[selectedPitcher] ? Object.keys(pitchersData[selectedPitcher]) : [];
+  return (
+    <FormControl fullWidth size="small" sx={{ minWidth: 120, '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#102542' } }}>
+      <InputLabel id="inning-label">Inning</InputLabel>
+      <Select
+        labelId="inning-label"
+        value={selectedInning || ''}
+        label="Inning"
+        onChange={e => onInningChange(e.target.value)}
+        disabled={!selectedPitcher}
+      >
+        {innings.map(inn => (
+          <MenuItem key={inn} value={inn}>{inn}</MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  );
+}
+
+export default function PitchersTable({ pitchersData, selectedPitcher, selectedInning, onPitcherChange, onInningChange, hideDropdowns }) {
   const pitcherNames = Object.keys(pitchersData || {});
   const innings = selectedPitcher && pitchersData[selectedPitcher] ? Object.keys(pitchersData[selectedPitcher]) : [];
   const rows = useMemo(() => {
@@ -20,45 +59,39 @@ export default function PitchersTable({ pitchersData, selectedPitcher, selectedI
   ];
 
   return (
-    <Box sx={{ mb: 4 }}>
-      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-        <FormControl sx={{ minWidth: 180 }}>
-          <InputLabel id="pitcher-label">Pitcher</InputLabel>
-          <Select
-            labelId="pitcher-label"
-            value={selectedPitcher || ''}
-            label="Pitcher"
-            onChange={e => onPitcherChange(e.target.value)}
-          >
-            {pitcherNames.map(name => (
-              <MenuItem key={name} value={name}>{name}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <FormControl sx={{ minWidth: 120 }}>
-          <InputLabel id="inning-label">Inning</InputLabel>
-          <Select
-            labelId="inning-label"
-            value={selectedInning || ''}
-            label="Inning"
-            onChange={e => onInningChange(e.target.value)}
-            disabled={!selectedPitcher}
-          >
-            {innings.map(inn => (
-              <MenuItem key={inn} value={inn}>{inn}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
-      <DataGrid
-        autoHeight
-        rows={rows}
-        columns={columns}
-        pageSize={10}
-        rowsPerPageOptions={[10, 25, 50]}
-        disableSelectionOnClick
-        sx={{ background: '#fff', borderRadius: 2 }}
-      />
-    </Box>
+    <Card elevation={3} sx={{ mb: 4, borderRadius: 3 }}>
+      <CardContent>
+        {!hideDropdowns && (
+          <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+            <PitcherDropdown pitchersData={pitchersData} selectedPitcher={selectedPitcher} onPitcherChange={onPitcherChange} />
+            <InningDropdown pitchersData={pitchersData} selectedPitcher={selectedPitcher} selectedInning={selectedInning} onInningChange={onInningChange} />
+          </Box>
+        )}
+        <DataGrid
+          autoHeight
+          rows={rows}
+          columns={columns}
+          pageSize={10}
+          rowsPerPageOptions={[10, 25, 50]}
+          disableSelectionOnClick
+          sx={{
+            background: '#fff',
+            borderRadius: 2,
+            '& .MuiDataGrid-columnHeaders': {
+              position: 'sticky',
+              top: 0,
+              backgroundColor: 'background.paper',
+              zIndex: 1,
+            },
+            '& .MuiDataGrid-row:hover': {
+              backgroundColor: 'rgba(25, 118, 210, 0.08)',
+            },
+            '& .MuiDataGrid-root': {
+              overflowX: 'auto',
+            },
+          }}
+        />
+      </CardContent>
+    </Card>
   );
 }
