@@ -10,7 +10,18 @@ export default function HittersTable({ hittersData }) {
     { field: 'ev', headerName: 'EV', width: 90, sortable: true },
     { field: 'la', headerName: 'LA', width: 90, sortable: true },
   ];
-  const rows = useMemo(() => hittersData.map((row, idx) => ({ id: idx + 1, ...row })), [hittersData]);
+  const rows = useMemo(() => {
+    return hittersData.flatMap((hitter) =>
+      hitter.atBats.map((atBat, idx) => ({
+        id: `${hitter.hitter}-${idx}`,
+        hitter: hitter.hitter,
+        inning: atBat.inning,
+        result: atBat.result,
+        ev: atBat.ev,
+        la: atBat.la
+      }))
+    );
+  }, [hittersData]);
 
   return (
     <Card elevation={3} sx={{ mb: 4, borderRadius: 3 }}>
@@ -19,10 +30,14 @@ export default function HittersTable({ hittersData }) {
           autoHeight
           rows={rows}
           columns={columns}
-          pageSize={10}
+          pageSize={25}
           rowsPerPageOptions={[10, 25, 50]}
           disableSelectionOnClick
+          getRowClassName={(params) => `hitter-${params.row.hitter.replace(/\s+/g, '-')}`}
           sx={{
+            '& .MuiDataGrid-row:nth-of-type(2n)': {
+              backgroundColor: '#f9f9f9'
+            },
             background: '#fff',
             borderRadius: 2,
             '& .MuiDataGrid-columnHeaders': {
