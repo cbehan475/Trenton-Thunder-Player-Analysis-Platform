@@ -5,13 +5,13 @@ import { FormControl, InputLabel, Select, MenuItem, Box, Card, CardContent } fro
 export function PitcherDropdown({ pitchersData, selectedPitcher, onPitcherChange }) {
   const pitcherNames = Object.keys(pitchersData || {});
   return (
-    <FormControl fullWidth size="small" sx={{ minWidth: 180, '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#102542' } }}>
+    <FormControl fullWidth size="small" sx={{ minWidth: 180, '& .MuiOutlinedInput-root': { bgcolor: 'white' } }}>
       <InputLabel id="pitcher-label">Pitcher</InputLabel>
       <Select
         labelId="pitcher-label"
         value={selectedPitcher || ''}
         label="Pitcher"
-        onChange={e => onPitcherChange(e.target.value)}
+        onChange={(e) => onPitcherChange(e.target.value)}
       >
         {pitcherNames.map(name => (
           <MenuItem key={name} value={name}>{name}</MenuItem>
@@ -24,13 +24,13 @@ export function PitcherDropdown({ pitchersData, selectedPitcher, onPitcherChange
 export function InningDropdown({ pitchersData, selectedPitcher, selectedInning, onInningChange }) {
   const innings = selectedPitcher && pitchersData[selectedPitcher] ? Object.keys(pitchersData[selectedPitcher]) : [];
   return (
-    <FormControl fullWidth size="small" sx={{ minWidth: 120, '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#102542' } }}>
+    <FormControl fullWidth size="small" sx={{ minWidth: 120, '& .MuiOutlinedInput-root': { bgcolor: 'white' } }}>
       <InputLabel id="inning-label">Inning</InputLabel>
       <Select
         labelId="inning-label"
         value={selectedInning || ''}
         label="Inning"
-        onChange={e => onInningChange(e.target.value)}
+        onChange={(e) => onInningChange(e.target.value)}
         disabled={!selectedPitcher}
       >
         {innings.map(inn => (
@@ -41,12 +41,21 @@ export function InningDropdown({ pitchersData, selectedPitcher, selectedInning, 
   );
 }
 
-export default function PitchersTable({ pitchersData, selectedPitcher, selectedInning, onPitcherChange, onInningChange, hideDropdowns }) {
-  const pitcherNames = Object.keys(pitchersData || {});
-  const innings = selectedPitcher && pitchersData[selectedPitcher] ? Object.keys(pitchersData[selectedPitcher]) : [];
+export default function PitchersTable({ pitchersData, selectedPitcher, selectedInning, onPitcherChange, onInningChange }) {
   const rows = useMemo(() => {
     if (!selectedPitcher || !selectedInning || !pitchersData[selectedPitcher] || !pitchersData[selectedPitcher][selectedInning]) return [];
-    return pitchersData[selectedPitcher][selectedInning].map((pitch, idx) => ({ id: idx + 1, ...pitch }));
+    return pitchersData[selectedPitcher][selectedInning].map((pitch, idx) => ({
+      id: idx + 1,
+      pitch: idx + 1,
+      type: pitch.pitchType,
+      velo: pitch.velo,
+      spin: pitch.spin,
+      ext: pitch.ext,
+      ivb: pitch.ivb,
+      hb: pitch.hb,
+      result: pitch.result,
+      batter: pitch.batter
+    }));
   }, [pitchersData, selectedPitcher, selectedInning]);
 
   const columns = [
@@ -54,19 +63,20 @@ export default function PitchersTable({ pitchersData, selectedPitcher, selectedI
     { field: 'type', headerName: 'Type', width: 120, sortable: true },
     { field: 'velo', headerName: 'Velo', width: 90, sortable: true },
     { field: 'spin', headerName: 'Spin', width: 90, sortable: true },
+    { field: 'ext', headerName: 'Ext', width: 90, sortable: true },
     { field: 'ivb', headerName: 'IVB', width: 90, sortable: true },
     { field: 'hb', headerName: 'HB', width: 90, sortable: true },
+    { field: 'result', headerName: 'Result', width: 120, sortable: true },
+    { field: 'batter', headerName: 'Batter', width: 150, sortable: true }
   ];
 
   return (
     <Card elevation={3} sx={{ mb: 4, borderRadius: 3 }}>
       <CardContent>
-        {!hideDropdowns && (
-          <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
-            <PitcherDropdown pitchersData={pitchersData} selectedPitcher={selectedPitcher} onPitcherChange={onPitcherChange} />
-            <InningDropdown pitchersData={pitchersData} selectedPitcher={selectedPitcher} selectedInning={selectedInning} onInningChange={onInningChange} />
-          </Box>
-        )}
+        <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+          <PitcherDropdown pitchersData={pitchersData} selectedPitcher={selectedPitcher} onPitcherChange={onPitcherChange} />
+          <InningDropdown pitchersData={pitchersData} selectedPitcher={selectedPitcher} selectedInning={selectedInning} onInningChange={onInningChange} />
+        </Box>
         <DataGrid
           autoHeight
           rows={rows}
