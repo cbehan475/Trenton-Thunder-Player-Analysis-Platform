@@ -4,7 +4,25 @@ import { Box, Card, CardContent } from '@mui/material';
 
 export default function HittersTable({ hittersData }) {
   const columns = [
-    { field: 'hitter', headerName: 'Hitter', width: 150, sortable: true },
+    {
+      field: 'hitter',
+      headerName: 'Hitter',
+      width: 150,
+      sortable: true,
+      renderCell: (params) => {
+        // Only show hitter name for the first at-bat of each hitter
+        const { id, row, api } = params;
+        // Find the index of this row in the sorted/visible rows
+        const visibleSortedRows = api.getSortedRowIds();
+        const idx = visibleSortedRows.indexOf(id);
+        // If first row, show hitter name
+        if (idx === 0) return row.hitter;
+        // Otherwise, compare with previous row's hitter
+        const prevRow = api.getRow(visibleSortedRows[idx - 1]);
+        if (prevRow && prevRow.hitter !== row.hitter) return row.hitter;
+        return '';
+      },
+    },
     { field: 'inning', headerName: 'Inning', width: 100, sortable: true },
     { field: 'result', headerName: 'Result', width: 120, sortable: true },
     { field: 'ev', headerName: 'EV', width: 90, sortable: true },
