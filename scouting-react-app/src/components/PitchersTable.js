@@ -22,7 +22,10 @@ export function PitcherDropdown({ pitchersData, selectedPitcher, onPitcherChange
 }
 
 export function InningDropdown({ pitchersData, selectedPitcher, selectedInning, onInningChange }) {
-  const innings = selectedPitcher && pitchersData[selectedPitcher] ? Object.keys(pitchersData[selectedPitcher]) : [];
+  const innings = selectedPitcher && pitchersData[selectedPitcher]
+    ? Object.keys(pitchersData[selectedPitcher]).sort((a, b) => Number(a) - Number(b))
+    : [];
+
   return (
     <FormControl fullWidth size="small" sx={{ minWidth: 120, '& .MuiOutlinedInput-root': { bgcolor: 'white' } }}>
       <InputLabel id="inning-label">Inning</InputLabel>
