@@ -5,7 +5,7 @@ import GameDateDropdown from '../components/GameDateDropdown';
 import HitterDropdown from '../components/HitterDropdown';
 import InningDropdown from '../components/InningDropdown';
 
-const GAME_DATES = ['2025-06-04', '2025-06-05']; // Add more as you add files
+const GAME_DATES = ['2025-06-04', '2025-06-05', '2025-06-06']; // Add more as you add files
 
 export default function HittingLogsPage() {
   const [selectedDate, setSelectedDate] = useState(GAME_DATES[0]);
