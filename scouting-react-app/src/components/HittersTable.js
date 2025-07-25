@@ -12,31 +12,35 @@ export default function HittersTable({ hittersData }) {
       renderCell: (params) => {
         // Only show hitter name for the first at-bat of each hitter
         const { id, row, api } = params;
-        // Find the index of this row in the sorted/visible rows
         const visibleSortedRows = api.getSortedRowIds();
         const idx = visibleSortedRows.indexOf(id);
-        // If first row, show hitter name
         if (idx === 0) return row.hitter;
-        // Otherwise, compare with previous row's hitter
         const prevRow = api.getRow(visibleSortedRows[idx - 1]);
         if (prevRow && prevRow.hitter !== row.hitter) return row.hitter;
         return '';
       },
     },
     { field: 'inning', headerName: 'Inning', width: 100, sortable: true },
-    { field: 'result', headerName: 'Result', width: 120, sortable: true },
+    { field: 'pitchType', headerName: 'Pitch Type', width: 140, sortable: true },
+    { field: 'spinRate', headerName: 'Spin Rate', width: 110, sortable: true },
     { field: 'ev', headerName: 'EV', width: 90, sortable: true },
     { field: 'la', headerName: 'LA', width: 90, sortable: true },
+    { field: 'pitchHeight', headerName: 'Pitch Height', width: 120, sortable: true },
+    { field: 'result', headerName: 'Result', width: 120, sortable: true },
   ];
+
   const rows = useMemo(() => {
     return hittersData.flatMap((hitter) =>
       hitter.atBats.map((atBat, idx) => ({
         id: `${hitter.hitter}-${idx}`,
         hitter: hitter.hitter,
         inning: atBat.inning,
-        result: atBat.result,
+        pitchType: atBat.pitchType,
+        spinRate: atBat.spinRate,
         ev: atBat.ev,
-        la: atBat.la
+        la: atBat.la,
+        pitchHeight: atBat.pitchHeight,
+        result: atBat.result
       }))
     );
   }, [hittersData]);
