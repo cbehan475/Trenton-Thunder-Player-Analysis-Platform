@@ -1,11 +1,22 @@
 import React, { useState } from 'react';
 import { Box, Typography, Grid, useMediaQuery } from '@mui/material';
 import HittersTable from '../components/HittersTable';
-import GameDateDropdown from '../components/GameDateDropdown';
 import HitterDropdown from '../components/HitterDropdown';
 import InningDropdown from '../components/InningDropdown';
+import { Button } from '@mui/material';
 
-const GAME_DATES = ['2025-06-04', '2025-06-05', '2025-06-06', '2025-06-07', '2025-06-08', '2025-06-10', '2025-06-11', '2025-06-12', '2025-06-13']; // Added June 13, 2025 for dropdown and data loading.
+const GAME_DATES = [
+  '2025-06-04',
+  '2025-06-05',
+  '2025-06-06',
+  '2025-06-07',
+  '2025-06-08',
+  '2025-06-10',
+  '2025-06-11',
+  '2025-06-12',
+  '2025-06-13',
+  '2025-06-14',
+].sort((a, b) => new Date(a) - new Date(b));
 
 export default function HittingLogsPage() {
   const [selectedDate, setSelectedDate] = useState(GAME_DATES[0]);
@@ -63,24 +74,50 @@ export default function HittingLogsPage() {
           px: isMobile ? 1 : 0,
         }}
       >
-        <Grid item xs={12} sm={4}>
-          <GameDateDropdown dates={GAME_DATES} selectedDate={selectedDate} onChange={setSelectedDate} />
+        <Grid item xs={12}>
+          <Grid container spacing={1} justifyContent="center" alignItems="center">
+            {GAME_DATES.map(date => (
+              <Grid item key={date}>
+                <Button
+                  variant={selectedDate === date ? 'contained' : 'outlined'}
+                  onClick={() => setSelectedDate(date)}
+                  sx={{
+                    minWidth: 68,
+                    fontWeight: 600,
+                    bgcolor: selectedDate === date ? '#FFD700' : undefined,
+                    color: selectedDate === date ? '#001f4d' : '#001f4d',
+                    borderColor: '#FFD700',
+                    '&:hover': {
+                      bgcolor: '#FFE066',
+                      borderColor: '#FFD700',
+                    },
+                  }}
+                >
+                  {date.slice(5).replace('-', '-')}
+                </Button>
+              </Grid>
+            ))}
+          </Grid>
         </Grid>
-        <Grid item xs={12} sm={4}>
-          <HitterDropdown
-            hittersData={hittersData || []}
-            selectedHitter={selectedHitter}
-            onHitterChange={setSelectedHitter}
-          />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <InningDropdown
-            hittersData={hittersData || []}
-            selectedHitter={selectedHitter}
-            selectedInning={selectedInning}
-            onInningChange={setSelectedInning}
-          />
-        </Grid>
+        {selectedDate && (
+          <>
+            <Grid item xs={12} sm={6} md={4}>
+              <HitterDropdown
+                hittersData={hittersData || []}
+                selectedHitter={selectedHitter}
+                onHitterChange={setSelectedHitter}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <InningDropdown
+                hittersData={hittersData || []}
+                selectedHitter={selectedHitter}
+                selectedInning={selectedInning}
+                onInningChange={setSelectedInning}
+              />
+            </Grid>
+          </>
+        )}
       </Grid>
       <Box
         sx={{

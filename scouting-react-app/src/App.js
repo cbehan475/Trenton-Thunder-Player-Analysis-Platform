@@ -39,36 +39,63 @@ function Home() {
             Welcome! Select a feature below to view game logs, player comparisons, and development plans.
           </Typography>
         </Box>
-        <Grid container spacing={4} justifyContent="center">
-          {cards.map((card) => (
-            <Grid item xs={12} sm={6} md={3} key={card.label}>
-              <Card
-                onClick={() => navigate(card.path)}
-                sx={{
-                  cursor: 'pointer',
-                  minHeight: 160,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  bgcolor: '#fff',
-                  boxShadow: 6,
-                  borderRadius: 3,
-                  transition: 'transform 0.15s',
-                  '&:hover': {
-                    transform: 'scale(1.04)',
-                    boxShadow: 12,
-                  },
-                }}
-              >
-                <CardContent>
-                  <Typography variant="h6" sx={{ color: navy, fontWeight: 600 }} align="center">
-                    {card.label}
-                  </Typography>
-                </CardContent>
-              </Card>
+
+        {/* First-Half Player Dashboard Section */}
+        <Box sx={{ mb: 6, p: 3, bgcolor: '#fff', borderRadius: 3, boxShadow: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <Typography variant="h5" sx={{ color: navy, fontWeight: 700, mb: 1 }} align="center">
+            First-Half Player Dashboard
+          </Typography>
+          <Typography variant="body1" sx={{ color: '#333', mb: 2 }} align="center">
+            Track game logs, development trends, and player insights from the first half of the 2025 MLB Draft League season.
+          </Typography>
+          <Grid container spacing={2} justifyContent="center" alignItems="center">
+            {/* Row 1 */}
+            <Grid item xs={12} container spacing={2} justifyContent="center">
+              <Grid item xs={12} sm={6} md={6} display="flex" justifyContent="center">
+                <Card sx={{ cursor: 'pointer', minWidth: 180, bgcolor: gold, color: navy, borderRadius: 2, boxShadow: 2, '&:hover': { boxShadow: 6, bgcolor: '#ffe066' } }} onClick={() => navigate('/hitting')}>
+                  <CardContent>
+                    <Typography variant="button" sx={{ fontWeight: 700 }} align="center">
+                      View Hitting Logs
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={6} display="flex" justifyContent="center">
+                <Card sx={{ cursor: 'pointer', minWidth: 180, bgcolor: gold, color: navy, borderRadius: 2, boxShadow: 2, '&:hover': { boxShadow: 6, bgcolor: '#ffe066' } }} onClick={() => navigate('/pitching')}>
+                  <CardContent>
+                    <Typography variant="button" sx={{ fontWeight: 700 }} align="center">
+                      View Pitching Logs
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
             </Grid>
-          ))}
-        </Grid>
+            {/* Row 2 */}
+            <Grid item xs={12} container spacing={2} justifyContent="center">
+              <Grid item xs={12} sm={6} md={6} display="flex" justifyContent="center">
+                <Card sx={{ cursor: 'pointer', minWidth: 180, bgcolor: gold, color: navy, borderRadius: 2, boxShadow: 2, '&:hover': { boxShadow: 6, bgcolor: '#ffe066' } }} onClick={() => navigate('/development')}>
+                  <CardContent>
+                    <Typography variant="button" sx={{ fontWeight: 700 }} align="center">
+                      View Player Dev Plans
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={6} display="flex" justifyContent="center">
+                <Card sx={{ cursor: 'pointer', minWidth: 220, bgcolor: gold, color: navy, borderRadius: 2, boxShadow: 2, '&:hover': { boxShadow: 6, bgcolor: '#ffe066' } }} onClick={() => navigate('/comparison')}>
+                  <CardContent>
+                    <Typography variant="button" sx={{ fontWeight: 700 }} align="center">
+                      Player Comparison to MLB Averages
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </Grid>
+        </Box>
+
+
+
       </Container>
     </Box>
   );
