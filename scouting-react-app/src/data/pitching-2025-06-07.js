@@ -95,49 +95,6 @@ const pitchersData = {
       { pitchType: "Sinker", velo: 91.6, spin: 2005, ivb: 9.4, hb: 17.5, ext: 5.3, result: "Groundout", batter: "Trey Lipsey" }
     ],
     5: [
-      // Jordan Peyton
-      { pitchType: "Four-Seam Fastball", velo: 88.9, spin: 2219, ext: 5.0, ivb: 18.8, hb: -2.7, result: "Ball", batter: "Jordan Peyton" },
-      { pitchType: "Four-Seam Fastball", velo: 88.5, spin: 2278, ext: 5.0, ivb: 14.4, hb: -2.1, result: "Ball", batter: "Jordan Peyton" },
-      { pitchType: "Four-Seam Fastball", velo: 87.1, spin: 2180, ext: 5.1, ivb: 18.6, hb: -5.4, result: "Ball", batter: "Jordan Peyton" },
-      { pitchType: "Four-Seam Fastball", velo: 87.4, spin: 2187, ext: 5.0, ivb: 15.8, hb: 1.5, result: "Walk", batter: "Jordan Peyton" },
-      // Trey Lipsey
-      { pitchType: "Four-Seam Fastball", velo: 87.5, spin: 2217, ext: 5.1, ivb: 17.0, hb: -6.0, result: "Called Strike", batter: "Trey Lipsey" },
-      { pitchType: "Slider", velo: 87.8, spin: 2227, ext: 4.8, ivb: 6.9, hb: -3.1, result: "Swinging Strike", batter: "Trey Lipsey" },
-      { pitchType: "Four-Seam Fastball", velo: 89.4, spin: 2197, ext: 5.2, ivb: 18.7, hb: -2.0, result: "Strikeout", batter: "Trey Lipsey" },
-      // Eddie Hacopian
-      { pitchType: "Changeup", velo: 86.8, spin: 2245, ext: 4.8, ivb: 5.7, hb: -8.3, result: "Called Strike", batter: "Eddie Hacopian" },
-      { pitchType: "Slider", velo: 80.0, spin: 2602, ext: 4.6, ivb: -1.2, hb: 15.0, result: "Called Strike", batter: "Eddie Hacopian" },
-      { pitchType: "Changeup", velo: 84.4, spin: 1944, ext: 5.0, ivb: 9.9, hb: -13.5, result: "Ball", batter: "Eddie Hacopian" },
-      { pitchType: "Four-Seam Fastball", velo: 90.5, spin: 2245, ext: 5.0, ivb: 14.6, hb: -7.7, result: "Foul", batter: "Eddie Hacopian" },
-      { pitchType: "Slider", velo: 81.5, spin: 2571, ext: 4.6, ivb: -0.3, hb: 10.3, result: "Ball", batter: "Eddie Hacopian" },
-      { pitchType: "Slider", velo: 78.4, spin: 2615, ext: 4.6, ivb: -4.4, hb: 12.8, result: "Foul", batter: "Eddie Hacopian" },
-      { pitchType: "Four-Seam Fastball", velo: 88.2, spin: 2116, ext: 5.1, ivb: 14.7, hb: -1.9, result: "Groundout", batter: "Eddie Hacopian" },
-      // Sam Parker
-      { pitchType: "Slider", velo: 86.6, spin: 2310, ext: 4.8, ivb: 6.5, hb: -1.3, result: "Ball", batter: "Sam Parker" },
-      { pitchType: "Slider", velo: 78.4, spin: 2561, ext: 4.5, ivb: -3.3, hb: 17.7, result: "Ball", batter: "Sam Parker" },
-      { pitchType: "Four-Seam Fastball", velo: 86.9, spin: 2208, ext: 5.2, ivb: 14.8, hb: -1.9, result: "Flyout", batter: "Sam Parker" }
-      ]
-  },
-  "Codi Scott": {
-    4: [
-      // Anthony Diaz
-      { pitchType: "Four-Seam Fastball", velo: 91.3, spin: 2242, ext: 5.0, ivb: 17.8, hb: -3.1, result: "Ball In Dirt", batter: "Anthony Diaz" },
-      { pitchType: "Four-Seam Fastball", velo: 89.5, spin: 2235, ext: 4.9, ivb: 7.2, hb: -1.6, result: "Swinging Strike", batter: "Anthony Diaz" },
-      { pitchType: "Four-Seam Fastball", velo: 89.2, spin: 2334, ext: 4.9, ivb: 8.2, hb: 1.7, result: "Foul", batter: "Anthony Diaz" },
-      { pitchType: "Slider", velo: 79.8, spin: 2646, ext: 4.5, ivb: -2.0, hb: 16.4, result: "Foul", batter: "Anthony Diaz" },
-      { pitchType: "Four-Seam Fastball", velo: 91.4, spin: 2184, ext: 4.9, ivb: 15.0, hb: -6.1, result: "Ball", batter: "Anthony Diaz" },
-      { pitchType: "Four-Seam Fastball", velo: 91.0, spin: 2141, ext: 4.9, ivb: 15.4, hb: -6.3, result: "Ball", batter: "Anthony Diaz" },
-      { pitchType: "Slider", velo: 87.9, spin: 2256, ext: 4.9, ivb: 5.1, hb: -1.2, result: "Walk", batter: "Anthony Diaz" },
-      // Taj Bates
-      { pitchType: "Four-Seam Fastball", velo: 90.7, spin: 2186, ext: 5.0, ivb: 19.5, hb: -4.4, result: "Called Strike", batter: "Taj Bates" },
-      { pitchType: "Four-Seam Fastball", velo: 91.0, spin: 2173, ext: 4.9, ivb: 18.6, hb: -8.7, result: "Ball", batter: "Taj Bates" },
-      { pitchType: "Four-Seam Fastball", velo: 91.0, spin: 2095, ext: 4.9, ivb: 17.5, hb: 0.6, result: "Ball", batter: "Taj Bates" },
-      { pitchType: "Four-Seam Fastball", velo: 89.4, spin: 2202, ext: 5.0, ivb: 18.6, hb: 0.7, result: "Foul", batter: "Taj Bates" },
-      { pitchType: "Slider", velo: 88.0, spin: 2248, ext: 4.9, ivb: 6.2, hb: -2.6, result: "Foul", batter: "Taj Bates" },
-      { pitchType: "Four-Seam Fastball", velo: 90.7, spin: 2308, ext: 5.0, ivb: 17.6, hb: -2.5, result: "Foul", batter: "Taj Bates" },
-      { pitchType: "Slider", velo: 78.8, spin: 2519, ext: 4.6, ivb: 4.0, hb: 12.4, result: "Strikeout", batter: "Taj Bates" }
-    ],
-    5: [
       // Eddie Hacopian
       { pitchType: "Sinker", velo: 90.4, spin: 2052, ivb: 13.1, hb: 13.0, ext: 5.2, result: "Single", batter: "Eddie Hacopian" },
       // Sam Parker
@@ -161,40 +118,6 @@ const pitchersData = {
       { pitchType: "Slider", velo: 82.8, spin: 2345, ivb: 0.2, hb: -6.7, ext: 5.0, result: "Ball In Dirt", batter: "Jose Silva" },
       { pitchType: "Slider", velo: 82.5, spin: 2286, ivb: 3.1, hb: -7.9, ext: 4.5, result: "Strikeout", batter: "Jose Silva" }
     ],
-  },
-  "Paulo Noris": {
-    6: [
-      // Lance Trippel
-      { pitchType: "Cutter", velo: 87.2, spin: 1982, ext: 6.1, ivb: 17.5, hb: 4.3, result: "Ball", batter: "Lance Trippel" },
-      { pitchType: "Curveball", velo: 75.1, spin: 1954, ext: 5.0, ivb: -4.0, hb: -10.8, result: "Called Strike", batter: "Lance Trippel" },
-      { pitchType: "Cutter", velo: 86.2, spin: 1624, ext: 5.8, ivb: 15.5, hb: 3.7, result: "Ball", batter: "Lance Trippel" },
-      { pitchType: "Curveball", velo: 75.8, spin: 1890, ext: 5.3, ivb: -6.5, hb: -15.4, result: "Ball", batter: "Lance Trippel" },
-      { pitchType: "Cutter", velo: 86.3, spin: 1700, ext: 5.9, ivb: 14.8, hb: 3.2, result: "Foul", batter: "Lance Trippel" },
-      { pitchType: "Cutter", velo: 86.0, spin: 1849, ext: 6.0, ivb: 13.6, hb: 1.2, result: "Strikeout", batter: "Lance Trippel" },
-      // Bruin Agbayani
-      { pitchType: "Curveball", velo: 76.7, spin: 1848, ext: 5.8, ivb: 2.5, hb: 18.7, result: "Ball", batter: "Bruin Agbayani" },
-      { pitchType: "Four-Seam Fastball", velo: 86.4, spin: 2186, ext: 5.8, ivb: 18.7, hb: 6.4, result: "Called Strike", batter: "Bruin Agbayani" },
-      { pitchType: "Curveball", velo: 78.0, spin: 1993, ext: 5.2, ivb: -1.1, hb: -5.3, result: "Ball", batter: "Bruin Agbayani" },
-      { pitchType: "Cutter", velo: 86.7, spin: 1730, ext: 5.9, ivb: 14.5, hb: 4.0, result: "Called Strike", batter: "Bruin Agbayani" },
-      { pitchType: "Curveball", velo: 73.7, spin: 1795, ext: 5.0, ivb: -3.9, hb: -6.4, result: "Single", batter: "Bruin Agbayani" },
-      // Jose Silva
-      { pitchType: "Cutter", velo: 84.9, spin: 1793, ext: 5.6, ivb: 16.1, hb: 3.0, result: "Foul", batter: "Jose Silva" },
-      { pitchType: "Curveball", velo: 73.0, spin: 1823, ext: 4.9, ivb: -8.0, hb: -11.3, result: "Ball", batter: "Jose Silva" },
-      { pitchType: "Curveball", velo: 73.4, spin: 1968, ext: 5.2, ivb: -9.8, hb: -12.6, result: "Ball", batter: "Jose Silva" },
-      { pitchType: "Slider", velo: 83.1, spin: 1706, ext: 6.1, ivb: 12.4, hb: 1.3, result: "Ball", batter: "Jose Silva" },
-      { pitchType: "Slider", velo: 83.0, spin: 1768, ext: 6.0, ivb: 10.6, hb: -0.9, result: "Swinging Strike", batter: "Jose Silva" },
-      { pitchType: "Curveball", velo: 71.3, spin: 1758, ext: 4.9, ivb: -5.5, hb: -11.6, result: "Walk", batter: "Jose Silva" },
-      // Anthony Diaz
-      { pitchType: "Slider", velo: 83.8, spin: 1831, ext: 5.8, ivb: 14.1, hb: 2.0, result: "Called Strike", batter: "Anthony Diaz" },
-      { pitchType: "Curveball", velo: 75.5, spin: 1934, ext: 5.2, ivb: -3.7, hb: -0.8, result: "Called Strike", batter: "Anthony Diaz" },
-      { pitchType: "Changeup", velo: 76.8, spin: 1922, ext: 5.8, ivb: 13.3, hb: 14.4, result: "Foul", batter: "Anthony Diaz" },
-      { pitchType: "Cutter", velo: 84.2, spin: 1892, ext: 5.9, ivb: 15.0, hb: 1.1, result: "Flyout", batter: "Anthony Diaz" },
-      // Taj Bates
-      { pitchType: "Cutter", velo: 84.9, spin: 2065, ext: 6.0, ivb: 17.8, hb: 3.8, result: "Called Strike", batter: "Taj Bates" },
-      { pitchType: "Slider", velo: 84.6, spin: 1872, ext: 6.0, ivb: 14.1, hb: 3.3, result: "Ball In Dirt", batter: "Taj Bates" },
-      { pitchType: "Curveball", velo: 72.8, spin: 1843, ext: 4.9, ivb: -12.2, hb: -11.7, result: "Ball", batter: "Taj Bates" },
-      { pitchType: "Cutter", velo: 85.1, spin: 1779, ext: 5.9, ivb: 15.0, hb: 5.3, result: "Lineout", batter: "Taj Bates" }
-    ]
   },
   "Noah Edders": {
   6: [

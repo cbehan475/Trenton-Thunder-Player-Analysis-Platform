@@ -3,7 +3,7 @@ import { Box, Typography, Grid, useMediaQuery } from '@mui/material';
 import PitchersTable, { PitcherDropdown, InningDropdown } from '../components/PitchersTable';
 import GameDateDropdown from '../components/GameDateDropdown';
 
-const GAME_DATES = ['2025-06-04', '2025-06-05', '2025-06-06', '2025-06-07']; // Added June 7, 2025 for dropdown and data loading.
+const GAME_DATES = ['2025-06-04', '2025-06-05', '2025-06-06', '2025-06-07', '2025-06-08']; // Added June 8, 2025 for dropdown and data loading.
 
 export default function PitchingLogsPage() {
   const [selectedDate, setSelectedDate] = useState(GAME_DATES[0]);
