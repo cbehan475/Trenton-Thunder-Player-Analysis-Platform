@@ -4,13 +4,17 @@ import PitchersTable, { PitcherDropdown, InningDropdown } from '../components/Pi
 import GameDateDropdown from '../components/GameDateDropdown';
 import pitching2025_06_11 from '../data/pitching-2025-06-11.js';
 import pitching2025_06_12 from '../data/pitching-2025-06-12.js';
+import pitching2025_06_13 from '../data/pitching-2025-06-13.js';
+import pitching2025_06_14 from '../data/pitching-2025-06-14.js';
 
-const GAME_DATES = ['2025-06-04', '2025-06-05', '2025-06-06', '2025-06-07', '2025-06-08', '2025-06-11', '2025-06-12']; // Added June 11, 2025 for dropdown and data loading.
+const GAME_DATES = ['2025-06-04', '2025-06-05', '2025-06-06', '2025-06-07', '2025-06-08', '2025-06-11', '2025-06-12', '2025-06-13', '2025-06-14']; // Added June 11, 2025 for dropdown and data loading.
 
 const pitchingLogsMap = {
   '2025-06-08': require('../data/pitching-2025-06-08.js').default,
   '2025-06-11': pitching2025_06_11,
   '2025-06-12': pitching2025_06_12,
+  '2025-06-13': pitching2025_06_13,
+  '2025-06-14': pitching2025_06_14,
 };
 
 export default function PitchingLogsPage() {
