@@ -2,8 +2,16 @@ import React, { useState } from 'react';
 import { Box, Typography, Grid, useMediaQuery } from '@mui/material';
 import PitchersTable, { PitcherDropdown, InningDropdown } from '../components/PitchersTable';
 import GameDateDropdown from '../components/GameDateDropdown';
+import pitching2025_06_11 from '../data/pitching-2025-06-11.js';
+import pitching2025_06_12 from '../data/pitching-2025-06-12.js';
 
-const GAME_DATES = ['2025-06-04', '2025-06-05', '2025-06-06', '2025-06-07', '2025-06-08']; // Added June 8, 2025 for dropdown and data loading.
+const GAME_DATES = ['2025-06-04', '2025-06-05', '2025-06-06', '2025-06-07', '2025-06-08', '2025-06-11', '2025-06-12']; // Added June 11, 2025 for dropdown and data loading.
+
+const pitchingLogsMap = {
+  '2025-06-08': require('../data/pitching-2025-06-08.js').default,
+  '2025-06-11': pitching2025_06_11,
+  '2025-06-12': pitching2025_06_12,
+};
 
 export default function PitchingLogsPage() {
   const [selectedDate, setSelectedDate] = useState(GAME_DATES[0]);
@@ -13,8 +21,12 @@ export default function PitchingLogsPage() {
 
   React.useEffect(() => {
     async function loadData() {
-      const module = await import(`../data/pitching-${selectedDate}.js`);
-      setPitchersData(module.default);
+      if (pitchingLogsMap[selectedDate]) {
+        setPitchersData(pitchingLogsMap[selectedDate]);
+      } else {
+        const module = await import(`../data/pitching-${selectedDate}.js`);
+        setPitchersData(module.default);
+      }
       setSelectedPitcher('');
       setSelectedInning('');
     }
