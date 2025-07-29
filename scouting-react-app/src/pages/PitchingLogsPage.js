@@ -2,10 +2,35 @@ import React, { useState } from 'react';
 import { Box, Typography, Grid, useMediaQuery } from '@mui/material';
 import PitchersTable, { PitcherDropdown, InningDropdown } from '../components/PitchersTable';
 import GameDateDropdown from '../components/GameDateDropdown';
-import pitching2025_06_11 from '../data/pitching-2025-06-11.js';
-import pitching2025_06_12 from '../data/pitching-2025-06-12.js';
-import pitching2025_06_13 from '../data/pitching-2025-06-13.js';
-import pitching2025_06_14 from '../data/pitching-2025-06-14.js';
+import pitching2025_06_04 from '../data/logs/pitching-2025-06-04.js';
+import pitching2025_06_05 from '../data/logs/pitching-2025-06-05.js';
+import pitching2025_06_06 from '../data/logs/pitching-2025-06-06.js';
+import pitching2025_06_07 from '../data/logs/pitching-2025-06-07.js';
+import pitching2025_06_08 from '../data/logs/pitching-2025-06-08.js';
+import pitching2025_06_11 from '../data/logs/pitching-2025-06-11.js';
+import pitching2025_06_12 from '../data/logs/pitching-2025-06-12.js';
+import pitching2025_06_13 from '../data/logs/pitching-2025-06-13.js';
+import pitching2025_06_15 from '../data/logs/pitching-2025-06-15.js';
+import pitching2025_06_18 from '../data/logs/pitching-2025-06-18.js';
+import pitching2025_06_20 from '../data/logs/pitching-2025-06-20.js';
+import pitching2025_06_21 from '../data/logs/pitching-2025-06-21.js';
+import pitching2025_06_22 from '../data/logs/pitching-2025-06-22.js';
+import pitching2025_06_24 from '../data/logs/pitching-2025-06-24.js';
+import pitching2025_06_25 from '../data/logs/pitching-2025-06-25.js';
+import pitching2025_06_26 from '../data/logs/pitching-2025-06-26.js';
+import pitching2025_06_27 from '../data/logs/pitching-2025-06-27.js';
+import pitching2025_06_28 from '../data/logs/pitching-2025-06-28.js';
+import pitching2025_06_29 from '../data/logs/pitching-2025-06-29.js';
+import pitching2025_07_01 from '../data/logs/pitching-2025-07-01.js';
+import pitching2025_07_02 from '../data/logs/pitching-2025-07-02.js';
+import pitching2025_07_03 from '../data/logs/pitching-2025-07-03.js';
+import pitching2025_07_04 from '../data/logs/pitching-2025-07-04.js';
+import pitching2025_07_05 from '../data/logs/pitching-2025-07-05.js';
+import pitching2025_07_06 from '../data/logs/pitching-2025-07-06.js';
+import pitching2025_07_08 from '../data/logs/pitching-2025-07-08.js';
+import pitching2025_07_09 from '../data/logs/pitching-2025-07-09.js';
+import pitching2025_07_11 from '../data/logs/pitching-2025-07-11.js';
+import pitching2025_07_12 from '../data/logs/pitching-2025-07-12.js';
 
 const GAME_DATES = [
   '2025-06-04',
@@ -16,7 +41,6 @@ const GAME_DATES = [
   '2025-06-11',
   '2025-06-12',
   '2025-06-13',
-  '2025-06-14',
   '2025-06-15',
   '2025-06-18',
   '2025-06-20',
@@ -41,11 +65,35 @@ const GAME_DATES = [
 ];
 
 const pitchingLogsMap = {
-  '2025-06-08': require('../data/pitching-2025-06-08.js').default,
+  '2025-06-04': pitching2025_06_04,
+  '2025-06-05': pitching2025_06_05,
+  '2025-06-06': pitching2025_06_06,
+  '2025-06-07': pitching2025_06_07,
+  '2025-06-08': pitching2025_06_08,
   '2025-06-11': pitching2025_06_11,
   '2025-06-12': pitching2025_06_12,
   '2025-06-13': pitching2025_06_13,
-  '2025-06-14': pitching2025_06_14,
+  '2025-06-15': pitching2025_06_15,
+  '2025-06-18': pitching2025_06_18,
+  '2025-06-20': pitching2025_06_20,
+  '2025-06-21': pitching2025_06_21,
+  '2025-06-22': pitching2025_06_22,
+  '2025-06-24': pitching2025_06_24,
+  '2025-06-25': pitching2025_06_25,
+  '2025-06-26': pitching2025_06_26,
+  '2025-06-27': pitching2025_06_27,
+  '2025-06-28': pitching2025_06_28,
+  '2025-06-29': pitching2025_06_29,
+  '2025-07-01': pitching2025_07_01,
+  '2025-07-02': pitching2025_07_02,
+  '2025-07-03': pitching2025_07_03,
+  '2025-07-04': pitching2025_07_04,
+  '2025-07-05': pitching2025_07_05,
+  '2025-07-06': pitching2025_07_06,
+  '2025-07-08': pitching2025_07_08,
+  '2025-07-09': pitching2025_07_09,
+  '2025-07-11': pitching2025_07_11,
+  '2025-07-12': pitching2025_07_12,
 };
 
 export default function PitchingLogsPage() {
@@ -59,8 +107,8 @@ export default function PitchingLogsPage() {
       if (pitchingLogsMap[selectedDate]) {
         setPitchersData(pitchingLogsMap[selectedDate]);
       } else {
-        const module = await import(`../data/pitching-${selectedDate}.js`);
-        setPitchersData(module.default);
+        // File does not exist, clear data or show error
+        setPitchersData(null);
       }
       setSelectedPitcher('');
       setSelectedInning('');

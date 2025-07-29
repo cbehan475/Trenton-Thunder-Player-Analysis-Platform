@@ -5,7 +5,7 @@ import BoltIcon from '@mui/icons-material/Bolt';
 import GameDateSelector from './components/GameDateSelector';
 import PitchersTable from './components/PitchersTable';
 import HittersTable from './components/HittersTable';
-import hittersData from './data/hitters-2025-06-04';
+import hittersData from './data/logs/hitters-2025-06-04.js';
 import HittingLogsPage from './pages/HittingLogsPage';
 import PitchingLogsPage from './pages/PitchingLogsPage';
 import ComparisonPage from './pages/ComparisonPage';

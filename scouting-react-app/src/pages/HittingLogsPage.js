@@ -27,7 +27,7 @@ export default function HittingLogsPage() {
 
   React.useEffect(() => {
     async function loadData() {
-      const module = await import(`../data/hitters-${selectedDate}.js`);
+      const module = await import(`../data/logs/hitters-${selectedDate}.js`);
       setHittersData(module.default);
       setSelectedHitter('');
       setSelectedInning('');
