@@ -115,6 +115,22 @@ const pitchersData = {
       { pitchType: "Slider", velo: 82.0, spin: 2211, ivb: 0.8, hb: -11.7, ext: 4.5, result: "Groundout", batter: "Chase Heath" }
     ]
   },
+  "Cooper McGrath": {
+    5: [
+      // Trey Fenderson
+      { pitchType: "Four-Seam Fastball", velo: 90.5, spin: 2410, ivb: 12.2, hb: 7.9, ext: 6.3, result: "Pop Out", batter: "Trey Fenderson" },
+      // JC Vanek
+      { pitchType: "Slider", velo: 84.4, spin: 2576, ivb: 0.0, hb: -2.6, ext: 5.9, result: "Called Strike", batter: "JC Vanek" },
+      { pitchType: "Slider", velo: 84.6, spin: 2598, ivb: 2.4, hb: -1.2, ext: 5.9, result: "Called Strike", batter: "JC Vanek" },
+      { pitchType: "Four-Seam Fastball", velo: 90.4, spin: 2471, ivb: 8.8, hb: 5.5, ext: 5.9, result: "Ball", batter: "JC Vanek" },
+      { pitchType: "Slider", velo: 84.1, spin: 2571, ivb: 1.8, hb: -0.5, ext: 6.1, result: "Groundout", batter: "JC Vanek" },
+      // Michal Sindelka
+      { pitchType: "Four-Seam Fastball", velo: 91.9, spin: 2528, ivb: 12.2, hb: 3.4, ext: 6.4, result: "Foul", batter: "Michal Sindelka" },
+      { pitchType: "Sinker", velo: 92.6, spin: 2465, ivb: 10.0, hb: 8.4, ext: 6.3, result: "Foul", batter: "Michal Sindelka" },
+      { pitchType: "Curveball", velo: 79.1, spin: 2702, ivb: -9.1, hb: -19.3, ext: 5.9, result: "Foul", batter: "Michal Sindelka" },
+      { pitchType: "Slider", velo: 84.5, spin: 2486, ivb: 0.7, hb: -1.7, ext: 6.1, result: "Strikeout", batter: "Michal Sindelka" }
+    ]
+  },
   "Kai Fyke": {
     6: [
       // Seth Farni
@@ -162,7 +178,6 @@ const pitchersData = {
       { pitchType: "Four-Seam Fastball", velo: 92.3, spin: 2141, ivb: 12.1, hb: 6.1, ext: 5.4, result: "Ball", batter: "Seth Farni" },
       { pitchType: "Changeup", velo: 86.1, spin: 1452, ivb: 10.9, hb: 11.0, ext: 5.3, result: "Foul", batter: "Seth Farni" },
       { pitchType: "Four-Seam Fastball", velo: 91.9, spin: 2185, ivb: 15.2, hb: 3.2, ext: 5.6, result: "Strikeout", batter: "Seth Farni" },
-
     ]
   },
   "Jarrette Bonet": {
