@@ -271,6 +271,6 @@ const pitchersData = {
       { pitchType: "Four-Seam Fastball", velo: 94.8, spin: 2104, ivb: 16.5, hb: 5.4, ext: 6.9, result: "Groundout", batter: "Grant Gallagher" }
     ]
   }
-}
+};
 
 export default pitchersData;
