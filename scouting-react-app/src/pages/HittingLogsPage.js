@@ -16,6 +16,10 @@ const GAME_DATES = [
   '2025-06-12',
   '2025-06-13',
   '2025-06-14',
+  '2025-06-15',
+  '2025-06-18',
+  '2025-06-20',
+  '2025-06-21',
 ].sort((a, b) => new Date(a) - new Date(b));
 
 export default function HittingLogsPage() {
