@@ -1,22 +1,24 @@
 import React, { useState } from 'react';
-import { Box, Typography, Card, CardContent, Grid, Divider, List, ListItem, ListItemIcon, ListItemText, MenuItem, FormControl, Select, InputLabel } from '@mui/material';
+import { Box, Typography, Card, CardContent, Grid, Divider, List, ListItem, ListItemText, MenuItem, FormControl, Select, InputLabel } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import BuildIcon from '@mui/icons-material/Build';
 import StarIcon from '@mui/icons-material/Star';
 import playerDevData from '../data/logs/playerDevData.js';
 
-export default function DevelopmentPage() {
+export default function DevelopmentPagePitchers() {
   const [selectedPitcher, setSelectedPitcher] = useState(playerDevData[0]?.name || '');
   const pitcher = playerDevData.find(p => p.name === selectedPitcher);
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#102542', py: 6, px: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <Typography variant="h3" sx={{ color: '#FFD600', fontWeight: 700, mb: 4 }} align="center">
-        Player Development Plans
+        Player Development Plans – Pitchers
       </Typography>
-      <FormControl sx={{ mb: 4, minWidth: 260 }}>
-        <InputLabel id="pitcher-select-label" sx={{ color: '#FFD600' }}>Select Pitcher</InputLabel>
+      <FormControl sx={{ mb: 4, minWidth: 260 }} variant="outlined">
+        <InputLabel id="pitcher-select-label" sx={{ color: '#FFD600', bgcolor: '#fff', px: 0.5 }} shrink>
+          Select Pitcher
+        </InputLabel>
         <Select
           labelId="pitcher-select-label"
           value={selectedPitcher}
@@ -89,10 +91,6 @@ export default function DevelopmentPage() {
           </Card>
         </Grid>
       </Grid>
-      {/*
-      // Old hardcoded JuJu Stevens plan removed for dynamic pitcher plans
-      */}
     </Box>
   );
 }
-

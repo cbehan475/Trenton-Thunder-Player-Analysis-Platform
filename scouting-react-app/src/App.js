@@ -10,6 +10,8 @@ import HittingLogsPage from './pages/HittingLogsPage';
 import PitchingLogsPage from './pages/PitchingLogsPage';
 import ComparisonPage from './pages/ComparisonPage';
 import DevelopmentPage from './pages/DevelopmentPage';
+import DevelopmentPagePitchers from './pages/DevelopmentPagePitchers';
+import DevelopmentPageHitters from './pages/DevelopmentPageHitters';
 
 const GAME_DATES = [
   { label: 'June 4, 2025 vs Williamsport', value: '2025-06-04' },
@@ -20,86 +22,93 @@ function Home() {
   const theme = useTheme();
   const navy = '#102542';
   const gold = '#FFD600';
+  const charcoal = '#23272F';
   const cards = [
     { label: 'Pitching Game Logs', path: '/pitching' },
     { label: 'Hitting Game Logs', path: '/hitting' },
     { label: 'Player Comparison to MLB Averages', path: '/comparison' },
-    { label: 'Player Development Plans', path: '/development' },
+    { label: 'Player Development Plans – Pitchers', path: '/development-pitchers' },
+    { label: 'Player Development Plans – Hitters', path: '/development-hitters' },
   ];
   const navigate = useNavigate();
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: navy, py: 6 }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: navy }}>
+      {/* Banner/Header */}
+      <Box sx={{ width: '100%', bgcolor: charcoal, py: { xs: 3, md: 4 }, px: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 3, mb: 4 }}>
+        <BoltIcon sx={{ fontSize: 60, color: gold, mr: 2 }} />
+        <Typography variant="h3" sx={{ color: '#fff', fontWeight: 800, letterSpacing: 2, textShadow: '0 2px 8px #001f4d', fontFamily: 'Montserrat, Roboto, sans-serif' }}>
+          Trenton Thunder Scouting App
+        </Typography>
+      </Box>
+      {/* Subheading */}
+      <Container maxWidth="md" sx={{ mb: 6 }}>
+        <Typography variant="h5" align="center" sx={{ color: '#fff', mb: 2, fontWeight: 400, letterSpacing: 1, fontFamily: 'Montserrat, Roboto, sans-serif' }}>
+          Data-driven insights for player development and in-game decision-making
+        </Typography>
+      </Container>
+      {/* Feature Cards */}
       <Container maxWidth="md">
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 6 }}>
-          <BoltIcon sx={{ fontSize: 70, color: gold, mb: 2 }} />
-          <Typography variant="h3" sx={{ color: gold, fontWeight: 700, mb: 1, letterSpacing: 1 }} align="center">
-            Trenton Thunder Scouting App
-          </Typography>
-          <Typography variant="h6" sx={{ color: '#fff', mb: 2 }} align="center">
-            Welcome! Select a feature below to view game logs, player comparisons, and development plans.
-          </Typography>
-        </Box>
-
-        {/* First-Half Player Dashboard Section */}
-        <Box sx={{ mb: 6, p: 3, bgcolor: '#fff', borderRadius: 3, boxShadow: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <Typography variant="h5" sx={{ color: navy, fontWeight: 700, mb: 1 }} align="center">
-            First-Half Player Dashboard
-          </Typography>
-          <Typography variant="body1" sx={{ color: '#333', mb: 2 }} align="center">
-            Track game logs, development trends, and player insights from the first half of the 2025 MLB Draft League season.
-          </Typography>
-          <Grid container spacing={2} justifyContent="center" alignItems="center">
-            {/* Row 1 */}
-            <Grid item xs={12} container spacing={2} justifyContent="center">
-              <Grid item xs={12} sm={6} md={6} display="flex" justifyContent="center">
-                <Card sx={{ cursor: 'pointer', minWidth: 180, bgcolor: gold, color: navy, borderRadius: 2, boxShadow: 2, '&:hover': { boxShadow: 6, bgcolor: '#ffe066' } }} onClick={() => navigate('/hitting')}>
-                  <CardContent>
-                    <Typography variant="button" sx={{ fontWeight: 700 }} align="center">
-                      View Hitting Logs
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={6} display="flex" justifyContent="center">
-                <Card sx={{ cursor: 'pointer', minWidth: 180, bgcolor: gold, color: navy, borderRadius: 2, boxShadow: 2, '&:hover': { boxShadow: 6, bgcolor: '#ffe066' } }} onClick={() => navigate('/pitching')}>
-                  <CardContent>
-                    <Typography variant="button" sx={{ fontWeight: 700 }} align="center">
-                      View Pitching Logs
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
+        <Grid
+          container
+          spacing={{ xs: 3, sm: 4, md: 5 }}
+          justifyContent="center"
+          alignItems="stretch"
+          sx={{ mt: 1, mb: 1 }}
+        >
+          {cards.map((card, idx) => (
+            <Grid
+              item
+              xs={12}
+              sm={6}
+              key={card.label}
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'stretch',
+                mb: { xs: 2, sm: 0 },
+              }}
+            >
+              <Card
+                onClick={() => navigate(card.path)}
+                sx={{
+                  cursor: 'pointer',
+                  bgcolor: '#23272F',
+                  color: '#fff',
+                  borderRadius: 4,
+                  boxShadow: 6,
+                  width: '100%',
+                  maxWidth: 370,
+                  minHeight: 130,
+                  mx: { xs: 0, sm: 1, md: 2 },
+                  my: { xs: 1, sm: 2 },
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  p: 2,
+                  '&:hover': {
+                    transform: 'translateY(-6px) scale(1.03)',
+                    boxShadow: 12,
+                    bgcolor: navy,
+                    color: gold,
+                  },
+                }}
+              >
+                <CardContent sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', py: 5 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: 1, mb: 1, textAlign: 'center', fontFamily: 'Montserrat, Roboto, sans-serif' }}>
+                    {card.label}
+                  </Typography>
+                </CardContent>
+              </Card>
             </Grid>
-            {/* Row 2 */}
-            <Grid item xs={12} container spacing={2} justifyContent="center">
-              <Grid item xs={12} sm={6} md={6} display="flex" justifyContent="center">
-                <Card sx={{ cursor: 'pointer', minWidth: 180, bgcolor: gold, color: navy, borderRadius: 2, boxShadow: 2, '&:hover': { boxShadow: 6, bgcolor: '#ffe066' } }} onClick={() => navigate('/development')}>
-                  <CardContent>
-                    <Typography variant="button" sx={{ fontWeight: 700 }} align="center">
-                      View Player Dev Plans
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={6} display="flex" justifyContent="center">
-                <Card sx={{ cursor: 'pointer', minWidth: 220, bgcolor: gold, color: navy, borderRadius: 2, boxShadow: 2, '&:hover': { boxShadow: 6, bgcolor: '#ffe066' } }} onClick={() => navigate('/comparison')}>
-                  <CardContent>
-                    <Typography variant="button" sx={{ fontWeight: 700 }} align="center">
-                      Player Comparison to MLB Averages
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
-          </Grid>
-        </Box>
-
-
-
+          ))}
+        </Grid>
       </Container>
     </Box>
   );
 }
+
 
 export default function App() {
   return (
@@ -110,6 +119,8 @@ export default function App() {
         <Route path="/pitching" element={<PitchingLogsPage />} />
         <Route path="/comparison" element={<ComparisonPage />} />
         <Route path="/development" element={<DevelopmentPage />} />
+        <Route path="/development-pitchers" element={<DevelopmentPagePitchers />} />
+        <Route path="/development-hitters" element={<DevelopmentPageHitters />} />
       </Routes>
     </Router>
   );

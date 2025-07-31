@@ -1,31 +1,33 @@
 import React, { useState } from 'react';
-import { Box, Typography, Card, CardContent, Grid, Divider, List, ListItem, ListItemIcon, ListItemText, MenuItem, FormControl, Select, InputLabel } from '@mui/material';
+import { Box, Typography, Card, CardContent, Grid, Divider, List, ListItem, ListItemText, MenuItem, FormControl, Select, InputLabel } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import BuildIcon from '@mui/icons-material/Build';
 import StarIcon from '@mui/icons-material/Star';
-import playerDevData from '../data/logs/playerDevData.js';
+import playerDevHittersData from '../data/logs/playerDevHittersData.js';
 
-export default function DevelopmentPage() {
-  const [selectedPitcher, setSelectedPitcher] = useState(playerDevData[0]?.name || '');
-  const pitcher = playerDevData.find(p => p.name === selectedPitcher);
+export default function DevelopmentPageHitters() {
+  const [selectedHitter, setSelectedHitter] = useState(playerDevHittersData[0]?.name || '');
+  const hitter = playerDevHittersData.find(h => h.name === selectedHitter);
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#102542', py: 6, px: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <Typography variant="h3" sx={{ color: '#FFD600', fontWeight: 700, mb: 4 }} align="center">
-        Player Development Plans
+        Player Development Plans – Hitters
       </Typography>
-      <FormControl sx={{ mb: 4, minWidth: 260 }}>
-        <InputLabel id="pitcher-select-label" sx={{ color: '#FFD600' }}>Select Pitcher</InputLabel>
+      <FormControl sx={{ mb: 4, minWidth: 260 }} variant="outlined">
+        <InputLabel id="hitter-select-label" sx={{ color: '#FFD600', bgcolor: '#fff', px: 0.5 }} shrink>
+          Select Hitter
+        </InputLabel>
         <Select
-          labelId="pitcher-select-label"
-          value={selectedPitcher}
-          label="Select Pitcher"
-          onChange={e => setSelectedPitcher(e.target.value)}
+          labelId="hitter-select-label"
+          value={selectedHitter}
+          label="Select Hitter"
+          onChange={e => setSelectedHitter(e.target.value)}
           sx={{ bgcolor: '#fff', borderRadius: 2, fontWeight: 600 }}
         >
-          {playerDevData.map(p => (
-            <MenuItem value={p.name} key={p.name}>{p.name}</MenuItem>
+          {playerDevHittersData.map(h => (
+            <MenuItem value={h.name} key={h.name}>{h.name}</MenuItem>
           ))}
         </Select>
       </FormControl>
@@ -34,7 +36,7 @@ export default function DevelopmentPage() {
           <Card sx={{ borderRadius: 4, boxShadow: 6, mb: 4 }}>
             <CardContent>
               <Typography variant="h5" sx={{ fontWeight: 700, color: '#102542', mb: 1 }}>
-                {pitcher?.name} – Player Development Plan
+                {hitter?.name} – Player Development Plan
               </Typography>
               <Divider sx={{ mb: 2 }} />
 
@@ -44,7 +46,7 @@ export default function DevelopmentPage() {
                   <CheckCircleIcon sx={{ mr: 1, verticalAlign: 'middle' }} />Strengths
                 </Typography>
                 <List dense>
-                  {pitcher?.strengths.map((item, idx) => (
+                  {hitter?.strengths.map((item, idx) => (
                     <ListItem key={idx}><ListItemText primary={item} /></ListItem>
                   ))}
                 </List>
@@ -56,7 +58,7 @@ export default function DevelopmentPage() {
                   <TrendingUpIcon sx={{ mr: 1, verticalAlign: 'middle' }} />Development Focus Areas
                 </Typography>
                 <List dense>
-                  {pitcher?.focusAreas.map((item, idx) => (
+                  {hitter?.focusAreas.map((item, idx) => (
                     <ListItem key={idx}><ListItemText primary={item} /></ListItem>
                   ))}
                 </List>
@@ -68,7 +70,7 @@ export default function DevelopmentPage() {
                   <BuildIcon sx={{ mr: 1, verticalAlign: 'middle' }} />Drills & Focus Work
                 </Typography>
                 <List dense>
-                  {pitcher?.drills.map((item, idx) => (
+                  {hitter?.drills.map((item, idx) => (
                     <ListItem key={idx}><ListItemText primary={item} /></ListItem>
                   ))}
                 </List>
@@ -80,7 +82,7 @@ export default function DevelopmentPage() {
                   <StarIcon sx={{ mr: 1, verticalAlign: 'middle' }} />Long-Term Goals
                 </Typography>
                 <List dense>
-                  {pitcher?.longTermGoals.map((item, idx) => (
+                  {hitter?.longTermGoals.map((item, idx) => (
                     <ListItem key={idx}><ListItemText primary={item} /></ListItem>
                   ))}
                 </List>
@@ -89,10 +91,6 @@ export default function DevelopmentPage() {
           </Card>
         </Grid>
       </Grid>
-      {/*
-      // Old hardcoded JuJu Stevens plan removed for dynamic pitcher plans
-      */}
     </Box>
   );
 }
-
