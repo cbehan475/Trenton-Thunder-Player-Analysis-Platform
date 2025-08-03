@@ -50,22 +50,23 @@ function Home() {
       <Container maxWidth="md">
         <Grid
           container
-          spacing={{ xs: 3, sm: 4, md: 5 }}
+          spacing={{ xs: 2, sm: 3, md: 4 }}
           justifyContent="center"
-          alignItems="stretch"
-          sx={{ mt: 1, mb: 1 }}
+          alignItems="center"
+          sx={{ mt: 1, mb: 1, minHeight: { md: '60vh' } }}
         >
           {cards.map((card, idx) => (
             <Grid
               item
               xs={12}
               sm={6}
+              md={4}
               key={card.label}
               sx={{
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'stretch',
-                mb: { xs: 2, sm: 0 },
+                mb: 0,
               }}
             >
               <Card
@@ -77,16 +78,16 @@ function Home() {
                   borderRadius: 4,
                   boxShadow: 6,
                   width: '100%',
-                  maxWidth: 370,
-                  minHeight: 130,
+                  maxWidth: 320,
+                  minHeight: 90,
                   mx: { xs: 0, sm: 1, md: 2 },
-                  my: { xs: 1, sm: 2 },
+                  my: 1,
                   transition: 'transform 0.2s, box-shadow 0.2s',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'center',
                   alignItems: 'center',
-                  p: 2,
+                  p: 1.5,
                   '&:hover': {
                     transform: 'translateY(-6px) scale(1.03)',
                     boxShadow: 12,
@@ -95,8 +96,8 @@ function Home() {
                   },
                 }}
               >
-                <CardContent sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', py: 5 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: 1, mb: 1, textAlign: 'center', fontFamily: 'Montserrat, Roboto, sans-serif' }}>
+                <CardContent sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', py: 2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: 1, mb: 1, textAlign: 'center', fontFamily: 'Montserrat, Roboto, sans-serif', fontSize: { xs: 16, sm: 18, md: 20 } }}>
                     {card.label}
                   </Typography>
                 </CardContent>
