@@ -10,6 +10,7 @@ import pitching2025_06_08 from '../data/logs/pitching-2025-06-08.js';
 import pitching2025_06_11 from '../data/logs/pitching-2025-06-11.js';
 import pitching2025_06_12 from '../data/logs/pitching-2025-06-12.js';
 import pitching2025_06_13 from '../data/logs/pitching-2025-06-13.js';
+import pitching2025_06_14 from '../data/logs/pitching-2025-06-14.js';
 import pitching2025_06_15 from '../data/logs/pitching-2025-06-15.js';
 import pitching2025_06_18 from '../data/logs/pitching-2025-06-18.js';
 import pitching2025_06_20 from '../data/logs/pitching-2025-06-20.js';
@@ -41,6 +42,7 @@ const GAME_DATES = [
   '2025-06-11',
   '2025-06-12',
   '2025-06-13',
+  '2025-06-14',
   '2025-06-15',
   '2025-06-18',
   '2025-06-20',
@@ -73,6 +75,7 @@ const pitchingLogsMap = {
   '2025-06-11': pitching2025_06_11,
   '2025-06-12': pitching2025_06_12,
   '2025-06-13': pitching2025_06_13,
+  '2025-06-14': pitching2025_06_14,
   '2025-06-15': pitching2025_06_15,
   '2025-06-18': pitching2025_06_18,
   '2025-06-20': pitching2025_06_20,
