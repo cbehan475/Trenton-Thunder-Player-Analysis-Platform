@@ -1,18 +1,19 @@
 import React, { useState, useMemo } from 'react';
 import { Box, Typography, MenuItem, Select, FormControl, InputLabel, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Grid, Tooltip, Switch, FormControlLabel } from '@mui/material';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer, Legend, LabelList } from 'recharts';
-import hittersData from '../data/logs/hitters-2025-07-12';
+import hittersData from '../data/logs/hittersDataAllFirstHalf';
 
 const LEVELS = ["MLB", "AAA", "AA", "A+", "A"];
+// MLB averages for a typical 32-game stretch (approximate, based on per-season MLB averages scaled to 32 games)
 const LEAGUE_PLACEHOLDER = {
-  atBats: 100,
-  strikeouts: 20,
-  walks: 10,
-  avgEV: 87.5,
-  avgLA: 13.2,
-  obp: 0.340,
-  slg: 0.420,
-  ops: 0.760
+  atBats: 120,           // ~3.75 AB/game x 32
+  strikeouts: 30,        // ~0.94 K/game x 32
+  walks: 12,             // ~0.38 BB/game x 32
+  avgEV: 88.4,           // MLB Statcast average
+  avgLA: 12.1,           // MLB Statcast average
+  obp: 0.318,            // MLB OBP
+  slg: 0.410,            // MLB SLG
+  ops: 0.728             // MLB OPS
 };
 
 function calcPlayerStats(atBats) {
