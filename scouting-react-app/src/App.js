@@ -14,6 +14,12 @@ import ComparisonPage from './pages/ComparisonPage';
 import PlayerDevPitchersPage from './pages/PlayerDevPitchersPage';
 import PlayerDevHittersPage from './pages/PlayerDevHittersPage';
 import PlayerComparisonTablePage from './pages/PlayerComparisonTablePage';
+import PitchingHub from './pages/PitchingHub';
+import HittingHub from './pages/HittingHub';
+import PlayerDevHub from './pages/PlayerDevHub';
+import PitchTypeAnalysisPage from './pages/PitchTypeAnalysisPage';
+import HittingPerformancePage from './pages/HittingPerformancePage';
+import HittingBattedBallPage from './pages/HittingBattedBallPage';
 import DevelopmentPage from './pages/DevelopmentPage';
 import DevelopmentPagePitchers from './pages/DevelopmentPagePitchers';
 import DevelopmentPageHitters from './pages/DevelopmentPageHitters';
@@ -186,11 +192,26 @@ export default function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/hitting" element={<HittingLogsPage />} />
-        <Route path="/pitching" element={<PitchingLogsPage />} />
-        <Route path="/comparison" element={<ComparisonPage />} />
-        <Route path="/player-dev-pitchers" element={<PlayerDevPitchersPage />} />
-        <Route path="/player-dev-hitters" element={<PlayerDevHittersPage />} />
+
+        {/* Hubs */}
+        <Route path="/pitching" element={<PitchingHub />} />
+        <Route path="/hitting" element={<HittingHub />} />
+        <Route path="/player-development" element={<PlayerDevHub />} />
+
+        {/* Pitching */}
+        <Route path="/pitching/logs" element={<PitchingLogsPage />} />
+        <Route path="/pitching/movement-control" element={<ComparisonPage />} />
+        <Route path="/pitching/types" element={<PitchTypeAnalysisPage />} />
+
+        {/* Hitting */}
+        <Route path="/hitting/logs" element={<HittingLogsPage />} />
+        <Route path="/hitting/performance" element={<HittingPerformancePage />} />
+        <Route path="/hitting/batted-ball" element={<HittingBattedBallPage />} />
+
+        {/* Player Dev */}
+        <Route path="/player-development/pitchers" element={<PlayerDevPitchersPage />} />
+        <Route path="/player-development/hitters" element={<PlayerDevHittersPage />} />
+        <Route path="/player-development/comparisons" element={<PlayerComparisonTablePage />} />
         <Route path="/player-comparison-table" element={<PlayerComparisonTablePage />} />
         <Route path="/development-hitters" element={<DevelopmentPageHitters />} />
       </Routes>
