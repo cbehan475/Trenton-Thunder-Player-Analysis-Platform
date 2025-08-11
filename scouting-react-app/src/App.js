@@ -19,7 +19,8 @@ import HittingHub from './pages/HittingHub';
 import PlayerDevHub from './pages/PlayerDevHub';
 import PitchTypeAnalysisPage from './pages/PitchTypeAnalysisPage';
 import HittingPerformancePage from './pages/HittingPerformancePage';
-import HittingBattedBallPage from './pages/HittingBattedBallPage';
+import BattedBallProfilePage from './pages/BattedBallProfilePage';
+import { Navigate } from 'react-router-dom';
 import DevelopmentPage from './pages/DevelopmentPage';
 import DevelopmentPagePitchers from './pages/DevelopmentPagePitchers';
 import DevelopmentPageHitters from './pages/DevelopmentPageHitters';
@@ -206,7 +207,9 @@ export default function App() {
         {/* Hitting */}
         <Route path="/hitting/logs" element={<HittingLogsPage />} />
         <Route path="/hitting/performance" element={<HittingPerformancePage />} />
-        <Route path="/hitting/batted-ball" element={<HittingBattedBallPage />} />
+        <Route path="/hitting/batted-ball" element={<BattedBallProfilePage />} />
+{/* redirect any old link like /hitting/battedball -> /hitting/batted-ball */}
+<Route path="/hitting/battedball" element={<Navigate to="/hitting/batted-ball" replace />} />
 
         {/* Player Dev */}
         <Route path="/player-development/pitchers" element={<PlayerDevPitchersPage />} />
