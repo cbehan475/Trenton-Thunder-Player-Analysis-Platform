@@ -70,7 +70,7 @@ function Home() {
                 textAlign: 'center',
               }}
             >
-              Complete first-half player performance analysis for the 2025 MLB Draft League season, including advanced metrics, player development plans, and comparisons to professional averages from Rookie Bail through the MLB through.
+              Complete first-half player performance analysis for the 2025 MLB Draft League season, including advanced metrics, player development plans, and comparisons to professional averages from Rookie Ball through the MLB through.
             </Typography>
 
             {/* 2025 SEASON pill */}
