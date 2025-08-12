@@ -47,7 +47,7 @@ export default function NavBar() {
   const menuItems = {
     pitch: [
       { label: 'Pitching Game Logs', to: '/pitching/logs' },
-      { label: 'Pitch Movement & Control', to: '/pitching/movement-control' },
+      { label: 'Pitch Control & Movement', to: '/pitching/pitch-control-movement' },
       { label: 'Pitch Type Analysis', to: '/pitching/types' },
       { label: 'Player Comparisons to Pro Averages', to: '/player-development/comparisons' },
     ],
@@ -55,7 +55,7 @@ export default function NavBar() {
       { label: 'Hitting Game Logs', to: '/hitting/logs' },
       { label: 'Batting Performance Metrics', to: '/hitting/performance' },
       { label: 'Batted Ball Profiles', to: '/hitting/batted-ball' },
-      { label: 'Player Comparisons to Pro Averages', to: '/player-development/comparisons' },
+      { label: 'Player Comparisons to Pro Averages', to: '/hitting/player-comparisons' },
     ],
     dev: [
       { label: 'Pitcher Development Plans', to: '/player-development/pitchers' },
