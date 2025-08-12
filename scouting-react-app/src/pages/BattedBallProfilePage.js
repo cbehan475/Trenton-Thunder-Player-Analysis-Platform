@@ -129,26 +129,34 @@ export default function BattedBallProfilePage() {
   );
   const hitterNameMap = useMemo(() => buildHitterNameMap(firstHalf), [firstHalf]);
 
-  const hitterKeysSorted = useMemo(() => {
-    const keys = Object.keys(firstHalf || {});
-    keys.sort((a, b) => {
-      const na = (hitterNameMap[a] || String(a));
-      const nb = (hitterNameMap[b] || String(b));
-      return na.localeCompare(nb);
-    });
-    return keys;
+  // Step 2: Merge all rows by display name
+  const mergedRowsByName = useMemo(() => {
+    const map = {};
+    for (const key of Object.keys(firstHalf || {})) {
+      const name = hitterNameMap[key] || String(key);
+      if (!map[name]) map[name] = [];
+      map[name].push(...(firstHalf[key] || []));
+    }
+    return map;
   }, [firstHalf, hitterNameMap]);
 
-  // selectedHitter stores the KEY
-  const [selectedHitter, setSelectedHitter] = useState(hitterKeysSorted[0] || '');
+  // Step 4: Unique display names, sorted
+  const displayNamesSorted = useMemo(() => {
+    const names = Object.keys(mergedRowsByName || {});
+    names.sort((a, b) => a.localeCompare(b));
+    return names;
+  }, [mergedRowsByName]);
+
+  // selectedHitter stores the display name
+  const [selectedHitter, setSelectedHitter] = useState(displayNamesSorted[0] || '');
   useEffect(() => {
-    if (!selectedHitter && hitterKeysSorted.length) {
-      setSelectedHitter(hitterKeysSorted[0]);
+    if (!selectedHitter && displayNamesSorted.length) {
+      setSelectedHitter(displayNamesSorted[0]);
     }
-    if (selectedHitter && !firstHalf[selectedHitter] && hitterKeysSorted.length) {
-      setSelectedHitter(hitterKeysSorted[0]);
+    if (selectedHitter && !mergedRowsByName[selectedHitter] && displayNamesSorted.length) {
+      setSelectedHitter(displayNamesSorted[0]);
     }
-  }, [hitterKeysSorted, selectedHitter, firstHalf]);
+  }, [displayNamesSorted, selectedHitter, mergedRowsByName]);
 
   // View mode
   const [showAll, setShowAll] = useState(false);
@@ -161,14 +169,13 @@ export default function BattedBallProfilePage() {
   };
 
   const selectedSummary = useMemo(() => {
-    return summarizeHitter(firstHalf[selectedHitter] || []);
-  }, [firstHalf, selectedHitter]);
+    return summarizeHitter(mergedRowsByName[selectedHitter] || []);
+  }, [mergedRowsByName, selectedHitter]);
 
   const allSummaries = useMemo(() => {
-    const arr = hitterKeysSorted.map(key => ({
-      key,
-      name: hitterNameMap[key] || String(key),
-      ...summarizeHitter(firstHalf[key] || [])
+    const arr = displayNamesSorted.map(name => ({
+      name,
+      ...summarizeHitter(mergedRowsByName[name] || [])
     }));
     arr.sort((a, b) => {
       if (orderBy === 'name') return a.name.localeCompare(b.name) * (order === 'asc' ? 1 : -1);
@@ -177,7 +184,7 @@ export default function BattedBallProfilePage() {
       return (va > vb ? 1 : -1) * (order === 'asc' ? 1 : -1);
     });
     return arr;
-  }, [firstHalf, hitterKeysSorted, hitterNameMap, orderBy, order]);
+  }, [mergedRowsByName, displayNamesSorted, orderBy, order]);
 
   return (
     <Box sx={{ width: '100%', minHeight: '100vh', bgcolor: '#f5f6fa', py: isMobile ? 2 : 5 }}>
@@ -234,9 +241,9 @@ export default function BattedBallProfilePage() {
         <FormControl sx={{ minWidth: 220, mb: 3 }} size="small">
           <InputLabel>Hitter</InputLabel>
           <Select labelId="hitter-label" value={selectedHitter} label="Hitter" onChange={(e) => setSelectedHitter(e.target.value)}>
-            {hitterKeysSorted.map(key => (
-              <MenuItem key={key} value={key}>
-                {hitterNameMap[key] || String(key)}
+            {displayNamesSorted.map(name => (
+              <MenuItem key={name} value={name}>
+                {name}
               </MenuItem>
             ))}
           </Select>
