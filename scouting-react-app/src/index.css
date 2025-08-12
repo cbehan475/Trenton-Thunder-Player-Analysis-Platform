@@ -23,6 +23,16 @@ code {
 .navbar { margin-bottom: 0; padding-top: 14px; padding-bottom: 6px; }
 .navbar .nav-links { gap: 28px; }
 
+.navbar a {
+  font-size: 1.4rem; /* slightly larger text */
+  font-weight: 700;  /* bold */
+  letter-spacing: 0.5px; /* small spacing for clarity */
+}
+
+.navbar a:hover {
+  text-decoration: underline; /* optional hover effect */
+}
+
 /* Hero section: tighten vertical rhythm */
 .hero { margin-top: 0; padding-top: 28px; padding-bottom: 36px; }
 .hero h1 { margin: 8px 0 12px; line-height: 1.08; }
