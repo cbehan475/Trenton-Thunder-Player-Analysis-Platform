@@ -1,0 +1,69 @@
+// src/data/logs/pitchingManifest.js
+/* eslint-disable import/no-duplicates */
+// Explicit manifest of all pitching log files. Keep this list updated as new logs are added.
+
+import p2025_06_04 from './pitching-2025-06-04.js';
+import p2025_06_05 from './pitching-2025-06-05.js';
+import p2025_06_06 from './pitching-2025-06-06.js';
+import p2025_06_07 from './pitching-2025-06-07.js';
+import p2025_06_08 from './pitching-2025-06-08.js';
+import p2025_06_11 from './pitching-2025-06-11.js';
+import p2025_06_12 from './pitching-2025-06-12.js';
+import p2025_06_13 from './pitching-2025-06-13.js';
+import p2025_06_14 from './pitching-2025-06-14.js';
+import p2025_06_15 from './pitching-2025-06-15.js';
+import p2025_06_18 from './pitching-2025-06-18.js';
+import p2025_06_20 from './pitching-2025-06-20.js';
+import p2025_06_21 from './pitching-2025-06-21.js';
+import p2025_06_22 from './pitching-2025-06-22.js';
+import p2025_06_24 from './pitching-2025-06-24.js';
+import p2025_06_25 from './pitching-2025-06-25.js';
+import p2025_06_26 from './pitching-2025-06-26.js';
+import p2025_06_27 from './pitching-2025-06-27.js';
+import p2025_06_28 from './pitching-2025-06-28.js';
+import p2025_06_29 from './pitching-2025-06-29.js';
+import p2025_07_01 from './pitching-2025-07-01.js';
+import p2025_07_02 from './pitching-2025-07-02.js';
+import p2025_07_03 from './pitching-2025-07-03.js';
+import p2025_07_04 from './pitching-2025-07-04.js';
+import p2025_07_05 from './pitching-2025-07-05.js';
+import p2025_07_06 from './pitching-2025-07-06.js';
+import p2025_07_08 from './pitching-2025-07-08.js';
+import p2025_07_09 from './pitching-2025-07-09.js';
+import p2025_07_11 from './pitching-2025-07-11.js';
+import p2025_07_12 from './pitching-2025-07-12.js';
+
+const MANIFEST = [
+  p2025_06_04,
+  p2025_06_05,
+  p2025_06_06,
+  p2025_06_07,
+  p2025_06_08,
+  p2025_06_11,
+  p2025_06_12,
+  p2025_06_13,
+  p2025_06_14,
+  p2025_06_15,
+  p2025_06_18,
+  p2025_06_20,
+  p2025_06_21,
+  p2025_06_22,
+  p2025_06_24,
+  p2025_06_25,
+  p2025_06_26,
+  p2025_06_27,
+  p2025_06_28,
+  p2025_06_29,
+  p2025_07_01,
+  p2025_07_02,
+  p2025_07_03,
+  p2025_07_04,
+  p2025_07_05,
+  p2025_07_06,
+  p2025_07_08,
+  p2025_07_09,
+  p2025_07_11,
+  p2025_07_12,
+];
+
+export default MANIFEST;
