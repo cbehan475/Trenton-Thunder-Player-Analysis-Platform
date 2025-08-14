@@ -49,7 +49,8 @@ export default function NavBar() {
       { label: 'Pitching Game Logs', to: '/pitching/logs' },
       { label: 'Pitch Control & Movement', to: '/pitching/pitch-control-movement' },
       { label: 'Pitch Type Analysis', to: '/pitching/types' },
-      { label: 'Player Comparisons to Pro Averages', to: '/player-development/comparisons' },
+      { label: 'MLB Benchmarks', to: '/pitching/mlb-benchmarks' },
+      { label: 'Pitcher Reports (beta)', to: '/pitching/reports' },
     ],
     hit: [
       { label: 'Hitting Game Logs', to: '/hitting/logs' },
