@@ -1,137 +1,124 @@
 /* eslint-disable no-console */
-import MANIFEST from './pitchingManifest';
+// AUTO-ADAPTED loader that understands your nested game-log format.
 
-// ---- helpers: flatten any mix of arrays/objects into a flat array of entries
-function flattenModules(mods) {
+import MANIFEST from './pitchingManifest.js';
+
+/** Turn one module into a flat list of pitch events, tagging pitcher & inning. */
+function adaptModule(modLike) {
+  const mod = modLike && modLike.default ? modLike.default : modLike;
   const out = [];
-  for (const m of mods) {
-    const mod = m && m.default ? m.default : m;
-    if (Array.isArray(mod)) out.push(...mod);
-    else if (mod && typeof mod === 'object') out.push(...Object.values(mod).flat());
+
+  if (!mod || typeof mod !== 'object') return out;
+
+  // Case A: your format: { "Pitcher Name": { inningNumber: [ { pitch… }, … ] }, … }
+  // Detect by checking that top-level values are objects with numeric keys -> arrays
+  let looksLikePitchersObject = false;
+  for (const val of Object.values(mod)) {
+    if (val && typeof val === 'object') { looksLikePitchersObject = true; break; }
   }
-  return out.filter(Boolean);
-}
 
-// ---- try multiple key aliases for each field
-const pick = (obj, keys) => {
-  for (const k of keys) {
-    if (obj[k] != null && obj[k] !== '') return obj[k];
-  }
-  return undefined;
-};
-
-function toVeloRange(raw) {
-  // accept: "94–96 mph", "94-96", low/high fields, or single number
-  const str = pick(raw, ['velocity', 'velo', 'Velo', 'vel', 'mph', 'VeloRange', 'veloRange']);
-  const lo = pick(raw, ['veloLow', 'VeloLow', 'vLow', 'mphLow']);
-  const hi = pick(raw, ['veloHigh', 'VeloHigh', 'vHigh', 'mphHigh']);
-  if (lo && hi) return `${lo}–${hi} mph`;
-  if (typeof str === 'string') {
-    if (str.includes('mph')) return str;
-    return `${str} mph`;
-  }
-  if (typeof str === 'number') return `${str} mph`;
-  return '';
-}
-
-function normalizeEntry(raw) {
-  // pitcher name
-  const name =
-    pick(raw, ['pitcherName', 'PitcherName', 'pitcher', 'Pitcher', 'playerName', 'Player', 'name']) || 'Unknown';
-
-  // pitch type
-  const type = pick(raw, ['pitchType', 'PitchType', 'type', 'Type', 'pitch']) || 'Pitch';
-
-  // IVB (induced vertical break)
-  let ivb =
-    pick(raw, ['ivb', 'IVB', 'inducedVertBreak', 'inducedVerticalBreak', 'vBreakInduced', 'vertBreak', 'vert']) ?? 0;
-
-  // HB (horizontal break)
-  let hb =
-    pick(raw, ['hb', 'HB', 'horizontalBreak', 'hBreak', 'horizBreak', 'horizontal']) ?? 0;
-
-  // numeric cleanup if strings like "17 in" or "+17"
-  const num = (v) => {
-    if (typeof v === 'number') return v;
-    if (typeof v === 'string') {
-      const m = v.match(/-?\d+(\.\d+)?/);
-      return m ? Number(m[0]) : 0;
+  if (looksLikePitchersObject) {
+    for (const [pitcherName, innings] of Object.entries(mod)) {
+      if (!innings || typeof innings !== 'object') continue;
+      for (const [inningStr, pitches] of Object.entries(innings)) {
+        const inning = Number(inningStr);
+        if (Array.isArray(pitches)) {
+          for (const p of pitches) {
+            out.push({ ...p, pitcher: pitcherName, inning });
+          }
+        }
+      }
     }
-    return 0;
-  };
-  ivb = num(ivb);
-  hb = num(hb);
-
-  // command label
-  let command = pick(raw, ['command', 'Command', 'cmd', 'grade', 'CommandGrade', 'control']);
-  if (typeof command === 'number') {
-    // translate common 20-80 or 2-8 scales
-    const val = Number(command);
-    if (val >= 55) command = 'Above-average';
-    else if (val >= 45) command = 'Average';
-    else command = 'Below-average';
-  } else if (typeof command === 'string') {
-    const c = command.toLowerCase();
-    if (c.includes('above')) command = 'Above-average';
-    else if (c.includes('below')) command = 'Below-average';
-    else command = 'Average';
-  } else {
-    command = 'Average';
+    return out;
   }
 
-  return {
-    name,
-    type,
-    velo: toVeloRange(raw),
-    ivb,
-    hb,
-    command,
-  };
+  // Case B: fallback – arrays or plain objects you might add later
+  if (Array.isArray(mod)) return mod.slice();
+  return Object.values(mod).flatMap((v) => (Array.isArray(v) ? v : [v]));
 }
 
-// ---- build per-pitcher map: { [name]: { name, pitches: [...] } }
-function buildPitcherMap(entries) {
-  const map = new Map();
-  for (const e of entries) {
-    const row = normalizeEntry(e);
-    if (!map.has(row.name)) map.set(row.name, { name: row.name, pitches: [] });
-    map.get(row.name).pitches.push({
-      type: row.type,
-      velo: row.velo,
-      ivb: row.ivb,
-      hb: row.hb,
-      command: row.command,
+/** Load & flatten everything from the manifest */
+const ALL_PITCH_EVENTS = MANIFEST.flatMap(adaptModule);
+
+/** Utility */
+const avg = (arr) => (arr.length ? arr.reduce((s, n) => s + n, 0) / arr.length : 0);
+const asNum = (v) => (typeof v === 'number' ? v : Number(v));
+const niceRange = (min, max) =>
+  Number.isFinite(min) && Number.isFinite(max) ? `${Math.round(min)}–${Math.round(max)} mph` : '—';
+
+/** Public: list pitcher names from real logs */
+export function getAllPitcherNames() {
+  const names = new Set();
+  for (const e of ALL_PITCH_EVENTS) if (e.pitcher) names.add(e.pitcher);
+  return Array.from(names).sort();
+}
+
+/** Public: compute table rows (one row per pitch type) from raw pitch events */
+export function getPitchingMetricsFor(pitcherName) {
+  const rows = ALL_PITCH_EVENTS.filter((e) => e.pitcher === pitcherName);
+  const byType = new Map();
+
+  for (const e of rows) {
+    const type =
+      e.pitchType || e.type || e.pitch || e.pitch_name || e.pitchClass || 'Unknown';
+    const velo = asNum(e.velo ?? e.velocity ?? e.v ?? e.speed);
+    const ivb = asNum(e.ivb ?? e.vert ?? e.rise);
+    const hb = asNum(e.hb ?? e.horz ?? e.run);
+
+    if (!byType.has(type)) byType.set(type, []);
+    byType.get(type).push({ velo, ivb, hb });
+  }
+
+  const table = [];
+  for (const [type, list] of byType) {
+    const vels = list.map((x) => x.velo).filter((n) => Number.isFinite(n));
+    const ivbs = list.map((x) => x.ivb).filter((n) => Number.isFinite(n));
+    const hbs  = list.map((x) => x.hb).filter((n) => Number.isFinite(n));
+
+    const vMin = Math.min(...vels);
+    const vMax = Math.max(...vels);
+
+    table.push({
+      type,
+      velo: niceRange(vMin, vMax),
+      ivb: Math.round(avg(ivbs)) || 0,
+      hb: Math.round(avg(hbs)) || 0,
+      command: '—',        // you can compute this later if you like
+      // simple benchmark label (optional)
+      bench: type.toLowerCase().includes('fastball')
+        ? (Math.round(avg(ivbs)) >= 15 ? 'Above Avg' : 'MLB Avg')
+        : 'MLB Avg',
     });
   }
-  return map;
+
+  // Sort FB first, then by velo descending
+  table.sort((a, b) => {
+    const af = a.type.toLowerCase().includes('fastball') ? 0 : 1;
+    const bf = b.type.toLowerCase().includes('fastball') ? 0 : 1;
+    if (af !== bf) return af - bf;
+    const aHi = Number(String(a.velo).split('–')[1]);
+    const bHi = Number(String(b.velo).split('–')[1]);
+    return (Number.isFinite(bHi) ? bHi : 0) - (Number.isFinite(aHi) ? aHi : 0);
+  });
+
+  return table;
 }
 
-// ---- public API used by the page
+/** Optional: simple stats for the badge/console */
 export function getPitchingLogStats() {
-  const modules = Array.isArray(MANIFEST) ? MANIFEST : [];
-  const entries = flattenModules(modules);
-  // For quick debugging, capture a sample of keys we saw
-  const sampleKeys = entries.slice(0, 3).map((e) => Object.keys(e));
-  console.log('[pitchingIndex] manifest files:', modules.length, 'total entries:', entries.length, 'sample keys:', sampleKeys);
-  return { files: modules.length, entries: entries.length, entries, sampleKeys };
+  const keys = getAllPitcherNames();
+  return { files: MANIFEST.length, entries: ALL_PITCH_EVENTS.length, keys };
 }
 
-export function getAllPitcherNames() {
-  const { entries } = getPitchingLogStats();
-  const names = [...new Set(entries.map((e) => normalizeEntry(e).name))].filter((n) => n && n !== 'Unknown');
-  return names;
-}
+/** Default export keeps parity with earlier code if anything still imports it */
+export default ALL_PITCH_EVENTS;
 
-export function getPitchingMetricsFor(pitcherName) {
-  const { entries } = getPitchingLogStats();
-  const map = buildPitcherMap(entries);
-  const rec = map.get(pitcherName);
-  if (!rec) return null;
-  // sort pitches stable: FB/SL/CB/CH if present
-  const order = ['fastball', 'sinker', 'slider', 'curve', 'curveball', 'change', 'changeup', 'cutter'];
-  rec.pitches.sort((a, b) => order.indexOf(a.type.toLowerCase()) - order.indexOf(b.type.toLowerCase()));
-  return rec;
-}
-
-// default export kept for any legacy callers
-export default MANIFEST;
+// Debug: you should now see real keys (not []) and non-zero entries
+console.log(
+  '[pitchingIndex] manifest files:',
+  MANIFEST.length,
+  'total entries:',
+  ALL_PITCH_EVENTS.length,
+  'keys:',
+  getAllPitcherNames()
+);
