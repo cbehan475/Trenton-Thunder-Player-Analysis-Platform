@@ -22,6 +22,7 @@ import PitchControlMovement from './pages/PitchControlMovement';
 import PitchingMLBBenchmarks from './pages/PitchingMLBBenchmarks';
 import PitcherReports from './pages/PitcherReports';
 import HittingPerformancePage from './pages/HittingPerformancePage';
+import HitterReportsPage from './pages/HitterReportsPage';
 import BattedBallProfilePage from './pages/BattedBallProfilePage';
 import { Navigate } from 'react-router-dom';
 import DevelopmentPage from './pages/DevelopmentPage';
@@ -208,6 +209,7 @@ export default function App() {
         <Route path="/pitching/pitch-control-movement" element={<PitchControlMovement />} />
         <Route path="/pitching/mlb-benchmarks" element={<PitchingMLBBenchmarks />} />
         <Route path="/pitching/reports" element={<PitcherReports />} />
+        <Route path="/hitting/reports" element={<HitterReportsPage />} />
 
         {/* Hitting */}
         <Route path="/hitting/logs" element={<HittingLogsPage />} />
