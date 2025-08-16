@@ -26,7 +26,8 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "gen:logs": "node scripts/genPitchingManifest.mjs"
+    "gen:logs": "node scripts/genPitchingManifest.mjs",
+    "gen:hlogs": "node scripts/genHittingManifest.mjs"
   },
   "eslintConfig": {
     "extends": [
