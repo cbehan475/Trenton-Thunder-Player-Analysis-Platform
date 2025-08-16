@@ -37,8 +37,13 @@ function adaptModule(modLike) {
   return Object.values(mod).flatMap((v) => (Array.isArray(v) ? v : [v]));
 }
 
+/** Public: flatten a list of modules using the same adapter */
+export function flattenModules(mods) {
+  return (mods || []).flatMap(adaptModule);
+}
+
 /** Load & flatten everything from the manifest */
-const ALL_PITCH_EVENTS = MANIFEST.flatMap(adaptModule);
+const ALL_PITCH_EVENTS = flattenModules(MANIFEST);
 
 /** Utility */
 const avg = (arr) => (arr.length ? arr.reduce((s, n) => s + n, 0) / arr.length : 0);
@@ -122,3 +127,52 @@ console.log(
   'keys:',
   getAllPitcherNames()
 );
+
+// --- Added small helpers for page-scoped querying by date/pitcher/inning ---
+// The page can seed this map using its existing per-date module imports to avoid
+// modifying data files or manifests.
+export let ALL_LOGS_BY_DATE = Object.create(null);
+
+/** Seed the date → flat-rows map using the shared flattener. Non-breaking. */
+export function seedLogsByDate(dateToModules) {
+  const out = Object.create(null);
+  for (const [dateStr, mod] of Object.entries(dateToModules || {})) {
+    const mods = [mod && (mod.default ?? mod)].filter(Boolean);
+    out[dateStr] = flattenModules(mods).map((r, idx) => ({ ...r, __id: `${dateStr}-${idx}` }));
+  }
+  ALL_LOGS_BY_DATE = out;
+}
+
+/** Return unique pitcher names who have logs on that date. */
+export function getPitchersForDate(dateStr) {
+  const day = ALL_LOGS_BY_DATE?.[dateStr] || [];
+  const names = new Set();
+  for (const entry of day) {
+    if (entry?.pitcher) names.add(entry.pitcher);
+  }
+  return Array.from(names).sort();
+}
+
+/** Return ["All", ...unique innings] for a given date and optional pitcher. */
+export function getInningsFor(dateStr, pitcherName) {
+  const day = ALL_LOGS_BY_DATE?.[dateStr] || [];
+  const innings = new Set();
+  for (const p of day) {
+    if (!pitcherName || p.pitcher === pitcherName) {
+      if (p.inning != null) innings.add(String(p.inning));
+    }
+  }
+  return [
+    'All',
+    ...Array.from(innings).sort((a, b) => Number(a) - Number(b)),
+  ];
+}
+
+/** Filter rows by date, then pitcher (if set), then inning (if not "All"). */
+export function getLogs(dateStr, pitcherName, inningVal) {
+  let rows = ALL_LOGS_BY_DATE?.[dateStr] || [];
+  if (pitcherName) rows = rows.filter((r) => r.pitcher === pitcherName);
+  if (inningVal && inningVal !== 'All') rows = rows.filter((r) => String(r.inning) === String(inningVal));
+  // Ensure DataGrid ids
+  return rows.map((r, i) => ({ id: r.__id || i + 1, ...r }));
+}

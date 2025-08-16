@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Box, Typography, Grid, useMediaQuery } from '@mui/material';
-import PitchersTable, { PitcherDropdown, InningDropdown } from '../components/PitchersTable';
-import GameDateDropdown from '../components/GameDateDropdown';
+import React, { useMemo, useState, useEffect } from 'react';
+import { DataGrid } from '@mui/x-data-grid';
+import { seedLogsByDate, getPitchersForDate, getInningsFor, getLogs } from '../data/logs/pitchingIndex.js';
+import './PitchingLogsPage.css';
 import pitching2025_06_04 from '../data/logs/pitching-2025-06-04.js';
 import pitching2025_06_05 from '../data/logs/pitching-2025-06-05.js';
 import pitching2025_06_06 from '../data/logs/pitching-2025-06-06.js';
@@ -100,106 +100,178 @@ const pitchingLogsMap = {
 };
 
 export default function PitchingLogsPage() {
-  const [selectedDate, setSelectedDate] = useState(GAME_DATES[0]);
-  const [pitchersData, setPitchersData] = useState(null);
-  const [selectedPitcher, setSelectedPitcher] = useState('');
-  const [selectedInning, setSelectedInning] = useState('');
+  // State per spec
+  const [dateStr, setDateStr] = useState(GAME_DATES[0]);
+  const [pitcher, setPitcher] = useState('');
+  const [inning, setInning] = useState('All');
+  const [pitcherOptions, setPitcherOptions] = useState([]);
+  const [inningOptions, setInningOptions] = useState(['All']);
 
-  React.useEffect(() => {
-    async function loadData() {
-      if (pitchingLogsMap[selectedDate]) {
-        setPitchersData(pitchingLogsMap[selectedDate]);
-      } else {
-        // File does not exist, clear data or show error
-        setPitchersData(null);
-      }
-      setSelectedPitcher('');
-      setSelectedInning('');
-    }
-    loadData();
-  }, [selectedDate]);
+  // Seed date → rows map on mount using existing modules
+  useEffect(() => {
+    seedLogsByDate({
+      '2025-06-04': pitching2025_06_04,
+      '2025-06-05': pitching2025_06_05,
+      '2025-06-06': pitching2025_06_06,
+      '2025-06-07': pitching2025_06_07,
+      '2025-06-08': pitching2025_06_08,
+      '2025-06-11': pitching2025_06_11,
+      '2025-06-12': pitching2025_06_12,
+      '2025-06-13': pitching2025_06_13,
+      '2025-06-14': pitching2025_06_14,
+      '2025-06-15': pitching2025_06_15,
+      '2025-06-18': pitching2025_06_18,
+      '2025-06-20': pitching2025_06_20,
+      '2025-06-21': pitching2025_06_21,
+      '2025-06-22': pitching2025_06_22,
+      '2025-06-24': pitching2025_06_24,
+      '2025-06-25': pitching2025_06_25,
+      '2025-06-26': pitching2025_06_26,
+      '2025-06-27': pitching2025_06_27,
+      '2025-06-28': pitching2025_06_28,
+      '2025-06-29': pitching2025_06_29,
+      '2025-07-01': pitching2025_07_01,
+      '2025-07-02': pitching2025_07_02,
+      '2025-07-03': pitching2025_07_03,
+      '2025-07-04': pitching2025_07_04,
+      '2025-07-05': pitching2025_07_05,
+      '2025-07-06': pitching2025_07_06,
+      '2025-07-08': pitching2025_07_08,
+      '2025-07-09': pitching2025_07_09,
+      '2025-07-11': pitching2025_07_11,
+      '2025-07-12': pitching2025_07_12,
+    });
+  }, []);
 
-  const handlePitcherChange = (pitcher) => {
-    setSelectedPitcher(pitcher);
-    setSelectedInning('');
-  };
+  // Refresh pitcher options when date changes; reset pitcher and inning
+  useEffect(() => {
+    const names = getPitchersForDate(dateStr);
+    const preferred = [
+      'Miguel Sime',
+      'Jude Abbadessa',
+      'Jarrette Bonet',
+      'Andrew Ronne',
+    ];
+    const order = new Map(preferred.map((n, i) => [n, i]));
+    const sorted = names.slice().sort((a, b) => {
+      const ia = order.has(a) ? order.get(a) : Number.POSITIVE_INFINITY;
+      const ib = order.has(b) ? order.get(b) : Number.POSITIVE_INFINITY;
+      if (ia !== ib) return ia - ib;
+      return a.localeCompare(b);
+    });
+    setPitcherOptions(sorted);
+    setPitcher('');
+    setInning('All');
+    setInningOptions(['All']);
+  }, [dateStr]);
 
-  const handleInningChange = (inning) => {
-    setSelectedInning(inning);
-  };
+  // Refresh inning options when date or pitcher changes; default to All if needed
+  useEffect(() => {
+    const inns = getInningsFor(dateStr, pitcher);
+    setInningOptions(inns);
+    if (!inns.includes(inning)) setInning('All');
+  }, [dateStr, pitcher]);
 
-  const isMobile = useMediaQuery('(max-width:600px)');
+  // Rows from single source of truth
+  const rawRows = useMemo(() => getLogs(dateStr, pitcher, inning), [dateStr, pitcher, inning]);
+  const gridRows = useMemo(
+    () => rawRows.map((r, idx) => ({
+      id: r.id ?? r.__id ?? idx + 1,
+      pitch: idx + 1,
+      type: r.type ?? r.pitchType ?? r.pitch ?? '—',
+      velo: r.velo,
+      spin: r.spin,
+      ext: r.ext,
+      ivb: r.ivb,
+      hb: r.hb,
+      result: r.result,
+      batter: r.batter,
+    })),
+    [rawRows]
+  );
+  const rowsCount = gridRows.length;
+
+  const columns = useMemo(() => ([
+    { field: 'pitch', headerName: '#', width: 70, sortable: true },
+    { field: 'type', headerName: 'Type', width: 120, sortable: true },
+    { field: 'velo', headerName: 'Velo', width: 90, sortable: true, headerAlign: 'right', align: 'right' },
+    { field: 'spin', headerName: 'Spin', width: 90, sortable: true, headerAlign: 'right', align: 'right' },
+    { field: 'ext', headerName: 'Ext', width: 90, sortable: true, headerAlign: 'right', align: 'right' },
+    { field: 'ivb', headerName: 'IVB', width: 90, sortable: true, headerAlign: 'right', align: 'right' },
+    { field: 'hb', headerName: 'HB', width: 90, sortable: true, headerAlign: 'right', align: 'right' },
+    { field: 'result', headerName: 'Result', width: 140, sortable: true },
+    { field: 'batter', headerName: 'Batter', width: 160, sortable: true },
+  ]), []);
 
   return (
-    <Box sx={{ width: '100%', minHeight: '100vh', bgcolor: '#f5f6fa', py: isMobile ? 2 : 5 }}>
-      <Typography
-        variant={isMobile ? 'h5' : 'h4'}
-        align="center"
-        sx={{
-          color: '#FFD700',
-          textShadow: '0 2px 8px #001f4d, 0 1px 0 #001f4d',
-          fontWeight: 700,
-          mb: isMobile ? 2 : 4,
-          letterSpacing: 1.5,
-        }}
-      >
-        Pitching Logs
-      </Typography>
+    <div className="pagePitchingLogs">
+      <h1>Pitching Logs</h1>
 
-      <Grid
-        container
-        spacing={isMobile ? 1 : 3}
-        justifyContent="center"
-        alignItems="center"
-        sx={{
-          maxWidth: 900,
-          mx: 'auto',
-          mb: isMobile ? 2 : 4,
-          px: isMobile ? 1 : 0,
-        }}
-      >
-        <Grid item xs={12} sm={4}>
-          <GameDateDropdown dates={GAME_DATES} selectedDate={selectedDate} onChange={setSelectedDate} />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <PitcherDropdown
-            pitchersData={pitchersData || {}}
-            selectedPitcher={selectedPitcher}
-            onPitcherChange={handlePitcherChange}
+      <div className="controls">
+        <div className="field">
+          <label className="gold">Date</label>
+          <input
+            type="date"
+            value={dateStr}
+            onChange={(e) => setDateStr(e.target.value)}
           />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <InningDropdown
-            pitchersData={pitchersData || {}}
-            selectedPitcher={selectedPitcher}
-            selectedInning={selectedInning}
-            onInningChange={handleInningChange}
-          />
-        </Grid>
-      </Grid>
+        </div>
 
-      <Box
-        sx={{
-          maxWidth: 1100,
-          mx: 'auto',
-          bgcolor: '#fff',
-          borderRadius: 4,
-          boxShadow: '0 2px 12px 0 rgba(0,32,91,0.08)',
-          p: isMobile ? 1 : 4,
-          border: '1px solid #e0e0e0',
-          minHeight: 300,
-        }}
-      >
-        {pitchersData && (
-          <PitchersTable
-            pitchersData={pitchersData}
-            selectedPitcher={selectedPitcher}
-            selectedInning={selectedInning}
-            onPitcherChange={handlePitcherChange}
-            onInningChange={handleInningChange}
+        <div className="field">
+          <label className="gold">Select Pitcher</label>
+          <select
+            value={pitcher}
+            onChange={(e) => setPitcher(e.target.value)}
+          >
+            {pitcherOptions.map((name) => (
+              <option key={name} value={name}>{name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="field">
+          <label className="gold inningLabel">Inning</label>
+          <select
+            value={inning}
+            onChange={(e) => setInning(e.target.value)}
+            disabled={!pitcher && inningOptions.length <= 1}
+          >
+            {inningOptions.map((v) => (
+              <option key={v} value={v}>{v}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="plogs-context">
+        <div className="ctx-left">
+          {pitcher || '—'} • {dateStr || '—'} • {inning && inning !== 'All' ? `Inning ${inning}` : 'All innings'}
+        </div>
+        <div className="ctx-right">Pitches: {rowsCount}</div>
+      </div>
+
+      <section className="dataGridContainer tableShell plogs-tablewrap">
+        <div style={{ width: '100%' }}>
+          <DataGrid
+            autoHeight
+            rows={gridRows}
+            columns={columns}
+            pageSize={10}
+            rowsPerPageOptions={[10, 25, 50]}
+            disableSelectionOnClick
+            disableColumnMenu
+            disableColumnFilter
+            disableColumnSelector
           />
+        </div>
+
+        {!rowsCount && pitcher && (
+          <div className="empty">
+            <div>No results. Adjust filters above.</div>
+            <div className="sub">Try a different date, pitcher, or inning.</div>
+          </div>
         )}
-      </Box>
-    </Box>
+      </section>
+    </div>
   );
 }

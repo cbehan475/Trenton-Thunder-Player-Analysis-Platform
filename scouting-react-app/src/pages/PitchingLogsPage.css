@@ -1,0 +1,88 @@
+.plogs-page { max-width: 1200px; margin: 0 auto; padding: 12px 16px 48px; }
+
+.plogs-title { margin: 16px 0 8px; font-size: 32px; font-weight: 800; color:#ff8a00; }
+
+.plogs-toolbar { display:flex; gap:16px; flex-wrap:wrap; align-items:end; padding:12px 16px; background:rgba(255,255,255,.06); border-radius:12px; backdrop-filter: blur(6px); position:sticky; top:0; z-index:5; border:1px solid rgba(255,255,255,.1); }
+.plogs-toolbar.sticky { position: sticky; }
+.toolbar-group { display:flex; gap:8px; align-items:end; }
+.toolbar-group label { font-size:12px; opacity:.8; display:block; }
+.ctrl { padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,.15); background:rgba(0,0,0,.2); color:#fff; }
+.ctrl:disabled { opacity:.5; cursor:not-allowed; }
+.link-btn { background:transparent; border:0; color:#74c0ff; cursor:pointer; padding:6px 8px; }
+.inning-pills { display:flex; gap:6px; }
+.pill { padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.05); cursor:pointer; color:#fff; }
+.pill.active { background:#1e90ff; border-color:#1e90ff; color:#fff; }
+
+.plogs-context { display:flex; justify-content:space-between; margin:14px 0 10px; font-size:16px; font-weight:700; color:#F5B301; opacity:1; }
+@media (min-width: 900px){
+  .plogs-context { font-size: 18px; }
+}
+
+.plogs-tablewrap { background: rgba(0,0,0,0.15); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:8px; }
+
+/* Hide internal dropdowns from PitchersTable header bar (first Box within CardContent) */
+.plogs-tablewrap .MuiCardContent-root > .MuiBox-root { display: none !important; }
+
+/* Card styling flatten */
+.plogs-tablewrap .MuiCard-root { background: transparent; box-shadow: none; }
+.plogs-tablewrap .MuiCardContent-root { padding: 0 !important; }
+
+/* DataGrid header sticky and backdrop */
+.plogs-tablewrap .MuiDataGrid-columnHeaders { position: sticky; top: 0; background: rgba(20,22,34,.9) !important; backdrop-filter: blur(6px); z-index: 2; }
+
+/* Compact rows and zebra stripes */
+.plogs-tablewrap .MuiDataGrid-row { min-height: 36px !important; }
+.plogs-tablewrap .MuiDataGrid-row:nth-of-type(even) { background: rgba(255,255,255,.03); }
+
+/* Right align numeric columns */
+.plogs-tablewrap .MuiDataGrid-cell[data-field="velo"],
+.plogs-tablewrap .MuiDataGrid-cell[data-field="spin"],
+.plogs-tablewrap .MuiDataGrid-cell[data-field="ext"],
+.plogs-tablewrap .MuiDataGrid-cell[data-field="ivb"],
+.plogs-tablewrap .MuiDataGrid-cell[data-field="hb"],
+.plogs-tablewrap .MuiDataGrid-columnHeader[data-field="velo"],
+.plogs-tablewrap .MuiDataGrid-columnHeader[data-field="spin"],
+.plogs-tablewrap .MuiDataGrid-columnHeader[data-field="ext"],
+.plogs-tablewrap .MuiDataGrid-columnHeader[data-field="ivb"],
+.plogs-tablewrap .MuiDataGrid-columnHeader[data-field="hb"]
+{ text-align: right; justify-content: flex-end; }
+
+/* Truncate long text for Result and Batter; rely on native title if present */
+.plogs-tablewrap .MuiDataGrid-cell[data-field="result"],
+.plogs-tablewrap .MuiDataGrid-cell[data-field="batter"] { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 240px; }
+
+/* Pagination/footer restyle without changing behavior */
+.plogs-tablewrap .MuiDataGrid-footerContainer { background: rgba(20,22,34,.65); backdrop-filter: blur(6px); border-top: 1px solid rgba(255,255,255,.08); }
+
+/* Empty state */
+.empty { text-align:center; padding:48px; opacity:.7; }
+.empty .sub { font-size:12px; margin-top:6px; }
+
+@media (max-width:720px){
+  .plogs-title{font-size:24px}
+  .plogs-toolbar{gap:10px}
+  .plogs-tablewrap .MuiDataGrid-cell[data-field="result"],
+  .plogs-tablewrap .MuiDataGrid-cell[data-field="batter"] { max-width: 140px; }
+}
+
+/* New: page background + typography + grid controls per spec */
+.page { min-height: 100vh; padding: 12px 16px 48px; background: radial-gradient(1200px 600px at 30% 0%, #0e2b4d 0%, #061a2e 60%, #041120 100%); }
+.title { color: #FFC107; font-weight: 800; letter-spacing: 0.5px; margin: 16px 0 8px; font-size: 34px; }
+.controls { display: grid; grid-template-columns: 220px 1fr 320px; gap: 12px; align-items: end; }
+.dateDisplay { font-size: 16px; font-weight: 600; color: #fff; opacity: .9; align-self: center; }
+.inningLabel { font-size: 16px; font-weight: 600; }
+.tableShell { border-radius: 14px; overflow: hidden; }
+
+/* Page variant per spec */
+.pagePitchingLogs { min-height: 100vh; background: linear-gradient(180deg, #0e1a2b 0%, #0b2142 60%, #0a2a57 100%); padding: 24px; }
+.pagePitchingLogs h1 { color: #F5B301; margin: 0 0 12px; font-weight: 800; letter-spacing: 0.5px; }
+
+/* Controls bar per spec */
+.controls { display: flex; gap: 16px; align-items: flex-end; background: rgba(255,255,255,0.06); border-radius: 10px; padding: 12px 16px; margin-bottom: 14px; }
+.field { display: flex; flex-direction: column; }
+.field .gold { color: #F5B301; font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.field input[type="date"],
+.field select { height: 36px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.25); color: #e9eef7; padding: 0 10px; }
+
+/* Table shell */
+.dataGridContainer { background: rgba(255,255,255,0.08); border-radius: 12px; padding: 6px 6px 0; }
