@@ -51,6 +51,7 @@ export function getHittingMetricsFor(name) {
 
   const avgEV = avg(evs);
   const avgLA = avg(las);
+  const maxEV = evs.length ? Math.max(...evs) : undefined;
 
   const denom = evs.length;
   const hardHits = evs.filter((v) => v >= 95).length;
@@ -61,11 +62,22 @@ export function getHittingMetricsFor(name) {
     avgLA,
     hardHitPct,
     samples: rows.length,
+    summary: {
+      evAvg: Number.isFinite(avgEV) ? Number(avgEV.toFixed(1)) : undefined,
+      evMax: Number.isFinite(maxEV) ? Number(maxEV.toFixed(1)) : undefined,
+      laAvg: Number.isFinite(avgLA) ? Number(avgLA.toFixed(1)) : undefined,
+    },
   };
 }
 
 export function getHittingLogStats() {
   return { files: MANIFEST.length, entries: ALL_HIT_EVENTS.length, keys: getAllHitterNames() };
+}
+
+// Return flattened raw entries for a specific hitter name
+export function getHitterEntries(name) {
+  if (!name) return [];
+  return ALL_HIT_EVENTS.filter((e) => e.hitter === name);
 }
 
 export default ALL_HIT_EVENTS;
