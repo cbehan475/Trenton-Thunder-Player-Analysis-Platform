@@ -213,8 +213,8 @@ export default function PitchTypeAnalysisPage() {
         <g>
           <line x1={40} y1={height-30} x2={width-10} y2={height-30} stroke="#88a" strokeWidth="1" />
           <line x1={40} y1={20} x2={40} y2={height-30} stroke="#88a" strokeWidth="1" />
-          <text x={width/2} y={height-8} fill="#e5e7eb" fontSize="12" textAnchor="middle">{xLabel}</text>
-          <text x={16} y={16} fill="#e5e7eb" fontSize="12">{yLabel}</text>
+          <text x={width/2} y={height-8} fill="#d1d5db" fontSize="12" textAnchor="middle">{xLabel}</text>
+          <text x={16} y={16} fill="#d1d5db" fontSize="12">{yLabel}</text>
         </g>
         {/* points */}
         {points.map((p, i) => (
@@ -293,7 +293,10 @@ export default function PitchTypeAnalysisPage() {
   const toggleType = (t) => setSelectedType(prev => (prev === t ? null : t));
 
   return (
-    <div className="pagePitchingLogs">
+    <div className="pagePitchingLogs" style={{
+      background: 'linear-gradient(180deg, #0A0C10 0%, #111827 100%)',
+      minHeight: '100vh'
+    }}>
       <h1>Pitch Type Analysis</h1>
 
       {/* Controls: single Select Pitcher */}
@@ -328,7 +331,7 @@ export default function PitchTypeAnalysisPage() {
                 cursor:'pointer',
                 minWidth: 240,
                 borderRadius: 12,
-                border: selectedType===c.t ? '2px solid #F5B301' : '1px solid rgba(255,255,255,0.15)',
+                border: selectedType===c.t ? '1px solid #F5B301' : '1px solid rgba(255,255,255,0.15)',
                 background: 'rgba(0,0,0,0.25)',
                 padding: '10px 12px',
                 color: '#e9eef7',
