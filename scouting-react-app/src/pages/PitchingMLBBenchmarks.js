@@ -1,6 +1,6 @@
 // src/pages/PitchingMLBBenchmarks.js
 import React, { useMemo, useState } from 'react';
-import { PITCHING_BENCHMARKS } from './pitchingBenchmarksByLevel.js';
+import { PITCHING_BENCHMARKS, PITCHING_BENCHMARKS_VERSION } from './pitchingBenchmarksByLevel.js';
 
 const gold = '#FFB800';
 
@@ -9,6 +9,7 @@ const styles = {
   headerRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 8 },
   title: { color: gold, fontSize: 36, fontWeight: 900, letterSpacing: 0.5, margin: 0 },
   sub: { color: 'var(--muted)', margin: '4px 0 18px 0' },
+  meta: { color: 'var(--muted)', margin: '2px 0 16px 0', fontSize: 12 },
   controls: { display: 'inline-flex', gap: 8, alignItems: 'center', color: 'var(--text)' },
   select: { background:'rgba(0,0,0,0.2)', color:'var(--text)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:8, padding:'6px 10px', fontWeight:700 },
   cardsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14, alignItems: 'stretch' },
@@ -102,6 +103,11 @@ export default function PitchingMLBBenchmarks() {
           <div>
             <h1 style={styles.title}>MLB Benchmarks</h1>
             <div style={styles.sub}>Reference ranges for MLB pitch traits (velo, IVB, HB, command).</div>
+            <div style={styles.meta}>
+              Benchmarks: {selectedLevel} season ranges
+              {PITCHING_BENCHMARKS_VERSION ? ` • version ${PITCHING_BENCHMARKS_VERSION}` : ''}
+              {' • edit in '}<code style={{ color: 'var(--text)' }}>pitchingBenchmarksByLevel.js</code>
+            </div>
           </div>
           {/* Level select (local state only) */}
           <div style={styles.controls} aria-label="Level Selector">
@@ -166,7 +172,12 @@ export default function PitchingMLBBenchmarks() {
                     <td style={styles.td}>{fmtBand(r.velo)}</td>
                     <td style={styles.td}>{fmtVal(r.ivb)}</td>
                     <td style={styles.td}>{fmtVal(r.hb)}</td>
-                    <td style={styles.td}>{fmtVal(r.command)}</td>
+                    <td style={styles.td}>
+                      <span>{fmtVal(r.command)}</span>
+                      {r.n != null && (
+                        <span style={{ marginLeft:8, color:'var(--muted)', fontSize:12, border:'1px solid rgba(255,255,255,0.15)', borderRadius:999, padding:'2px 6px' }}>n={r.n}</span>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}
