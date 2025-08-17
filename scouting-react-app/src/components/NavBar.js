@@ -47,7 +47,6 @@ export default function NavBar() {
   const menuItems = {
     pitch: [
       { label: 'Pitching Game Logs', to: '/pitching/logs' },
-      { label: 'Pitch Control & Movement', to: '/pitching/pitch-control-movement' },
       { label: 'Pitch Type Analysis', to: '/pitching/types' },
       { label: 'MLB Benchmarks', to: '/pitching/mlb-benchmarks' },
       { label: 'Pitcher Reports', to: '/pitching/reports' },

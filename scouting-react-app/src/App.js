@@ -18,7 +18,6 @@ import PitchingHub from './pages/PitchingHub';
 import HittingHub from './pages/HittingHub';
 import PlayerDevHub from './pages/PlayerDevHub';
 import PitchTypeAnalysisPage from './pages/PitchTypeAnalysisPage';
-import PitchControlMovement from './pages/PitchControlMovement';
 import PitchingMLBBenchmarks from './pages/PitchingMLBBenchmarks';
 import PitcherReports from './pages/PitcherReports';
 import HittingPerformancePage from './pages/HittingPerformancePage';
@@ -206,7 +205,8 @@ export default function App() {
         {/* Pitching */}
         <Route path="/pitching/logs" element={<PitchingLogsPage />} />
                 <Route path="/pitching/types" element={<PitchTypeAnalysisPage />} />
-        <Route path="/pitching/pitch-control-movement" element={<PitchControlMovement />} />
+        {/* Redirect old Pitch Control & Movement link to MLB Benchmarks */}
+        <Route path="/pitching/pitch-control-movement" element={<Navigate to="/pitching/mlb-benchmarks" replace />} />
         <Route path="/pitching/mlb-benchmarks" element={<PitchingMLBBenchmarks />} />
         <Route path="/pitching/reports" element={<PitcherReports />} />
         <Route path="/hitting/reports" element={<HitterReportsPage />} />
