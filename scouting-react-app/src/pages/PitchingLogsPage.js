@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { seedLogsByDate, getPitchersForDate, getInningsFor, getLogs } from '../data/logs/pitchingIndex.js';
 import './PitchingLogsPage.css';
+import { getBench, delta, BENCH_LEVEL, FEATURE_BENCHMARK_BADGES } from '../lib/benchmarks.js';
 import pitching2025_06_04 from '../data/logs/pitching-2025-06-04.js';
 import pitching2025_06_05 from '../data/logs/pitching-2025-06-05.js';
 import pitching2025_06_06 from '../data/logs/pitching-2025-06-06.js';
@@ -201,6 +202,28 @@ export default function PitchingLogsPage() {
     { field: 'hb', headerName: 'HB', width: 90, sortable: true, headerAlign: 'right', align: 'right' },
     { field: 'result', headerName: 'Result', width: 140, sortable: true },
     { field: 'batter', headerName: 'Batter', width: 160, sortable: true },
+    {
+      field: 'bench', headerName: 'Bench', width: 220, sortable: false,
+      renderCell: (params) => {
+        if (!FEATURE_BENCHMARK_BADGES) return null;
+        const t = params.row?.type;
+        const v = params.row?.velo;
+        const i = params.row?.ivb;
+        const b = getBench(BENCH_LEVEL, t);
+        const dv = b?.p50Velo != null ? delta(v, b.p50Velo) : null;
+        const di = b?.p50IVB != null ? delta(i, b.p50IVB) : null;
+        if (!Number.isFinite(dv) && !Number.isFinite(di)) return null;
+        const muted = { color:'#94a3b8', fontSize: 11 };
+        return (
+          <span style={muted}>
+            {Number.isFinite(dv) ? `ΔVelo ${dv >= 0 ? `+${dv.toFixed(1)}` : dv.toFixed(1)}` : ''}
+            {Number.isFinite(dv) && Number.isFinite(di) ? ' • ' : ''}
+            {Number.isFinite(di) ? `ΔIVB ${di >= 0 ? `+${di.toFixed(1)}` : di.toFixed(1)}` : ''}
+            {` vs ${BENCH_LEVEL}`}
+          </span>
+        );
+      }
+    }
   ]), []);
 
   return (

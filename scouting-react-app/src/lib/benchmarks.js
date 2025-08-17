@@ -4,6 +4,10 @@
 
 import { PITCHING_BENCHMARKS } from '../pages/pitchingBenchmarksByLevel.js';
 
+// Global feature toggles / defaults
+export const BENCH_LEVEL = 'MLB';
+export const FEATURE_BENCHMARK_BADGES = true;
+
 const KEY_MAP = new Map([
   ['four-seam', 'fourSeam'],
   ['fourseam', 'fourSeam'],

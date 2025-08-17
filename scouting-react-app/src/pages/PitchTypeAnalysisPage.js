@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './PitchingLogsPage.css';
+import { getBench, delta, BENCH_LEVEL, FEATURE_BENCHMARK_BADGES } from '../lib/benchmarks.js';
 import { seedLogsByDate, getPitchersForDate, getInningsFor, getLogs } from '../data/logs/pitchingIndex.js';
 
 // Import existing date modules to seed logs (keep in sync with PitchingLogsPage)
@@ -339,7 +340,32 @@ export default function PitchTypeAnalysisPage() {
               }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline' }}>
                 <div style={{ fontWeight: 800, color: '#F5B301' }}>{c.t}</div>
-                <div style={{ fontSize: 12, opacity: .9 }}>{c.usage.toFixed(1)}%</div>
+                <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+                  {FEATURE_BENCHMARK_BADGES && (() => {
+                    const b = getBench(BENCH_LEVEL, c.t);
+                    const dv = b?.p50Velo != null ? delta(c.veloAvg, b.p50Velo) : null;
+                    const di = b?.p50IVB != null ? delta(c.ivbAvg, b.p50IVB) : null;
+                    const chipStyle = {
+                      fontSize: 10,
+                      color: '#cbd5e1',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      borderRadius: 999,
+                      padding: '2px 6px',
+                      background: 'rgba(255,255,255,0.04)'
+                    };
+                    return (
+                      <>
+                        {Number.isFinite(dv) && (
+                          <span style={chipStyle}>ΔVelo {dv >= 0 ? `+${dv.toFixed(1)}` : dv.toFixed(1)}</span>
+                        )}
+                        {Number.isFinite(di) && (
+                          <span style={chipStyle}>ΔIVB {di >= 0 ? `+${di.toFixed(1)}` : di.toFixed(1)}</span>
+                        )}
+                      </>
+                    );
+                  })()}
+                  <div style={{ fontSize: 12, opacity: .9 }}>{c.usage.toFixed(1)}%</div>
+                </div>
               </div>
               <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:6, marginTop:6, fontSize:12 }}>
                 <div>Velo avg {c.veloAvg.toFixed(1)}</div>
