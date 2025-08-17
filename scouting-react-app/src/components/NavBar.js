@@ -56,7 +56,7 @@ export default function NavBar() {
       { label: 'Batting Performance Metrics', to: '/hitting/performance' },
       { label: 'Batted Ball Profiles', to: '/hitting/batted-ball' },
       { label: 'Hitter Reports', to: '/hitting/reports' },
-      { label: 'Player Comparisons to Pro Averages', to: '/hitting/player-comparisons' },
+      { label: 'MLB Benchmarks', to: '/hitting/player-comparisons' },
     ],
     dev: [
       { label: 'Pitcher Development Plans', to: '/player-development/pitchers' },
