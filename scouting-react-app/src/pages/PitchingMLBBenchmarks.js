@@ -5,6 +5,7 @@ import { pitchingBenchmarksByLevel } from '../lib/pitchingBenchmarksByLevel.js';
 import { validateBenchmarks } from '../lib/validateBenchmarks.js';
 import { PITCHERS_SEASON_AGG } from '../data/pitchersSeasonAggregates.js';
 import { getPitcherSeasonAgg, FEATURE_BENCHMARK_BADGES } from '../lib/benchmarks.js';
+import { FEATURE_AGG_FROM_LOGS, getSeasonAggFromLogsCached } from '../lib/seasonAggCache.js';
 
 // Local dev flag (scoped to this page only)
 const DEV_TOOLS = true;
@@ -72,6 +73,8 @@ export default function PitchingMLBBenchmarks() {
   }, []);
   const [selectedLevel, setSelectedLevel] = useState(() => levelOptions.includes('MLB') ? 'MLB' : (levelOptions[0] || 'MLB'));
   const [selectedPitcherId, setSelectedPitcherId] = useState('');
+  const [pitchersAgg, setPitchersAgg] = useState(null); // computed map { [id]: {id,name,pitches} }
+  const hasComputedAgg = !!(pitchersAgg && typeof pitchersAgg === 'object' && Object.keys(pitchersAgg).length);
   const [warnings, setWarnings] = useState([]);
   const [warnOpen, setWarnOpen] = useState(false);
 
@@ -80,6 +83,23 @@ export default function PitchingMLBBenchmarks() {
     const w = validateBenchmarks(pitchingBenchmarksByLevel) || [];
     setWarnings(w);
   }, [selectedLevel]);
+
+  // Load computed season aggregates (first-half) if feature is enabled
+  useEffect(() => {
+    let mounted = true;
+    async function loadAgg() {
+      if (!FEATURE_AGG_FROM_LOGS) return;
+      try {
+        const data = await getSeasonAggFromLogsCached();
+        if (mounted) setPitchersAgg(data);
+      } catch (e) {
+        // non-blocking; fall back silently
+        if (mounted) setPitchersAgg(null);
+      }
+    }
+    loadAgg();
+    return () => { mounted = false; };
+  }, []);
 
   // Lock to Pro Dark preset via CSS variables on page root
   const rootStyle = useMemo(() => ({
@@ -136,16 +156,28 @@ export default function PitchingMLBBenchmarks() {
   const fmtNum = (v, digits=1) => (v===null || v===undefined || Number.isNaN(Number(v))) ? '—' : Number(v).toFixed(digits);
   const sign = (v) => (v>0?`+${v}`:`${v}`);
 
-  // Pitcher options sorted by last name
+  // Pitcher options sorted by last name (computed agg preferred)
   const pitcherOptions = useMemo(() => {
-    const arr = (PITCHERS_SEASON_AGG || []).map(p => ({ value: p.id, label: p.name }));
+    const source = hasComputedAgg ? Object.values(pitchersAgg) : (PITCHERS_SEASON_AGG || []);
+    const arr = source.map(p => ({ value: p.id, label: p.name }));
     arr.sort((a,b) => {
       const al = a.label.trim().split(/\s+/).pop()?.toLowerCase() || '';
       const bl = b.label.trim().split(/\s+/).pop()?.toLowerCase() || '';
       return al.localeCompare(bl);
     });
     return arr;
-  }, []);
+  }, [hasComputedAgg, pitchersAgg]);
+
+  // Lookup helper: prefer computed map, fallback to static helper
+  const getPlayerAgg = (pid, pitchKey) => {
+    if (!pid || !pitchKey) return null;
+    if (hasComputedAgg) {
+      const rec = pitchersAgg?.[pid];
+      const agg = rec?.pitches?.[pitchKey];
+      if (agg) return agg;
+    }
+    return getPitcherSeasonAgg(pid, pitchKey);
+  };
 
   return (
     <div className={`mlb-benchmarks-page preset-pro-dark`}
@@ -165,6 +197,9 @@ export default function PitchingMLBBenchmarks() {
               Benchmarks: {selectedLevel} season ranges
               {PITCHING_BENCHMARKS_VERSION ? ` • version ${PITCHING_BENCHMARKS_VERSION}` : ''}
               {' • edit in '}<code style={{ color: 'var(--text)' }}>pitchingBenchmarksByLevel.js</code>
+              <div style={{ marginTop: 4 }}>
+                <span style={{ color:'var(--muted)' }}>Source: {hasComputedAgg ? 'season logs (first half)' : 'static aggregates'}</span>
+              </div>
             </div>
           </div>
           {/* Level select (local state only) */}
@@ -246,7 +281,7 @@ export default function PitchingMLBBenchmarks() {
                   <div style={styles.cardBodyRow}><span className="lbl" style={styles.small}>HB avg</span><span>{fmtVal(r.hb)}</span></div>
                   {/* Player overlay */}
                   {selectedPitcherId && (() => {
-                    const player = getPitcherSeasonAgg(selectedPitcherId, r.key);
+                    const player = getPlayerAgg(selectedPitcherId, r.key);
                     if (!player) return null;
                     const dV = (FEATURE_BENCHMARK_BADGES && Number.isFinite(r.p50Velo) && Number.isFinite(player.p50Velo)) ? (player.p50Velo - r.p50Velo) : null;
                     const dI = (FEATURE_BENCHMARK_BADGES && Number.isFinite(r.p50IVB) && Number.isFinite(player.p50IVB)) ? (player.p50IVB - r.p50IVB) : null;
@@ -306,7 +341,7 @@ export default function PitchingMLBBenchmarks() {
                       )}
                     </td>
                     {selectedPitcherId && (() => {
-                      const player = getPitcherSeasonAgg(selectedPitcherId, r.key);
+                      const player = getPlayerAgg(selectedPitcherId, r.key);
                       const playerCell = player ? `${fmtNum(player.p50Velo,1)} / ${fmtNum(player.p50IVB,1)} / ${fmtNum(player.p50HB,1)}` : '—';
                       const dV = (FEATURE_BENCHMARK_BADGES && Number.isFinite(r.p50Velo) && player && Number.isFinite(player.p50Velo)) ? (player.p50Velo - r.p50Velo) : null;
                       const dI = (FEATURE_BENCHMARK_BADGES && Number.isFinite(r.p50IVB) && player && Number.isFinite(player.p50IVB)) ? (player.p50IVB - r.p50IVB) : null;
