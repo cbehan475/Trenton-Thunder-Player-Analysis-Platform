@@ -1,7 +1,11 @@
 // src/pages/PitchingMLBBenchmarks.js
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { PITCHING_BENCHMARKS_VERSION } from './pitchingBenchmarksByLevel.js';
 import { pitchingBenchmarksByLevel } from '../lib/pitchingBenchmarksByLevel.js';
+import { validateBenchmarks } from '../lib/validateBenchmarks.js';
+
+// Local dev flag (scoped to this page only)
+const DEV_TOOLS = true;
 
 const gold = '#FFB800';
 
@@ -32,6 +36,27 @@ const styles = {
   th: { position: 'sticky', top: 0, background: 'rgba(10,18,30,0.65)', color: 'var(--text)', textAlign: 'left', fontWeight: 900, padding: '10px 12px', backdropFilter: 'blur(3px)', cursor: 'pointer' },
   td: { color: 'var(--text)', padding: '10px 12px', borderTop: '1px solid rgba(255,255,255,0.07)' },
   footnote: { marginTop: 10, color: 'var(--muted)', fontSize: 12 },
+  warnWrap: { marginBottom: 12 },
+  warnBanner: {
+    background: 'rgba(148,163,184,0.12)',
+    border: '1px solid rgba(148,163,184,0.3)',
+    color: 'var(--muted)',
+    borderRadius: 10,
+    padding: '8px 12px',
+    fontSize: 12,
+  },
+  warnToggle: { cursor: 'pointer', fontWeight: 700 },
+  warnList: { marginTop: 8, paddingLeft: 16 },
+  btn: {
+    background: 'rgba(255,255,255,0.06)',
+    border: '1px solid rgba(255,255,255,0.18)',
+    color: 'var(--text)',
+    borderRadius: 8,
+    padding: '6px 10px',
+    fontWeight: 800,
+    fontSize: 12,
+    cursor: 'pointer'
+  }
 };
 
 export default function PitchingMLBBenchmarks() {
@@ -44,6 +69,14 @@ export default function PitchingMLBBenchmarks() {
     return [...ordered, ...extras];
   }, []);
   const [selectedLevel, setSelectedLevel] = useState(() => levelOptions.includes('MLB') ? 'MLB' : (levelOptions[0] || 'MLB'));
+  const [warnings, setWarnings] = useState([]);
+  const [warnOpen, setWarnOpen] = useState(false);
+
+  useEffect(() => {
+    // Validate full dataset (non-blocking). Toggle stays as user set.
+    const w = validateBenchmarks(pitchingBenchmarksByLevel) || [];
+    setWarnings(w);
+  }, [selectedLevel]);
 
   // Lock to Pro Dark preset via CSS variables on page root
   const rootStyle = useMemo(() => ({
@@ -126,8 +159,49 @@ export default function PitchingMLBBenchmarks() {
                 <option key={lvl} value={lvl}>{lvl}</option>
               ))}
             </select>
+            {DEV_TOOLS && (
+              <button
+                type="button"
+                style={{ ...styles.btn, marginLeft: 8 }}
+                onClick={() => {
+                  const payload = {
+                    version: PITCHING_BENCHMARKS_VERSION,
+                    data: pitchingBenchmarksByLevel,
+                  };
+                  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'pitchingBenchmarksByLevel-export.json';
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                }}
+              >
+                Export JSON
+              </button>
+            )}
           </div>
         </div>
+
+        {/* Data warnings (non-blocking) */}
+        {warnings.length > 0 && (
+          <div style={styles.warnWrap}>
+            <div style={styles.warnBanner}>
+              <span role="button" onClick={() => setWarnOpen(o=>!o)} style={styles.warnToggle}>
+                Data warnings ({warnings.length}) {warnOpen ? '▾' : '▸'}
+              </span>
+              {warnOpen && (
+                <ul style={styles.warnList}>
+                  {warnings.map((w, idx) => (
+                    <li key={`warn-${idx}`}>{w}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Cards Grid */}
         {(!levelData) ? (
