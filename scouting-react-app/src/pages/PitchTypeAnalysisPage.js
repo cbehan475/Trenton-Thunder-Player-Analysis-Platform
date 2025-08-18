@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import './PitchingLogsPage.css';
 import { getBench, delta, BENCH_LEVEL, FEATURE_BENCHMARK_BADGES } from '../lib/benchmarks.js';
 import { seedLogsByDate, getPitchersForDate, getInningsFor, getLogs } from '../data/logs/pitchingIndex.js';
-
 // Import existing date modules to seed logs (keep in sync with PitchingLogsPage)
 import pitching2025_06_04 from '../data/logs/pitching-2025-06-04.js';
 import pitching2025_06_05 from '../data/logs/pitching-2025-06-05.js';
@@ -34,6 +33,40 @@ import pitching2025_07_08 from '../data/logs/pitching-2025-07-08.js';
 import pitching2025_07_09 from '../data/logs/pitching-2025-07-09.js';
 import pitching2025_07_11 from '../data/logs/pitching-2025-07-11.js';
 import pitching2025_07_12 from '../data/logs/pitching-2025-07-12.js';
+
+// Local, minimal tooltip (Pro Dark) scoped to this page only
+const Tooltip = ({ content, children }) => {
+  const wrap = {
+    position:'relative', display:'inline-block'
+  };
+  const tip = {
+    position:'absolute', zIndex: 1000, bottom:'125%', right: 0,
+    background:'#1E293B', color:'#E5E7EB', border:'1px solid rgba(255,255,255,0.15)',
+    borderRadius:8, padding:'8px 10px', fontSize:12, whiteSpace:'pre-line',
+    boxShadow:'0 6px 16px rgba(0,0,0,0.5)', pointerEvents:'none', opacity:0, transform:'translateY(4px)', transition:'opacity 120ms ease, transform 120ms ease'
+  };
+  const arrow = {
+    position:'absolute', top:'100%', right: 10, width:0, height:0,
+    borderLeft:'6px solid transparent', borderRight:'6px solid transparent', borderTop:'6px solid #1E293B'
+  };
+  const show = {
+    opacity:1, transform:'translateY(0)'
+  };
+  return (
+    <span style={wrap}
+      onMouseEnter={(e)=>{ const t=e.currentTarget.querySelector('.tt'); if (t) Object.assign(t.style, show); }}
+      onMouseLeave={(e)=>{ const t=e.currentTarget.querySelector('.tt'); if (t) Object.assign(t.style, {opacity:0, transform:'translateY(4px)'}); }}
+      onFocus={(e)=>{ const t=e.currentTarget.querySelector('.tt'); if (t) Object.assign(t.style, show); }}
+      onBlur={(e)=>{ const t=e.currentTarget.querySelector('.tt'); if (t) Object.assign(t.style, {opacity:0, transform:'translateY(4px)'}); }}
+    >
+      {children}
+      <span className="tt" style={tip} role="tooltip">
+        {content}
+        <span style={arrow} />
+      </span>
+    </span>
+  );
+};
 
 // First-half dates (H1) using the same included files
 const FIRST_HALF_DATES = [
@@ -361,10 +394,14 @@ export default function PitchTypeAnalysisPage() {
                     return (
                       <>
                         {Number.isFinite(dv) && (
-                          <span style={chipStyle}>ΔVelo {dv >= 0 ? `+${dv.toFixed(1)}` : dv.toFixed(1)}</span>
+                          <Tooltip content={`Player: ${c.veloAvg.toFixed(1)} mph\n${BENCH_LEVEL} p50: ${b.p50Velo.toFixed?.(1) ?? b.p50Velo} mph\nΔVelo: ${dv >= 0 ? `+${dv.toFixed(1)}` : dv.toFixed(1)}`}>
+                            <span style={chipStyle}>ΔVelo {dv >= 0 ? `+${dv.toFixed(1)}` : dv.toFixed(1)}</span>
+                          </Tooltip>
                         )}
                         {Number.isFinite(di) && (
-                          <span style={chipStyle}>ΔIVB {di >= 0 ? `+${di.toFixed(1)}` : di.toFixed(1)}</span>
+                          <Tooltip content={`Player: ${c.ivbAvg.toFixed(1)} in\n${BENCH_LEVEL} p50: ${b.p50IVB.toFixed?.(1) ?? b.p50IVB} in\nΔIVB: ${di >= 0 ? `+${di.toFixed(1)}` : di.toFixed(1)}`}>
+                            <span style={chipStyle}>ΔIVB {di >= 0 ? `+${di.toFixed(1)}` : di.toFixed(1)}</span>
+                          </Tooltip>
                         )}
                       </>
                     );
