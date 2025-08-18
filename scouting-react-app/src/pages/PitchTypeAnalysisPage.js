@@ -299,6 +299,11 @@ export default function PitchTypeAnalysisPage() {
       minHeight: '100vh'
     }}>
       <h1>Pitch Type Analysis</h1>
+      {FEATURE_BENCHMARK_BADGES && (
+        <div style={{ display:'flex', justifyContent:'flex-end', marginTop:-8, marginBottom:8 }}>
+          <div style={{ fontSize: 12, color:'#94a3b8' }}>Δ vs {BENCH_LEVEL} p50</div>
+        </div>
+      )}
 
       {/* Controls: single Select Pitcher */}
       <div className="controls">

@@ -229,6 +229,11 @@ export default function PitchingLogsPage() {
   return (
     <div className="pagePitchingLogs">
       <h1>Pitching Logs</h1>
+      {FEATURE_BENCHMARK_BADGES && (
+        <div style={{ display:'flex', justifyContent:'flex-end', marginTop:-8, marginBottom:8 }}>
+          <div style={{ fontSize: 12, color:'#94a3b8' }}>Δ vs {BENCH_LEVEL} p50</div>
+        </div>
+      )}
 
       <div className="controls">
         <div className="field">
