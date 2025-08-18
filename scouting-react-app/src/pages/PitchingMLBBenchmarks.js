@@ -3,6 +3,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { PITCHING_BENCHMARKS_VERSION } from './pitchingBenchmarksByLevel.js';
 import { pitchingBenchmarksByLevel } from '../lib/pitchingBenchmarksByLevel.js';
 import { validateBenchmarks } from '../lib/validateBenchmarks.js';
+import { PITCHERS_SEASON_AGG } from '../data/pitchersSeasonAggregates.js';
+import { getPitcherSeasonAgg, FEATURE_BENCHMARK_BADGES } from '../lib/benchmarks.js';
 
 // Local dev flag (scoped to this page only)
 const DEV_TOOLS = true;
@@ -69,6 +71,7 @@ export default function PitchingMLBBenchmarks() {
     return [...ordered, ...extras];
   }, []);
   const [selectedLevel, setSelectedLevel] = useState(() => levelOptions.includes('MLB') ? 'MLB' : (levelOptions[0] || 'MLB'));
+  const [selectedPitcherId, setSelectedPitcherId] = useState('');
   const [warnings, setWarnings] = useState([]);
   const [warnOpen, setWarnOpen] = useState(false);
 
@@ -130,6 +133,19 @@ export default function PitchingMLBBenchmarks() {
 
   const fmtBand = (band) => Array.isArray(band) && band.length===2 && band[0]!=null && band[1]!=null ? `${band[0]}–${band[1]} mph` : '—';
   const fmtVal = (v) => (v===null || v===undefined || v==='') ? '—' : `${v}`;
+  const fmtNum = (v, digits=1) => (v===null || v===undefined || Number.isNaN(Number(v))) ? '—' : Number(v).toFixed(digits);
+  const sign = (v) => (v>0?`+${v}`:`${v}`);
+
+  // Pitcher options sorted by last name
+  const pitcherOptions = useMemo(() => {
+    const arr = (PITCHERS_SEASON_AGG || []).map(p => ({ value: p.id, label: p.name }));
+    arr.sort((a,b) => {
+      const al = a.label.trim().split(/\s+/).pop()?.toLowerCase() || '';
+      const bl = b.label.trim().split(/\s+/).pop()?.toLowerCase() || '';
+      return al.localeCompare(bl);
+    });
+    return arr;
+  }, []);
 
   return (
     <div className={`mlb-benchmarks-page preset-pro-dark`}
@@ -157,6 +173,13 @@ export default function PitchingMLBBenchmarks() {
             <select value={selectedLevel} onChange={(e)=>setSelectedLevel(e.target.value)} style={styles.select}>
               {levelOptions.map((lvl) => (
                 <option key={lvl} value={lvl}>{lvl}</option>
+              ))}
+            </select>
+            <span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 10 }}>Compare Pitcher:</span>
+            <select value={selectedPitcherId} onChange={(e)=>setSelectedPitcherId(e.target.value)} style={styles.select}>
+              <option value="">None</option>
+              {pitcherOptions.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
             {DEV_TOOLS && (
@@ -221,6 +244,27 @@ export default function PitchingMLBBenchmarks() {
                   <div style={styles.cardBodyRow}><span className="lbl" style={styles.small}>Velocity</span><span>{fmtBand(r.velo)}</span></div>
                   <div style={styles.cardBodyRow}><span className="lbl" style={styles.small}>IVB avg</span><span>{fmtVal(r.ivb)}</span></div>
                   <div style={styles.cardBodyRow}><span className="lbl" style={styles.small}>HB avg</span><span>{fmtVal(r.hb)}</span></div>
+                  {/* Player overlay */}
+                  {selectedPitcherId && (() => {
+                    const player = getPitcherSeasonAgg(selectedPitcherId, r.key);
+                    if (!player) return null;
+                    const dV = (FEATURE_BENCHMARK_BADGES && Number.isFinite(r.p50Velo) && Number.isFinite(player.p50Velo)) ? (player.p50Velo - r.p50Velo) : null;
+                    const dI = (FEATURE_BENCHMARK_BADGES && Number.isFinite(r.p50IVB) && Number.isFinite(player.p50IVB)) ? (player.p50IVB - r.p50IVB) : null;
+                    return (
+                      <div style={{ marginTop: 8, color:'var(--muted)', fontSize:12 }}>
+                        <div>Player p50 Velo: {fmtNum(player.p50Velo, 1)} mph</div>
+                        <div>Player p50 IVB: {fmtNum(player.p50IVB, 1)} in</div>
+                        <div>Player p50 HB: {fmtNum(player.p50HB, 1)} in</div>
+                        {(dV!=null || dI!=null) && (
+                          <div style={{ marginTop:6 }}>
+                            <span style={{ border:'1px solid rgba(255,255,255,0.18)', borderRadius:999, padding:'2px 6px' }}>
+                              {dV!=null ? `ΔVelo ${sign(dV.toFixed(1))}` : ''}{(dV!=null && dI!=null)?' • ':''}{dI!=null ? `ΔIVB ${sign(dI.toFixed(1))}` : ''}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                   <div style={{ marginTop: 8, display:'flex', alignItems:'center', color:'var(--muted)', fontSize:12 }}>
                     <span>Ranges represent typical values for this level.</span>
                     <span title="Ranges represent typical values for this level." style={styles.footIcon}>ⓘ</span>
@@ -241,11 +285,13 @@ export default function PitchingMLBBenchmarks() {
                 {header('IVB (in)', 'ivb')}
                 {header('HB (in)', 'hb')}
                 {header('Command Notes', 'command')}
+                {selectedPitcherId && <th style={styles.th}>Player (p50)</th>}
+                {selectedPitcherId && <th style={styles.th}>Δ vs {selectedLevel} p50</th>}
               </tr>
             </thead>
             <tbody>
               {(!levelData) ? (
-                <tr><td style={styles.td} colSpan={5}>No benchmark data available for this level.</td></tr>
+                <tr><td style={styles.td} colSpan={selectedPitcherId?7:5}>No benchmark data available for this level.</td></tr>
               ) : (
                 sorted.map((r) => (
                   <tr key={`row-${r.type}`}>
@@ -259,6 +305,29 @@ export default function PitchingMLBBenchmarks() {
                         <span style={{ marginLeft:8, color:'var(--muted)', fontSize:12, border:'1px solid rgba(255,255,255,0.15)', borderRadius:999, padding:'2px 6px' }}>n={r.n}</span>
                       )}
                     </td>
+                    {selectedPitcherId && (() => {
+                      const player = getPitcherSeasonAgg(selectedPitcherId, r.key);
+                      const playerCell = player ? `${fmtNum(player.p50Velo,1)} / ${fmtNum(player.p50IVB,1)} / ${fmtNum(player.p50HB,1)}` : '—';
+                      const dV = (FEATURE_BENCHMARK_BADGES && Number.isFinite(r.p50Velo) && player && Number.isFinite(player.p50Velo)) ? (player.p50Velo - r.p50Velo) : null;
+                      const dI = (FEATURE_BENCHMARK_BADGES && Number.isFinite(r.p50IVB) && player && Number.isFinite(player.p50IVB)) ? (player.p50IVB - r.p50IVB) : null;
+                      const dH = (FEATURE_BENCHMARK_BADGES && Number.isFinite(r.p50HB) && player && Number.isFinite(player.p50HB)) ? (player.p50HB - r.p50HB) : null;
+                      return (
+                        <>
+                          <td style={styles.td}>{playerCell}</td>
+                          <td style={styles.td}>
+                            {(dV!=null || dI!=null || dH!=null) ? (
+                              <span style={{ color:'var(--muted)' }}>
+                                {dV!=null ? `ΔVelo ${sign(dV.toFixed(1))}` : ''}
+                                {(dV!=null && (dI!=null || dH!=null)) ? ' • ' : ''}
+                                {dI!=null ? `ΔIVB ${sign(dI.toFixed(1))}` : ''}
+                                {(dI!=null && dH!=null) ? ' • ' : ''}
+                                {dH!=null ? `ΔHB ${sign(dH.toFixed(1))}` : ''}
+                              </span>
+                            ) : '—'}
+                          </td>
+                        </>
+                      );
+                    })()}
                   </tr>
                 ))
               )}
