@@ -3,6 +3,7 @@
 // Pure JS to match the project stack. All values are optional-safe.
 
 import { PITCHING_BENCHMARKS } from '../pages/pitchingBenchmarksByLevel.js';
+import { PITCHERS_SEASON_AGG } from '../data/pitchersSeasonAggregates.js';
 
 // Global feature toggles / defaults
 export const BENCH_LEVEL = 'MLB';
@@ -71,4 +72,22 @@ export function percentileFromBand(value, p25, p50, p75) {
     const t = (v - m) / (z - m);
     return Math.max(50, Math.min(100, 50 + t * 50));
   }
+}
+
+// getPitcherSeasonAgg(pitcherIdOrName, pitchType) -> { p50Velo, p50IVB, p50HB, n } | null
+export function getPitcherSeasonAgg(pitcherIdOrName, pitchType) {
+  if (!pitcherIdOrName) return null;
+  const needle = String(pitcherIdOrName).toLowerCase();
+  const norm = normalizePitchType(pitchType);
+  if (!norm) return null;
+  const rec = (PITCHERS_SEASON_AGG || []).find(p => {
+    const id = String(p.id || '').toLowerCase();
+    const name = String(p.name || '').toLowerCase();
+    return id === needle || name === needle;
+  });
+  if (!rec || !rec.pitches) return null;
+  const data = rec.pitches[norm];
+  if (!data) return null;
+  const { p50Velo=null, p50IVB=null, p50HB=null, n=null } = data;
+  return { p50Velo, p50IVB, p50HB, n };
 }
