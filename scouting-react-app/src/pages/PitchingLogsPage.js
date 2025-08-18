@@ -34,6 +34,36 @@ import pitching2025_07_09 from '../data/logs/pitching-2025-07-09.js';
 import pitching2025_07_11 from '../data/logs/pitching-2025-07-11.js';
 import pitching2025_07_12 from '../data/logs/pitching-2025-07-12.js';
 
+// Local, minimal tooltip (Pro Dark) scoped to this page only
+const Tooltip = ({ content, children }) => {
+  const wrap = { position:'relative', display:'inline-block' };
+  const tip = {
+    position:'absolute', zIndex:1000, bottom:'125%', right:0,
+    background:'#1E293B', color:'#E5E7EB', border:'1px solid rgba(255,255,255,0.15)',
+    borderRadius:8, padding:'8px 10px', fontSize:12, whiteSpace:'pre-line',
+    boxShadow:'0 6px 16px rgba(0,0,0,0.5)', pointerEvents:'none', opacity:0, transform:'translateY(4px)', transition:'opacity 120ms ease, transform 120ms ease'
+  };
+  const arrow = {
+    position:'absolute', top:'100%', right:10, width:0, height:0,
+    borderLeft:'6px solid transparent', borderRight:'6px solid transparent', borderTop:'6px solid #1E293B'
+  };
+  const show = { opacity:1, transform:'translateY(0)' };
+  return (
+    <span style={wrap}
+      onMouseEnter={(e)=>{ const t=e.currentTarget.querySelector('.tt'); if (t) Object.assign(t.style, show); }}
+      onMouseLeave={(e)=>{ const t=e.currentTarget.querySelector('.tt'); if (t) Object.assign(t.style, {opacity:0, transform:'translateY(4px)'}); }}
+      onFocus={(e)=>{ const t=e.currentTarget.querySelector('.tt'); if (t) Object.assign(t.style, show); }}
+      onBlur={(e)=>{ const t=e.currentTarget.querySelector('.tt'); if (t) Object.assign(t.style, {opacity:0, transform:'translateY(4px)'}); }}
+    >
+      {children}
+      <span className="tt" style={tip} role="tooltip">
+        {content}
+        <span style={arrow} />
+      </span>
+    </span>
+  );
+};
+
 const GAME_DATES = [
   '2025-06-04',
   '2025-06-05',
@@ -192,6 +222,37 @@ export default function PitchingLogsPage() {
   );
   const rowsCount = gridRows.length;
 
+  // Season (first-half) aggregates per pitcher per pitch type
+  const seasonAggByType = useMemo(() => {
+    const map = new Map();
+    if (!pitcher) return map;
+    const push = (t, r) => {
+      if (!t) return;
+      if (!map.has(t)) map.set(t, []);
+      map.get(t).push(r);
+    };
+    for (const d of GAME_DATES) {
+      const day = pitchingLogsMap[d];
+      if (!day) continue;
+      const byInning = day[pitcher];
+      if (!byInning) continue;
+      for (const inn of Object.keys(byInning)) {
+        const arr = Array.isArray(byInning[inn]) ? byInning[inn] : [];
+        for (const r of arr) push(r.type ?? r.pitchType, r);
+      }
+    }
+    // summarize
+    const mean = (arr) => (arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : NaN);
+    const out = new Map();
+    for (const [t, arr] of map.entries()) {
+      out.set(t, {
+        veloAvg: mean(arr.map(r=>r.velo).filter(v=>Number.isFinite(v))),
+        ivbAvg: mean(arr.map(r=>r.ivb).filter(v=>Number.isFinite(v))),
+      });
+    }
+    return out;
+  }, [pitcher]);
+
   const columns = useMemo(() => ([
     { field: 'pitch', headerName: '#', width: 70, sortable: true },
     { field: 'type', headerName: 'Type', width: 120, sortable: true },
@@ -205,26 +266,37 @@ export default function PitchingLogsPage() {
     {
       field: 'bench', headerName: 'Bench', width: 220, sortable: false,
       renderCell: (params) => {
-        if (!FEATURE_BENCHMARK_BADGES) return null;
         const t = params.row?.type;
-        const v = params.row?.velo;
-        const i = params.row?.ivb;
+        const agg = seasonAggByType.get(t);
+        const v = agg?.veloAvg;
+        const i = agg?.ivbAvg;
         const b = getBench(BENCH_LEVEL, t);
         const dv = b?.p50Velo != null ? delta(v, b.p50Velo) : null;
         const di = b?.p50IVB != null ? delta(i, b.p50IVB) : null;
-        if (!Number.isFinite(dv) && !Number.isFinite(di)) return null;
         const muted = { color:'#94a3b8', fontSize: 11 };
-        return (
+        const text = (
           <span style={muted}>
             {Number.isFinite(dv) ? `ΔVelo ${dv >= 0 ? `+${dv.toFixed(1)}` : dv.toFixed(1)}` : ''}
             {Number.isFinite(dv) && Number.isFinite(di) ? ' • ' : ''}
             {Number.isFinite(di) ? `ΔIVB ${di >= 0 ? `+${di.toFixed(1)}` : di.toFixed(1)}` : ''}
-            {` vs ${BENCH_LEVEL}`}
+            {(Number.isFinite(dv) || Number.isFinite(di)) ? ` vs ${BENCH_LEVEL}` : ''}
           </span>
+        );
+        if (!FEATURE_BENCHMARK_BADGES || (!Number.isFinite(dv) && !Number.isFinite(di))) return text;
+        const parts = [];
+        if (Number.isFinite(v) && Number.isFinite(b?.p50Velo) && Number.isFinite(dv)) {
+          parts.push(`Velo\nPlayer: ${v.toFixed(1)} mph\n${BENCH_LEVEL} p50: ${b.p50Velo.toFixed?.(1) ?? b.p50Velo} mph\nΔVelo: ${dv >= 0 ? `+${dv.toFixed(1)}` : dv.toFixed(1)}`);
+        }
+        if (Number.isFinite(i) && Number.isFinite(b?.p50IVB) && Number.isFinite(di)) {
+          parts.push(`IVB\nPlayer: ${i.toFixed(1)} in\n${BENCH_LEVEL} p50: ${b.p50IVB.toFixed?.(1) ?? b.p50IVB} in\nΔIVB: ${di >= 0 ? `+${di.toFixed(1)}` : di.toFixed(1)}`);
+        }
+        const content = parts.join('\n\n');
+        return (
+          <Tooltip content={content}>{text}</Tooltip>
         );
       }
     }
-  ]), []);
+  ]), [seasonAggByType]);
 
   return (
     <div className="pagePitchingLogs">
