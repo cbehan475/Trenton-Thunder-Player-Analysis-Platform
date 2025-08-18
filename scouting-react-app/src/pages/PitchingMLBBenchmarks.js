@@ -1,6 +1,7 @@
 // src/pages/PitchingMLBBenchmarks.js
 import React, { useMemo, useState } from 'react';
-import { PITCHING_BENCHMARKS, PITCHING_BENCHMARKS_VERSION } from './pitchingBenchmarksByLevel.js';
+import { PITCHING_BENCHMARKS_VERSION } from './pitchingBenchmarksByLevel.js';
+import { pitchingBenchmarksByLevel } from '../lib/pitchingBenchmarksByLevel.js';
 
 const gold = '#FFB800';
 
@@ -34,7 +35,15 @@ const styles = {
 };
 
 export default function PitchingMLBBenchmarks() {
-  const [selectedLevel, setSelectedLevel] = useState('MLB');
+  // Build level options from data keys, sorted per required order
+  const desiredOrder = ['MLB','AAA','AA','A+','A'];
+  const levelOptions = useMemo(() => {
+    const keys = Object.keys(pitchingBenchmarksByLevel || {});
+    const ordered = desiredOrder.filter(k => keys.includes(k));
+    const extras = keys.filter(k => !desiredOrder.includes(k)).sort();
+    return [...ordered, ...extras];
+  }, []);
+  const [selectedLevel, setSelectedLevel] = useState(() => levelOptions.includes('MLB') ? 'MLB' : (levelOptions[0] || 'MLB'));
 
   // Lock to Pro Dark preset via CSS variables on page root
   const rootStyle = useMemo(() => ({
@@ -58,7 +67,7 @@ export default function PitchingMLBBenchmarks() {
     sweeper: 'Sweeper',
   };
 
-  const levelData = PITCHING_BENCHMARKS[selectedLevel];
+  const levelData = pitchingBenchmarksByLevel[selectedLevel];
   const rows = useMemo(() => {
     if (!levelData) return [];
     return keyOrder
@@ -113,11 +122,9 @@ export default function PitchingMLBBenchmarks() {
           <div style={styles.controls} aria-label="Level Selector">
             <span style={{ fontSize: 12, color: 'var(--muted)' }}>Level:</span>
             <select value={selectedLevel} onChange={(e)=>setSelectedLevel(e.target.value)} style={styles.select}>
-              <option value="MLB">MLB</option>
-              <option value="AAA">AAA</option>
-              <option value="AA">AA</option>
-              <option value="A+">A+</option>
-              <option value="A">A</option>
+              {levelOptions.map((lvl) => (
+                <option key={lvl} value={lvl}>{lvl}</option>
+              ))}
             </select>
           </div>
         </div>
