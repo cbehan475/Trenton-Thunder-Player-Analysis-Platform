@@ -3,8 +3,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { PITCHING_BENCHMARKS_VERSION } from './pitchingBenchmarksByLevel.js';
 import { pitchingBenchmarksByLevel } from '../lib/pitchingBenchmarksByLevel.js';
 import { validateBenchmarks } from '../lib/validateBenchmarks.js';
-import { PITCHERS_SEASON_AGG } from '../data/pitchersSeasonAggregates.js';
-import { getPitcherSeasonAgg, FEATURE_BENCHMARK_BADGES } from '../lib/benchmarks.js';
+import { PITCHERS_SEASON_AGG, PITCHERS_AGG_VERSION } from '../data/pitchersSeasonAggregates.js';
+import { getPitcherSeasonAgg, FEATURE_BENCHMARK_BADGES, percentileFromBand } from '../lib/benchmarks.js';
 import { FEATURE_AGG_FROM_LOGS, getSeasonAggFromLogsCached } from '../lib/seasonAggCache.js';
 
 // Local dev flag (scoped to this page only)
@@ -31,6 +31,7 @@ const styles = {
   cardHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   cardName: { fontWeight: 900, color: gold, letterSpacing: 0.2 },
   badge: { display: 'inline-block', padding: '3px 8px', borderRadius: 999, background: 'rgba(255,184,0,0.12)', color: gold, fontWeight: 800, fontSize: 12 },
+  pctBadge: { display: 'inline-block', padding: '2px 6px', borderRadius: 999, background: 'rgba(148,163,184,0.15)', color: 'var(--muted)', fontWeight: 800, fontSize: 11 },
   cardBodyRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', color: 'var(--text)', marginTop: 6 },
   small: { color: 'var(--muted)', fontSize: 12 },
   footIcon: { marginLeft: 6, color: 'var(--muted)', cursor: 'help' },
@@ -156,6 +157,27 @@ export default function PitchingMLBBenchmarks() {
   const fmtNum = (v, digits=1) => (v===null || v===undefined || Number.isNaN(Number(v))) ? '—' : Number(v).toFixed(digits);
   const sign = (v) => (v>0?`+${v}`:`${v}`);
 
+  // Percentile helpers
+  function velBandToPcts(band, p50Override) {
+    if (!Array.isArray(band) || band.length !== 2) return null;
+    const [min, max] = band;
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
+    const p25 = min + 0.25 * (max - min);
+    const p75 = min + 0.75 * (max - min);
+    const p50 = Number.isFinite(p50Override) ? p50Override : (min + max) / 2;
+    return { p25, p50, p75 };
+  }
+  function ivbBandApprox(p50) {
+    if (!Number.isFinite(p50)) return null;
+    const span = Math.abs(p50) * 0.25;
+    return { p25: p50 - span, p50, p75: p50 + span };
+  }
+  function hbBandApprox(p50) {
+    if (!Number.isFinite(p50)) return null;
+    const span = Math.abs(p50) * 0.25;
+    return { p25: p50 - span, p50, p75: p50 + span };
+  }
+
   // Pitcher options sorted by last name (computed agg preferred)
   const pitcherOptions = useMemo(() => {
     const source = hasComputedAgg ? Object.values(pitchersAgg) : (PITCHERS_SEASON_AGG || []);
@@ -195,10 +217,10 @@ export default function PitchingMLBBenchmarks() {
             <div style={styles.sub}>Reference ranges for MLB pitch traits (velo, IVB, HB, command).</div>
             <div style={styles.meta}>
               Benchmarks: {selectedLevel} season ranges
-              {PITCHING_BENCHMARKS_VERSION ? ` • version ${PITCHING_BENCHMARKS_VERSION}` : ''}
-              {' • edit in '}<code style={{ color: 'var(--text)' }}>pitchingBenchmarksByLevel.js</code>
+              {PITCHING_BENCHMARKS_VERSION ? ` \u000b• version ${PITCHING_BENCHMARKS_VERSION}` : ''}
+              {' \u000b• edit in '}<code style={{ color: 'var(--text)' }}>pitchingBenchmarksByLevel.js</code>
               <div style={{ marginTop: 4 }}>
-                <span style={{ color:'var(--muted)' }}>Source: {hasComputedAgg ? 'season logs (first half)' : 'static aggregates'}</span>
+                <span style={{ color:'var(--muted)' }}>Source: first-half aggregates • version {PITCHERS_AGG_VERSION}</span>
               </div>
             </div>
           </div>
@@ -240,6 +262,67 @@ export default function PitchingMLBBenchmarks() {
                 Export JSON
               </button>
             )}
+            <button
+              type="button"
+              style={{ ...styles.btn, marginLeft: 8 }}
+              onClick={() => {
+                // Build CSV from current table state
+                const rowsOut = [];
+                const header = [
+                  'Pitch Type','Velocity (mph)','IVB (in)','HB (in)','Command',
+                  'Player p50 Velo','Player p50 IVB','Player p50 HB',
+                  'Delta Velo','Delta IVB','Delta HB',
+                  'Velo %ile','IVB %ile','HB %ile'
+                ];
+                rowsOut.push(header);
+                (sorted || []).forEach((r) => {
+                  let player=null, dV=null, dI=null, dH=null, pV=null, pI=null, pH=null;
+                  if (selectedPitcherId) {
+                    player = getPlayerAgg(selectedPitcherId, r.key);
+                    if (player) {
+                      if (Number.isFinite(r.p50Velo) && Number.isFinite(player.p50Velo)) dV = player.p50Velo - r.p50Velo;
+                      if (Number.isFinite(r.p50IVB) && Number.isFinite(player.p50IVB)) dI = player.p50IVB - r.p50IVB;
+                      if (Number.isFinite(r.p50HB)  && Number.isFinite(player.p50HB))  dH = player.p50HB  - r.p50HB;
+                      const vb = velBandToPcts(r.velo, r.p50Velo);
+                      if (vb && Number.isFinite(player.p50Velo)) pV = Math.round(percentileFromBand(player.p50Velo, vb.p25, vb.p50, vb.p75));
+                      const ib = ivbBandApprox(Number.isFinite(r.p50IVB)?r.p50IVB:r.ivb);
+                      if (ib && Number.isFinite(player.p50IVB)) pI = Math.round(percentileFromBand(player.p50IVB, ib.p25, ib.p50, ib.p75));
+                      const hb = hbBandApprox(Number.isFinite(r.p50HB)?r.p50HB:r.hb);
+                      if (hb && Number.isFinite(player.p50HB)) pH = Math.round(percentileFromBand(player.p50HB, hb.p25, hb.p50, hb.p75));
+                    }
+                  }
+                  rowsOut.push([
+                    r.type,
+                    fmtBand(r.velo),
+                    fmtVal(r.ivb),
+                    fmtVal(r.hb),
+                    fmtVal(r.command),
+                    player ? fmtNum(player.p50Velo,1) : '',
+                    player ? fmtNum(player.p50IVB,1) : '',
+                    player ? fmtNum(player.p50HB,1) : '',
+                    dV!=null ? dV.toFixed(1) : '',
+                    dI!=null ? dI.toFixed(1) : '',
+                    dH!=null ? dH.toFixed(1) : '',
+                    pV!=null ? String(pV) : '',
+                    pI!=null ? String(pI) : '',
+                    pH!=null ? String(pH) : ''
+                  ]);
+                });
+                const csv = rowsOut.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                const pitcherLabel = selectedPitcherId ? (pitcherOptions.find(p=>p.value===selectedPitcherId)?.label || 'Player') : 'All';
+                a.href = url;
+                a.download = `pitching-benchmarks_${selectedLevel}_${pitcherLabel.replace(/\s+/g,'-')}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              }}
+            >
+              Export CSV
+            </button>
           </div>
         </div>
 
@@ -285,6 +368,12 @@ export default function PitchingMLBBenchmarks() {
                     if (!player) return null;
                     const dV = (FEATURE_BENCHMARK_BADGES && Number.isFinite(r.p50Velo) && Number.isFinite(player.p50Velo)) ? (player.p50Velo - r.p50Velo) : null;
                     const dI = (FEATURE_BENCHMARK_BADGES && Number.isFinite(r.p50IVB) && Number.isFinite(player.p50IVB)) ? (player.p50IVB - r.p50IVB) : null;
+                    // Percentiles for cards: velo + ivb only
+                    let pctV = null, pctI = null;
+                    const vb = velBandToPcts(r.velo, r.p50Velo);
+                    if (vb && Number.isFinite(player.p50Velo)) pctV = Math.round(percentileFromBand(player.p50Velo, vb.p25, vb.p50, vb.p75));
+                    const ib = ivbBandApprox(Number.isFinite(r.p50IVB)?r.p50IVB:r.ivb);
+                    if (ib && Number.isFinite(player.p50IVB)) pctI = Math.round(percentileFromBand(player.p50IVB, ib.p25, ib.p50, ib.p75));
                     return (
                       <div style={{ marginTop: 8, color:'var(--muted)', fontSize:12 }}>
                         <div>Player p50 Velo: {fmtNum(player.p50Velo, 1)} mph</div>
@@ -294,6 +383,13 @@ export default function PitchingMLBBenchmarks() {
                           <div style={{ marginTop:6 }}>
                             <span style={{ border:'1px solid rgba(255,255,255,0.18)', borderRadius:999, padding:'2px 6px' }}>
                               {dV!=null ? `ΔVelo ${sign(dV.toFixed(1))}` : ''}{(dV!=null && dI!=null)?' • ':''}{dI!=null ? `ΔIVB ${sign(dI.toFixed(1))}` : ''}
+                            </span>
+                          </div>
+                        )}
+                        {(pctV!=null || pctI!=null) && (
+                          <div style={{ marginTop:6 }}>
+                            <span style={styles.pctBadge}>
+                              {pctV!=null ? `Velo ${pctV}th` : ''}{(pctV!=null && pctI!=null)?' • ':''}{pctI!=null ? `IVB ${pctI}th` : ''}
                             </span>
                           </div>
                         )}
@@ -346,6 +442,16 @@ export default function PitchingMLBBenchmarks() {
                       const dV = (FEATURE_BENCHMARK_BADGES && Number.isFinite(r.p50Velo) && player && Number.isFinite(player.p50Velo)) ? (player.p50Velo - r.p50Velo) : null;
                       const dI = (FEATURE_BENCHMARK_BADGES && Number.isFinite(r.p50IVB) && player && Number.isFinite(player.p50IVB)) ? (player.p50IVB - r.p50IVB) : null;
                       const dH = (FEATURE_BENCHMARK_BADGES && Number.isFinite(r.p50HB) && player && Number.isFinite(player.p50HB)) ? (player.p50HB - r.p50HB) : null;
+                      // Percentiles (table: include HB)
+                      let pctV=null, pctI=null, pctH=null;
+                      if (player) {
+                        const vb = velBandToPcts(r.velo, r.p50Velo);
+                        if (vb && Number.isFinite(player.p50Velo)) pctV = Math.round(percentileFromBand(player.p50Velo, vb.p25, vb.p50, vb.p75));
+                        const ib = ivbBandApprox(Number.isFinite(r.p50IVB)?r.p50IVB:r.ivb);
+                        if (ib && Number.isFinite(player.p50IVB)) pctI = Math.round(percentileFromBand(player.p50IVB, ib.p25, ib.p50, ib.p75));
+                        const hb = hbBandApprox(Number.isFinite(r.p50HB)?r.p50HB:r.hb);
+                        if (hb && Number.isFinite(player.p50HB)) pctH = Math.round(percentileFromBand(player.p50HB, hb.p25, hb.p50, hb.p75));
+                      }
                       return (
                         <>
                           <td style={styles.td}>{playerCell}</td>
@@ -359,6 +465,17 @@ export default function PitchingMLBBenchmarks() {
                                 {dH!=null ? `ΔHB ${sign(dH.toFixed(1))}` : ''}
                               </span>
                             ) : '—'}
+                            {(pctV!=null || pctI!=null || pctH!=null) && (
+                              <div style={{ marginTop:6 }}>
+                                <span style={styles.pctBadge}>
+                                  {pctV!=null ? `Velo ${pctV}th` : ''}
+                                  {(pctV!=null && (pctI!=null || pctH!=null)) ? ' • ' : ''}
+                                  {pctI!=null ? `IVB ${pctI}th` : ''}
+                                  {(pctI!=null && pctH!=null) ? ' • ' : ''}
+                                  {pctH!=null ? `HB ${pctH}th` : ''}
+                                </span>
+                              </div>
+                            )}
                           </td>
                         </>
                       );
