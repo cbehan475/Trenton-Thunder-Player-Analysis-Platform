@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
-import { Box, Card, CardContent } from '@mui/material';
+import { Card, CardContent } from '@mui/material';
 
 export default function HittersTable({ hittersData }) {
   const columns = [
@@ -46,33 +46,52 @@ export default function HittersTable({ hittersData }) {
   }, [hittersData]);
 
   return (
-    <Card elevation={3} sx={{ mb: 4, borderRadius: 3 }}>
-      <CardContent>
+    <Card elevation={0} sx={{ mb: 3, borderRadius: 2, bgcolor: '#0f172a', border: '1px solid #1f2937' }}>
+      <CardContent sx={{ p: 0 }}>
         <DataGrid
           autoHeight
+          density="compact"
           rows={rows}
           columns={columns}
-          pageSize={25}
-          rowsPerPageOptions={[10, 25, 50]}
-          disableSelectionOnClick
+          pagination
+          pageSizeOptions={[10, 25, 50]}
+          initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
+          disableRowSelectionOnClick
           getRowClassName={(params) => `hitter-${params.row.hitter.replace(/\s+/g, '-')}`}
           sx={{
-            '& .MuiDataGrid-row:nth-of-type(2n)': {
-              backgroundColor: '#f9f9f9'
-            },
-            background: '#fff',
-            borderRadius: 2,
+            color: '#e5e7eb',
+            bgcolor: '#0f172a',
+            border: 0,
+            '& .MuiDataGrid-overlay': { bgcolor: '#0f172a' },
             '& .MuiDataGrid-columnHeaders': {
               position: 'sticky',
               top: 0,
-              backgroundColor: 'background.paper',
               zIndex: 1,
+              bgcolor: '#111827',
+              color: '#e5e7eb',
+              borderBottom: '1px solid #1f2937',
+            },
+            '& .MuiDataGrid-columnHeaderTitle': {
+              fontWeight: 700,
+            },
+            '& .MuiDataGrid-row': {
+              borderBottom: '1px solid #1f2937',
+            },
+            '& .MuiDataGrid-row:nth-of-type(2n)': {
+              bgcolor: '#0b1222',
             },
             '& .MuiDataGrid-row:hover': {
-              backgroundColor: 'rgba(25, 118, 210, 0.08)',
+              bgcolor: '#162036',
             },
-            '& .MuiDataGrid-root': {
-              overflowX: 'auto',
+            '& .MuiTablePagination-root': {
+              color: '#cbd5e1',
+            },
+            '& .MuiDataGrid-cell': {
+              borderColor: '#1f2937',
+            },
+            '& .MuiDataGrid-footerContainer': {
+              bgcolor: '#0f172a',
+              borderTop: '1px solid #1f2937',
             },
           }}
         />

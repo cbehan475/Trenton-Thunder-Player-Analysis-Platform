@@ -70,48 +70,52 @@ export default function HittingLogsPage() {
   }
 
   return (
-    <Box sx={{ width: '100%', minHeight: '100vh', bgcolor: '#f5f6fa', py: isMobile ? 2 : 5 }}>
+    <Box sx={{ width: '100%', minHeight: '100vh', bgcolor: '#0b1426', py: isMobile ? 2 : 5 }}>
       <Typography
         variant={isMobile ? 'h5' : 'h4'}
         align="center"
         sx={{
           color: '#FFD700',
-          textShadow: '0 2px 8px #001f4d, 0 1px 0 #001f4d',
-          fontWeight: 700,
-          mb: isMobile ? 2 : 4,
-          letterSpacing: 1.5,
+          textShadow: '0 2px 8px rgba(0,0,0,0.6)',
+          fontWeight: 800,
+          mb: isMobile ? 2 : 3,
+          letterSpacing: 1.2,
         }}
       >
         Hitting Logs
       </Typography>
       <Grid
         container
-        spacing={isMobile ? 1 : 3}
+        spacing={isMobile ? 1 : 2}
         justifyContent="center"
         alignItems="center"
         sx={{
-          maxWidth: 900,
+          maxWidth: 1000,
           mx: 'auto',
-          mb: isMobile ? 2 : 4,
+          mb: isMobile ? 2 : 3,
           px: isMobile ? 1 : 0,
         }}
       >
         <Grid item xs={12}>
-          <Grid container spacing={1} justifyContent="center" alignItems="center">
+          <Grid container spacing={0.75} justifyContent="center" alignItems="center">
             {GAME_DATES.map(date => (
               <Grid item key={date}>
                 <Button
+                  size="small"
                   variant={selectedDate === date ? 'contained' : 'outlined'}
                   onClick={() => setSelectedDate(date)}
                   sx={{
-                    minWidth: 68,
-                    fontWeight: 600,
-                    bgcolor: selectedDate === date ? '#FFD700' : undefined,
-                    color: selectedDate === date ? '#001f4d' : '#001f4d',
-                    borderColor: '#FFD700',
+                    minWidth: 58,
+                    height: 28,
+                    lineHeight: 1,
+                    px: 1,
+                    fontWeight: 700,
+                    bgcolor: selectedDate === date ? '#FFD700' : 'transparent',
+                    color: selectedDate === date ? '#0b1426' : '#cdd7e3',
+                    borderColor: '#2a3a52',
                     '&:hover': {
-                      bgcolor: '#FFE066',
-                      borderColor: '#FFD700',
+                      bgcolor: selectedDate === date ? '#FFE066' : 'rgba(255,215,0,0.1)',
+                      borderColor: '#3b4f6a',
                     },
                   }}
                 >
@@ -145,11 +149,11 @@ export default function HittingLogsPage() {
         sx={{
           maxWidth: 1100,
           mx: 'auto',
-          bgcolor: '#fff',
-          borderRadius: 4,
-          boxShadow: '0 2px 12px 0 rgba(0,32,91,0.08)',
-          p: isMobile ? 1 : 4,
-          border: '1px solid #e0e0e0',
+          bgcolor: '#0f172a',
+          borderRadius: 3,
+          boxShadow: '0 6px 24px rgba(0,0,0,0.35)',
+          p: isMobile ? 1 : 3,
+          border: '1px solid #1f2937',
           minHeight: 300,
         }}
       >

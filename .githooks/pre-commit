@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Block commits that modify data logs under scouting-react-app/src/data/logs/**
+# Allow bypass with ALLOW_LOGS_COMMIT=1
+
+if [[ "$ALLOW_LOGS_COMMIT" == "1" ]]; then
+  exit 0
+fi
+
+# List staged files (Added, Copied, Modified, Renamed)
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+
+if echo "$staged" | grep -E '^scouting-react-app/src/data/logs/' >/dev/null 2>&1; then
+  echo "\n[pre-commit] Blocked: staged changes include files under scouting-react-app/src/data/logs/**" 1>&2
+  echo "Set ALLOW_LOGS_COMMIT=1 to bypass intentionally (not recommended)." 1>&2
+  echo "Staged matches:" 1>&2
+  echo "$staged" | grep -E '^scouting-react-app/src/data/logs/' 1>&2
+  exit 1
+fi
+
+exit 0
