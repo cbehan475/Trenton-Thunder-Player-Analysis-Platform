@@ -1,0 +1,1100 @@
+[
+  {
+    "id": "jude-abbadessa",
+    "name": "Jude Abbadessa",
+    "pitches": {
+      "fourSeam": {
+        "p50Velo": 92.55,
+        "p50IVB": 15.7,
+        "p50HB": 9.2,
+        "n": 42
+      },
+      "sinker": {
+        "p50Velo": 92.1,
+        "p50IVB": 10.4,
+        "p50HB": 15.2,
+        "n": 173
+      },
+      "slider": {
+        "p50Velo": 82.5,
+        "p50IVB": 1.55,
+        "p50HB": 7,
+        "n": 158
+      },
+      "changeup": {
+        "p50Velo": 86.1,
+        "p50IVB": 5.3,
+        "p50HB": 15.1,
+        "n": 23
+      },
+      "curveball": {
+        "p50Velo": 80.8,
+        "p50IVB": -3.2,
+        "p50HB": 9.8,
+        "n": 17
+      }
+    }
+  },
+  {
+    "id": "jj-almeda",
+    "name": "JJ Almeda",
+    "pitches": {
+      "slider": {
+        "p50Velo": 80.65,
+        "p50IVB": 0.15000000000000002,
+        "p50HB": 4.65,
+        "n": 22
+      },
+      "fourSeam": {
+        "p50Velo": 89.3,
+        "p50IVB": 18.5,
+        "p50HB": 5.9,
+        "n": 29
+      },
+      "cutter": {
+        "p50Velo": 88.3,
+        "p50IVB": 16.6,
+        "p50HB": 2.9,
+        "n": 3
+      },
+      "curveball": {
+        "p50Velo": 79.05000000000001,
+        "p50IVB": -1.2000000000000002,
+        "p50HB": 5.55,
+        "n": 34
+      },
+      "sinker": {
+        "p50Velo": 88.3,
+        "p50IVB": 13,
+        "p50HB": 15.7,
+        "n": 1
+      }
+    }
+  },
+  {
+    "id": "joe-ariola",
+    "name": "Joe Ariola",
+    "pitches": {
+      "fourSeam": {
+        "p50Velo": 91.55,
+        "p50IVB": 21.1,
+        "p50HB": 7.5,
+        "n": 72
+      },
+      "curveball": {
+        "p50Velo": 80.35,
+        "p50IVB": -16.65,
+        "p50HB": 5.800000000000001,
+        "n": 30
+      },
+      "sinker": {
+        "p50Velo": 91.4,
+        "p50IVB": 21.2,
+        "p50HB": 11.85,
+        "n": 6
+      },
+      "slider": {
+        "p50Velo": 84.8,
+        "p50IVB": 5.5,
+        "p50HB": 2.8,
+        "n": 25
+      },
+      "changeup": {
+        "p50Velo": 82.7,
+        "p50IVB": 4.8,
+        "p50HB": 11.2,
+        "n": 3
+      }
+    }
+  },
+  {
+    "id": "chris-billingsley",
+    "name": "Chris Billingsley",
+    "pitches": {
+      "fourSeam": {
+        "p50Velo": 93.3,
+        "p50IVB": 15.45,
+        "p50HB": 5.85,
+        "n": 86
+      },
+      "slider": {
+        "p50Velo": 83.8,
+        "p50IVB": 1,
+        "p50HB": 10.1,
+        "n": 37
+      },
+      "sinker": {
+        "p50Velo": 92.45,
+        "p50IVB": 10.399999999999999,
+        "p50HB": 12.5,
+        "n": 10
+      },
+      "curveball": {
+        "p50Velo": 80.5,
+        "p50IVB": -5.8,
+        "p50HB": 13.7,
+        "n": 9
+      },
+      "cutter": {
+        "p50Velo": 86.2,
+        "p50IVB": 8.5,
+        "p50HB": 8.4,
+        "n": 3
+      },
+      "changeup": {
+        "p50Velo": 85.75,
+        "p50IVB": 10.05,
+        "p50HB": 10.95,
+        "n": 8
+      }
+    }
+  },
+  {
+    "id": "jarrette-bonet",
+    "name": "Jarrette Bonet",
+    "pitches": {
+      "sinker": {
+        "p50Velo": 93.25,
+        "p50IVB": 13.45,
+        "p50HB": 15.149999999999999,
+        "n": 68
+      },
+      "fourSeam": {
+        "p50Velo": 93.9,
+        "p50IVB": 17.65,
+        "p50HB": 9.5,
+        "n": 90
+      },
+      "changeup": {
+        "p50Velo": 87.1,
+        "p50IVB": 8.6,
+        "p50HB": 12.2,
+        "n": 9
+      },
+      "cutter": {
+        "p50Velo": 89.2,
+        "p50IVB": 5.2,
+        "p50HB": 2.8,
+        "n": 37
+      },
+      "slider": {
+        "p50Velo": 84,
+        "p50IVB": 0.9,
+        "p50HB": 7.9,
+        "n": 19
+      }
+    }
+  },
+  {
+    "id": "collin-bosley-smith",
+    "name": "Collin Bosley-Smith",
+    "pitches": {
+      "fourSeam": {
+        "p50Velo": 92.5,
+        "p50IVB": 20.6,
+        "p50HB": 5.9,
+        "n": 113
+      },
+      "slider": {
+        "p50Velo": 81.75,
+        "p50IVB": -1.35,
+        "p50HB": 9.05,
+        "n": 16
+      },
+      "curveball": {
+        "p50Velo": 79.9,
+        "p50IVB": -3.45,
+        "p50HB": 11.350000000000001,
+        "n": 24
+      },
+      "changeup": {
+        "p50Velo": 82.2,
+        "p50IVB": 8,
+        "p50HB": 14.7,
+        "n": 14
+      }
+    }
+  },
+  {
+    "id": "ryan-calvert",
+    "name": "Ryan Calvert",
+    "pitches": {
+      "fourSeam": {
+        "p50Velo": 89.95,
+        "p50IVB": 16.95,
+        "p50HB": 10,
+        "n": 78
+      },
+      "curveball": {
+        "p50Velo": 76.25,
+        "p50IVB": -12.2,
+        "p50HB": 7.45,
+        "n": 54
+      },
+      "changeup": {
+        "p50Velo": 78.65,
+        "p50IVB": 7.75,
+        "p50HB": 11.45,
+        "n": 4
+      },
+      "slider": {
+        "p50Velo": 83.55,
+        "p50IVB": 8.1,
+        "p50HB": 2.75,
+        "n": 46
+      },
+      "sinker": {
+        "p50Velo": 89.7,
+        "p50IVB": 14.2,
+        "p50HB": 14,
+        "n": 15
+      },
+      "cutter": {
+        "p50Velo": 85.4,
+        "p50IVB": 10.55,
+        "p50HB": 1.35,
+        "n": 14
+      }
+    }
+  },
+  {
+    "id": "john-carver",
+    "name": "John Carver",
+    "pitches": {
+      "fourSeam": {
+        "p50Velo": 91.9,
+        "p50IVB": 18.049999999999997,
+        "p50HB": 9.649999999999999,
+        "n": 54
+      },
+      "changeup": {
+        "p50Velo": 84.2,
+        "p50IVB": 3,
+        "p50HB": 17,
+        "n": 45
+      },
+      "slider": {
+        "p50Velo": 82.5,
+        "p50IVB": 2.4,
+        "p50HB": 2.2,
+        "n": 23
+      },
+      "curveball": {
+        "p50Velo": 79.6,
+        "p50IVB": -1.7,
+        "p50HB": 7.2,
+        "n": 5
+      },
+      "sinker": {
+        "p50Velo": 91.1,
+        "p50IVB": 14.7,
+        "p50HB": 15.3,
+        "n": 6
+      }
+    }
+  },
+  {
+    "id": "tommy-case",
+    "name": "Tommy Case",
+    "pitches": {
+      "fourSeam": {
+        "p50Velo": 91.8,
+        "p50IVB": 20.1,
+        "p50HB": 11.5,
+        "n": 47
+      },
+      "curveball": {
+        "p50Velo": 76.7,
+        "p50IVB": -13.25,
+        "p50HB": 12.9,
+        "n": 22
+      },
+      "sinker": {
+        "p50Velo": 92.15,
+        "p50IVB": 18.9,
+        "p50HB": 15.9,
+        "n": 7
+      },
+      "changeup": {
+        "p50Velo": 85.44999999999999,
+        "p50IVB": 7.2,
+        "p50HB": 15.7,
+        "n": 10
+      }
+    }
+  },
+  {
+    "id": "luke-delongchamp",
+    "name": "Luke Delongchamp",
+    "pitches": {
+      "sinker": {
+        "p50Velo": 88.1,
+        "p50IVB": 13.6,
+        "p50HB": 16.55,
+        "n": 16
+      },
+      "changeup": {
+        "p50Velo": 83.5,
+        "p50IVB": 12.25,
+        "p50HB": 14.95,
+        "n": 92
+      },
+      "curveball": {
+        "p50Velo": 76.85,
+        "p50IVB": 2.4,
+        "p50HB": 1.2999999999999998,
+        "n": 36
+      },
+      "slider": {
+        "p50Velo": 78.9,
+        "p50IVB": 4.5,
+        "p50HB": 2,
+        "n": 9
+      }
+    }
+  },
+  {
+    "id": "bryson-dudley",
+    "name": "Bryson Dudley",
+    "pitches": {
+      "fourSeam": {
+        "p50Velo": 95,
+        "p50IVB": 19.7,
+        "p50HB": 9.9,
+        "n": 65
+      },
+      "sinker": {
+        "p50Velo": 95.2,
+        "p50IVB": 17,
+        "p50HB": 14.1,
+        "n": 11
+      },
+      "curveball": {
+        "p50Velo": 81.3,
+        "p50IVB": -3.9499999999999997,
+        "p50HB": 3.45,
+        "n": 8
+      },
+      "cutter": {
+        "p50Velo": 87.3,
+        "p50IVB": 4.85,
+        "p50HB": 0.8,
+        "n": 26
+      },
+      "slider": {
+        "p50Velo": 83.2,
+        "p50IVB": 3.1,
+        "p50HB": 2.8,
+        "n": 23
+      },
+      "changeup": {
+        "p50Velo": 75.3,
+        "p50IVB": 9.4,
+        "p50HB": 17.6,
+        "n": 5
+      }
+    }
+  },
+  {
+    "id": "noah-edders",
+    "name": "Noah Edders",
+    "pitches": {
+      "fourSeam": {
+        "p50Velo": 92,
+        "p50IVB": 16.05,
+        "p50HB": 7.35,
+        "n": 32
+      },
+      "sinker": {
+        "p50Velo": 91.7,
+        "p50IVB": 13.5,
+        "p50HB": 14.4,
+        "n": 13
+      },
+      "slider": {
+        "p50Velo": 82.5,
+        "p50IVB": 5,
+        "p50HB": 5.5,
+        "n": 29
+      },
+      "changeup": {
+        "p50Velo": 87.6,
+        "p50IVB": 7.6,
+        "p50HB": 17.55,
+        "n": 4
+      }
+    }
+  },
+  {
+    "id": "sean-finn",
+    "name": "Sean Finn",
+    "pitches": {
+      "sinker": {
+        "p50Velo": 92,
+        "p50IVB": 16.6,
+        "p50HB": 14.2,
+        "n": 39
+      },
+      "changeup": {
+        "p50Velo": 85.2,
+        "p50IVB": 6.300000000000001,
+        "p50HB": 13.2,
+        "n": 10
+      },
+      "curveball": {
+        "p50Velo": 80.8,
+        "p50IVB": -2.7,
+        "p50HB": 9.5,
+        "n": 13
+      },
+      "fourSeam": {
+        "p50Velo": 91.9,
+        "p50IVB": 18.7,
+        "p50HB": 11.9,
+        "n": 19
+      },
+      "slider": {
+        "p50Velo": 81.25,
+        "p50IVB": 0.44999999999999996,
+        "p50HB": 10.75,
+        "n": 6
+      }
+    }
+  },
+  {
+    "id": "nick-frusco",
+    "name": "Nick Frusco",
+    "pitches": {
+      "fourSeam": {
+        "p50Velo": 88.2,
+        "p50IVB": 17.9,
+        "p50HB": 5.5,
+        "n": 49
+      },
+      "slider": {
+        "p50Velo": 84.75,
+        "p50IVB": 13.95,
+        "p50HB": 7.2,
+        "n": 10
+      },
+      "curveball": {
+        "p50Velo": 78.4,
+        "p50IVB": -12.8,
+        "p50HB": 9.8,
+        "n": 9
+      },
+      "changeup": {
+        "p50Velo": 86.94999999999999,
+        "p50IVB": 17.5,
+        "p50HB": 10.7,
+        "n": 2
+      }
+    }
+  },
+  {
+    "id": "kai-fyke",
+    "name": "Kai Fyke",
+    "pitches": {
+      "fourSeam": {
+        "p50Velo": 91.7,
+        "p50IVB": 14.1,
+        "p50HB": 6.6,
+        "n": 105
+      },
+      "slider": {
+        "p50Velo": 82.9,
+        "p50IVB": -3.1,
+        "p50HB": 3,
+        "n": 25
+      },
+      "cutter": {
+        "p50Velo": 88.4,
+        "p50IVB": 9.5,
+        "p50HB": 2.1,
+        "n": 18
+      },
+      "curveball": {
+        "p50Velo": 79.9,
+        "p50IVB": -5.75,
+        "p50HB": 2.4,
+        "n": 36
+      },
+      "changeup": {
+        "p50Velo": 85.3,
+        "p50IVB": 4.7,
+        "p50HB": 10.3,
+        "n": 35
+      },
+      "sinker": {
+        "p50Velo": 90.9,
+        "p50IVB": 10.4,
+        "p50HB": 12.2,
+        "n": 17
+      }
+    }
+  },
+  {
+    "id": "miles-garrett",
+    "name": "Miles Garrett",
+    "pitches": {
+      "sinker": {
+        "p50Velo": 91.1,
+        "p50IVB": 14.75,
+        "p50HB": 14.8,
+        "n": 34
+      },
+      "slider": {
+        "p50Velo": 81.75,
+        "p50IVB": 3.1,
+        "p50HB": 1.65,
+        "n": 10
+      },
+      "fourSeam": {
+        "p50Velo": 89.1,
+        "p50IVB": 16,
+        "p50HB": 11.6,
+        "n": 5
+      },
+      "changeup": {
+        "p50Velo": 87.85,
+        "p50IVB": 10.600000000000001,
+        "p50HB": 14,
+        "n": 4
+      },
+      "curveball": {
+        "p50Velo": 80.7,
+        "p50IVB": 1.3,
+        "p50HB": 8.2,
+        "n": 1
+      }
+    }
+  },
+  {
+    "id": "cullen-horowicz",
+    "name": "Cullen Horowicz",
+    "pitches": {
+      "sinker": {
+        "p50Velo": 91.55,
+        "p50IVB": 11.3,
+        "p50HB": 17.799999999999997,
+        "n": 28
+      },
+      "slider": {
+        "p50Velo": 81.7,
+        "p50IVB": 3.2,
+        "p50HB": 1.6,
+        "n": 11
+      },
+      "cutter": {
+        "p50Velo": 86.75,
+        "p50IVB": 1,
+        "p50HB": 0.8,
+        "n": 4
+      },
+      "fourSeam": {
+        "p50Velo": 94.2,
+        "p50IVB": 18.8,
+        "p50HB": 11.9,
+        "n": 2
+      }
+    }
+  },
+  {
+    "id": "matthew-hoskins",
+    "name": "Matthew Hoskins",
+    "pitches": {
+      "fourSeam": {
+        "p50Velo": 95.1,
+        "p50IVB": 10.9,
+        "p50HB": 6,
+        "n": 25
+      },
+      "slider": {
+        "p50Velo": 82.6,
+        "p50IVB": 0.2,
+        "p50HB": 18,
+        "n": 9
+      },
+      "changeup": {
+        "p50Velo": 85.9,
+        "p50IVB": 10.9,
+        "p50HB": 12.9,
+        "n": 5
+      },
+      "sinker": {
+        "p50Velo": 93,
+        "p50IVB": 7.5,
+        "p50HB": 7.8,
+        "n": 1
+      },
+      "cutter": {
+        "p50Velo": 91.9,
+        "p50IVB": 7.5,
+        "p50HB": 0.3,
+        "n": 1
+      }
+    }
+  },
+  {
+    "id": "clayton-johnson",
+    "name": "Clayton Johnson",
+    "pitches": {
+      "sinker": {
+        "p50Velo": 94.5,
+        "p50IVB": 14.2,
+        "p50HB": 12.9,
+        "n": 29
+      },
+      "fourSeam": {
+        "p50Velo": 95,
+        "p50IVB": 17.6,
+        "p50HB": 7.8,
+        "n": 79
+      },
+      "slider": {
+        "p50Velo": 83.95,
+        "p50IVB": -5.800000000000001,
+        "p50HB": 12.45,
+        "n": 16
+      },
+      "curveball": {
+        "p50Velo": 83.6,
+        "p50IVB": -9.9,
+        "p50HB": 12.5,
+        "n": 11
+      }
+    }
+  },
+  {
+    "id": "gavin-king",
+    "name": "Gavin King",
+    "pitches": {
+      "fourSeam": {
+        "p50Velo": 92.5,
+        "p50IVB": 19.35,
+        "p50HB": 8.6,
+        "n": 286
+      },
+      "slider": {
+        "p50Velo": 82.6,
+        "p50IVB": -2.1,
+        "p50HB": 1.7,
+        "n": 15
+      },
+      "sinker": {
+        "p50Velo": 92.45,
+        "p50IVB": 14.7,
+        "p50HB": 14.2,
+        "n": 16
+      },
+      "curveball": {
+        "p50Velo": 80.8,
+        "p50IVB": -6.9,
+        "p50HB": 2,
+        "n": 45
+      },
+      "changeup": {
+        "p50Velo": 85.5,
+        "p50IVB": 11.3,
+        "p50HB": 14.2,
+        "n": 23
+      },
+      "cutter": {
+        "p50Velo": 88.5,
+        "p50IVB": 9.3,
+        "p50HB": 2.3,
+        "n": 34
+      }
+    }
+  },
+  {
+    "id": "cooper-mcgrath",
+    "name": "Cooper McGrath",
+    "pitches": {
+      "sinker": {
+        "p50Velo": 92.8,
+        "p50IVB": 9.25,
+        "p50HB": 10.25,
+        "n": 54
+      },
+      "cutter": {
+        "p50Velo": 87.2,
+        "p50IVB": 2.1,
+        "p50HB": 1.2,
+        "n": 36
+      },
+      "fourSeam": {
+        "p50Velo": 91.95,
+        "p50IVB": 10.75,
+        "p50HB": 6.05,
+        "n": 32
+      },
+      "curveball": {
+        "p50Velo": 81.25,
+        "p50IVB": -3.7,
+        "p50HB": 15.6,
+        "n": 4
+      },
+      "slider": {
+        "p50Velo": 84.45,
+        "p50IVB": 0.6,
+        "p50HB": 2.7,
+        "n": 42
+      }
+    }
+  },
+  {
+    "id": "luis-misla",
+    "name": "Luis Misla",
+    "pitches": {
+      "fourSeam": {
+        "p50Velo": 88.6,
+        "p50IVB": 15.7,
+        "p50HB": 5.449999999999999,
+        "n": 16
+      },
+      "slider": {
+        "p50Velo": 78.6,
+        "p50IVB": -4.7,
+        "p50HB": 7.3,
+        "n": 13
+      },
+      "changeup": {
+        "p50Velo": 88.2,
+        "p50IVB": 16.8,
+        "p50HB": 9.6,
+        "n": 5
+      }
+    }
+  },
+  {
+    "id": "paulo-noris",
+    "name": "Paulo Noris",
+    "pitches": {
+      "cutter": {
+        "p50Velo": 85.25,
+        "p50IVB": 16.5,
+        "p50HB": 3.6500000000000004,
+        "n": 58
+      },
+      "curveball": {
+        "p50Velo": 75.5,
+        "p50IVB": -0.7,
+        "p50HB": 7.6,
+        "n": 55
+      },
+      "fourSeam": {
+        "p50Velo": 85.7,
+        "p50IVB": 18.8,
+        "p50HB": 6.3,
+        "n": 27
+      },
+      "slider": {
+        "p50Velo": 83.3,
+        "p50IVB": 14,
+        "p50HB": 3.1,
+        "n": 22
+      },
+      "changeup": {
+        "p50Velo": 77.5,
+        "p50IVB": 8.4,
+        "p50HB": 16,
+        "n": 43
+      }
+    }
+  },
+  {
+    "id": "preston-prince",
+    "name": "Preston Prince",
+    "pitches": {
+      "fourSeam": {
+        "p50Velo": 89.9,
+        "p50IVB": 19.7,
+        "p50HB": 6.9,
+        "n": 58
+      },
+      "slider": {
+        "p50Velo": 83.7,
+        "p50IVB": 9.1,
+        "p50HB": 1.8,
+        "n": 47
+      },
+      "changeup": {
+        "p50Velo": 79.80000000000001,
+        "p50IVB": 5.15,
+        "p50HB": 12.95,
+        "n": 22
+      },
+      "sinker": {
+        "p50Velo": 90.2,
+        "p50IVB": 19.7,
+        "p50HB": 13,
+        "n": 3
+      }
+    }
+  },
+  {
+    "id": "andrew-ronne",
+    "name": "Andrew Ronne",
+    "pitches": {
+      "slider": {
+        "p50Velo": 82.7,
+        "p50IVB": -2.4,
+        "p50HB": 16.5,
+        "n": 87
+      },
+      "fourSeam": {
+        "p50Velo": 92.9,
+        "p50IVB": 14.4,
+        "p50HB": 6.5,
+        "n": 168
+      },
+      "sinker": {
+        "p50Velo": 92.9,
+        "p50IVB": 12.3,
+        "p50HB": 11.2,
+        "n": 15
+      },
+      "curveball": {
+        "p50Velo": 81.3,
+        "p50IVB": -6.300000000000001,
+        "p50HB": 14.4,
+        "n": 54
+      },
+      "cutter": {
+        "p50Velo": 85.5,
+        "p50IVB": 2.4,
+        "p50HB": 13.4,
+        "n": 1
+      },
+      "changeup": {
+        "p50Velo": 87.1,
+        "p50IVB": 9.6,
+        "p50HB": 18.55,
+        "n": 2
+      }
+    }
+  },
+  {
+    "id": "codi-scott",
+    "name": "Codi Scott",
+    "pitches": {
+      "fourSeam": {
+        "p50Velo": 88.3,
+        "p50IVB": 15.8,
+        "p50HB": 2.7,
+        "n": 59
+      },
+      "slider": {
+        "p50Velo": 83.3,
+        "p50IVB": 5.9,
+        "p50HB": 3.3,
+        "n": 85
+      },
+      "changeup": {
+        "p50Velo": 86.8,
+        "p50IVB": 9.9,
+        "p50HB": 12.2,
+        "n": 5
+      },
+      "curveball": {
+        "p50Velo": 73.5,
+        "p50IVB": -5.7,
+        "p50HB": 15.7,
+        "n": 7
+      }
+    }
+  },
+  {
+    "id": "zach-silfies",
+    "name": "Zach Silfies",
+    "pitches": {
+      "fourSeam": {
+        "p50Velo": 88.9,
+        "p50IVB": 12.4,
+        "p50HB": 8.7,
+        "n": 15
+      },
+      "curveball": {
+        "p50Velo": 72.9,
+        "p50IVB": -4,
+        "p50HB": 12.5,
+        "n": 27
+      },
+      "slider": {
+        "p50Velo": 80.35,
+        "p50IVB": 1.6,
+        "p50HB": 7.1,
+        "n": 10
+      },
+      "sinker": {
+        "p50Velo": 89.2,
+        "p50IVB": 9.8,
+        "p50HB": 11.1,
+        "n": 3
+      },
+      "changeup": {
+        "p50Velo": 88.15,
+        "p50IVB": 9.65,
+        "p50HB": 10.05,
+        "n": 2
+      }
+    }
+  },
+  {
+    "id": "miguel-sime",
+    "name": "Miguel Sime",
+    "pitches": {
+      "fourSeam": {
+        "p50Velo": 97.8,
+        "p50IVB": 19,
+        "p50HB": 9.5,
+        "n": 108
+      },
+      "slider": {
+        "p50Velo": 84.25,
+        "p50IVB": -8.5,
+        "p50HB": 9.25,
+        "n": 8
+      },
+      "changeup": {
+        "p50Velo": 86,
+        "p50IVB": 4.550000000000001,
+        "p50HB": 15.45,
+        "n": 12
+      },
+      "curveball": {
+        "p50Velo": 81.9,
+        "p50IVB": -13.4,
+        "p50HB": 8.7,
+        "n": 33
+      }
+    }
+  },
+  {
+    "id": "eddie-smink",
+    "name": "Eddie Smink",
+    "pitches": {
+      "fourSeam": {
+        "p50Velo": 90.9,
+        "p50IVB": 18.5,
+        "p50HB": 11.7,
+        "n": 45
+      },
+      "slider": {
+        "p50Velo": 79.15,
+        "p50IVB": 1.5,
+        "p50HB": 4.05,
+        "n": 4
+      },
+      "sinker": {
+        "p50Velo": 91.45,
+        "p50IVB": 14.1,
+        "p50HB": 14.6,
+        "n": 72
+      },
+      "changeup": {
+        "p50Velo": 82.4,
+        "p50IVB": 7.9,
+        "p50HB": 14,
+        "n": 15
+      },
+      "curveball": {
+        "p50Velo": 76.19999999999999,
+        "p50IVB": -5.4,
+        "p50HB": 6.4,
+        "n": 44
+      }
+    }
+  },
+  {
+    "id": "caden-spivey",
+    "name": "Caden Spivey",
+    "pitches": {
+      "sinker": {
+        "p50Velo": 91.1,
+        "p50IVB": 12.45,
+        "p50HB": 13.399999999999999,
+        "n": 24
+      },
+      "fourSeam": {
+        "p50Velo": 91.5,
+        "p50IVB": 16.4,
+        "p50HB": 7.8,
+        "n": 75
+      },
+      "curveball": {
+        "p50Velo": 78.2,
+        "p50IVB": -3.15,
+        "p50HB": 9.649999999999999,
+        "n": 32
+      },
+      "slider": {
+        "p50Velo": 83.7,
+        "p50IVB": 3.6,
+        "p50HB": 3.6,
+        "n": 23
+      },
+      "cutter": {
+        "p50Velo": 88,
+        "p50IVB": 12.2,
+        "p50HB": 2.5,
+        "n": 4
+      }
+    }
+  },
+  {
+    "id": "aidan-weaver",
+    "name": "Aidan Weaver",
+    "pitches": {
+      "fourSeam": {
+        "p50Velo": 94.1,
+        "p50IVB": 13.9,
+        "p50HB": 8.5,
+        "n": 201
+      },
+      "slider": {
+        "p50Velo": 84.8,
+        "p50IVB": 1.1,
+        "p50HB": 2.1,
+        "n": 47
+      },
+      "changeup": {
+        "p50Velo": 79.6,
+        "p50IVB": 0.4,
+        "p50HB": 13.7,
+        "n": 15
+      }
+    }
+  },
+  {
+    "id": "brian-young",
+    "name": "Brian Young",
+    "pitches": {
+      "fourSeam": {
+        "p50Velo": 88.5,
+        "p50IVB": 11.7,
+        "p50HB": 3.7,
+        "n": 13
+      },
+      "changeup": {
+        "p50Velo": 83.5,
+        "p50IVB": 11.25,
+        "p50HB": 9.4,
+        "n": 16
+      },
+      "curveball": {
+        "p50Velo": 79.3,
+        "p50IVB": -13.2,
+        "p50HB": 9.8,
+        "n": 7
+      },
+      "slider": {
+        "p50Velo": 83.80000000000001,
+        "p50IVB": 8.45,
+        "p50HB": 6.25,
+        "n": 44
+      }
+    }
+  }
+]

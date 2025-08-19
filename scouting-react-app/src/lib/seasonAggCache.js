@@ -4,7 +4,7 @@
 import { buildSeasonAggregatesFromLogs } from './seasonAggregatesFromLogs.js';
 import { getPitchingLogStats } from '../data/logs/pitchingIndex.js';
 
-export const FEATURE_AGG_FROM_LOGS = true; // default true
+export const FEATURE_AGG_FROM_LOGS = false; // default false when using baked JSON snapshot
 
 const LS_PREFIX = 'agg_cache_v1::';
 
