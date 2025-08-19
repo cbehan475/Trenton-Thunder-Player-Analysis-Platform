@@ -22,6 +22,29 @@
   color: #48566a;
 }
 
+/* Selected row highlight */
+.hitting-logs-page .row-selected .MuiDataGrid-cell {
+  background: rgba(59, 130, 246, 0.12);
+}
+
+/* Drawer details */
+.hitting-logs-page .details-drawer {
+  box-shadow: -8px 0 24px rgba(0,0,0,0.45);
+}
+.hitting-logs-page .details-drawer .kv {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  column-gap: 12px;
+  align-items: center;
+}
+.hitting-logs-page .details-drawer .kv .label {
+  color: #94a3b8;
+  font-size: 12px;
+}
+.hitting-logs-page .details-drawer .kv .value {
+  font-size: 14px;
+}
+
 /* Result chips (scoped) */
 .hitting-logs-page .chip { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; line-height: 1.2; }
 .hitting-logs-page .chip-hr { background: #3a0b0b; color: #ffb4b4; border: 1px solid #6b1515; }

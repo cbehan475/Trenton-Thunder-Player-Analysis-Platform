@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { Box, Typography, Grid, useMediaQuery, TextField, Button, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Box, Typography, Grid, useMediaQuery, TextField, Button, FormControl, InputLabel, Select, MenuItem, Tooltip, Drawer, IconButton, Divider } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import HittersTable from '../components/HittersTable';
-import { filterRows, quickStats } from '../lib/hitLogUtils';
+import { filterRows, quickStats, resultClass } from '../lib/hitLogUtils';
 import './HittingLogsPage.css';
 
 const GAME_DATES = [
@@ -45,6 +46,8 @@ export default function HittingLogsPage() {
   const [selectedHitter, setSelectedHitter] = useState('All');
   const [selectedInning, setSelectedInning] = useState('All');
   const [query, setQuery] = useState('');
+  const [selectedRow, setSelectedRow] = useState(null);
+  const [isOpen, setIsOpen] = useState(false);
   const isMobile = useMediaQuery('(max-width:600px)');
 
   React.useEffect(() => {
@@ -63,6 +66,7 @@ export default function HittingLogsPage() {
     return hittersData.flatMap((hitter) =>
       hitter.atBats.map((ab, idx) => ({
         id: `${hitter.hitter}-${idx}`,
+        date: selectedDate,
         hitter: hitter.hitter,
         inning: ab.inning,
         pitchType: ab.pitchType,
@@ -73,7 +77,7 @@ export default function HittingLogsPage() {
         result: ab.result,
       }))
     );
-  }, [hittersData]);
+  }, [hittersData, selectedDate]);
 
   const rows = useMemo(() => filterRows(allRows, { hitter: selectedHitter, inning: selectedInning, q: query }), [allRows, selectedHitter, selectedInning, query]);
   const stats = useMemo(() => quickStats(rows), [rows]);
@@ -82,6 +86,25 @@ export default function HittingLogsPage() {
     setSelectedHitter('All');
     setSelectedInning('All');
     setQuery('');
+  };
+
+  const handleRowClick = (row) => {
+    setSelectedRow(row);
+    setIsOpen(true);
+  };
+
+  const downloadCsv = (rowsToExport) => {
+    const columns = ['date','hitter','inning','pitchType','spinRate','ev','la','pitchHeight','result'];
+    const esc = (v) => (v === null || v === undefined ? '' : String(v).replace(/"/g, '""'));
+    const header = columns.join(',');
+    const body = rowsToExport.map((r) => columns.map((c) => `"${esc(r[c])}"`).join(',')).join('\n');
+    const blob = new Blob([header + '\n' + body], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `hitting-logs-${selectedDate}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const hitterOptions = useMemo(() => {
@@ -178,9 +201,16 @@ export default function HittingLogsPage() {
                 placeholder="Search hitter / pitch / result"
                 inputProps={{ 'aria-label': 'Quick search' }}
               />
-              <Button variant="outlined" size="small" onClick={handleClear} sx={{ justifySelf: 'end' }}>
-                Clear
-              </Button>
+              <Box sx={{ display: 'flex', gap: 1, justifySelf: 'end', justifyContent: 'flex-end' }}>
+                <Button variant="outlined" size="small" onClick={handleClear}>Clear</Button>
+                <Tooltip title={rows.length === 0 ? 'No rows to export' : ''}>
+                  <span>
+                    <Button variant="contained" size="small" disabled={rows.length === 0} onClick={() => downloadCsv(rows)}>
+                      Export CSV
+                    </Button>
+                  </span>
+                </Tooltip>
+              </Box>
             </Box>
             <Box className="quick-stats">
               <span>PA: {stats.pa}</span>
@@ -212,8 +242,34 @@ export default function HittingLogsPage() {
           minHeight: 300,
         }}
       >
-        {hittersData && <HittersTable rows={rows} />}
+        {hittersData && <HittersTable rows={rows} onRowClick={handleRowClick} selectedRowId={selectedRow?.id || null} />}
       </Box>
+
+      <Drawer anchor="right" open={isOpen} onClose={() => { setIsOpen(false); setSelectedRow(null); }} PaperProps={{ sx: { width: '100%', maxWidth: 380, bgcolor: '#0d1117', color: '#e5e7eb' } }}>
+        <Box className="details-drawer" role="dialog" aria-label="Row details" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <Box className="drawer-header" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+              {selectedRow ? `${selectedRow.hitter} — Inning ${selectedRow.inning}` : 'Details'}
+            </Typography>
+            <IconButton aria-label="Close" onClick={() => { setIsOpen(false); setSelectedRow(null); }} size="small" sx={{ color: '#cbd5e1' }}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          <Divider sx={{ borderColor: '#1f2937' }} />
+          <Box sx={{ p: 2, display: 'grid', rowGap: 1.25 }}>
+            <div className="kv"><span className="label">Date</span><span className="value">{selectedRow?.date}</span></div>
+            <div className="kv"><span className="label">Pitch Type</span><span className="value">{selectedRow?.pitchType ?? '—'}</span></div>
+            <div className="kv"><span className="label">Spin Rate</span><span className="value">{selectedRow?.spinRate == null ? '—' : `${Number(selectedRow.spinRate).toFixed(0)} rpm`}</span></div>
+            <div className="kv"><span className="label">EV</span><span className="value">{selectedRow?.ev == null ? '—' : `${Number(selectedRow.ev).toFixed(1)} mph`}</span></div>
+            <div className="kv"><span className="label">LA</span><span className="value">{selectedRow?.la == null ? '—' : `${Number(selectedRow.la).toFixed(0)}°`}</span></div>
+            <div className="kv"><span className="label">Pitch Height</span><span className="value">{selectedRow?.pitchHeight == null ? '—' : Number(selectedRow.pitchHeight).toFixed(1)}</span></div>
+            <div className="kv"><span className="label">Result</span><span className={`value chip ${selectedRow ? resultClass(selectedRow.result) : ''}`}>{selectedRow?.result ?? '—'}</span></div>
+          </Box>
+          <Box sx={{ mt: 'auto', p: 2, pt: 1, color: '#94a3b8', fontSize: 12 }}>
+            Source: first-half logs. Values are recorded per plate appearance.
+          </Box>
+        </Box>
+      </Drawer>
     </Box>
   );
 }

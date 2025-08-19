@@ -4,7 +4,7 @@ import { Card, CardContent } from '@mui/material';
 import { fmt } from '../lib/formatters';
 import { resultClass } from '../lib/hitLogUtils';
 
-export default function HittersTable({ rows }) {
+export default function HittersTable({ rows, onRowClick, selectedRowId }) {
   const show = (v) => (v === null || v === undefined ? '—' : v);
   const show0 = (v) => (v === null || v === undefined ? '—' : Number.isFinite(Number(v)) ? Number(v).toFixed(0) : v);
   const show1 = (v) => (v === null || v === undefined ? '—' : Number.isFinite(Number(v)) ? Number(v).toFixed(1) : v);
@@ -57,7 +57,12 @@ export default function HittersTable({ rows }) {
           pageSizeOptions={[10, 25, 50]}
           initialState={{ pagination: { paginationModel: { pageSize: 50 } } }}
           disableRowSelectionOnClick
-          getRowClassName={(params) => `hitter-${params.row.hitter.replace(/\s+/g, '-')}`}
+          onRowClick={(params) => onRowClick && onRowClick(params.row)}
+          getRowClassName={(params) => {
+            const byHitter = `hitter-${params.row.hitter.replace(/\s+/g, '-')}`;
+            const isSel = selectedRowId && params.id === selectedRowId ? 'row-selected' : '';
+            return `${byHitter} ${isSel}`.trim();
+          }}
           sx={{
             color: '#e5e7eb',
             bgcolor: '#0f172a',
