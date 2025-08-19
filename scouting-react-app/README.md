@@ -1,4 +1,4 @@
-# Trenton Thunder Scouting React App
+# Trenton Thunder Player Analysis Platform
 
 This is a custom React web application I built to track and display hitting and pitching data for the Trenton Thunder during the MLB Draft League season. It helps support scouting evaluations, player development, and game-specific reports.
 
