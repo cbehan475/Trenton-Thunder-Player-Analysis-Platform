@@ -1,0 +1,35 @@
+/* Scoped styles for Hitting Logs page */
+.hitting-logs-page {
+  width: 100%;
+}
+.hitting-logs-page .filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.5fr auto;
+  gap: 8px;
+  align-items: center;
+}
+.hitting-logs-page .quick-stats {
+  margin: 8px 0 0 0;
+  color: #9aa5b1;
+  font-size: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.hitting-logs-page .quick-stats .dot::before {
+  content: '•';
+  margin: 0 8px;
+  color: #48566a;
+}
+
+/* Result chips (scoped) */
+.hitting-logs-page .chip { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; line-height: 1.2; }
+.hitting-logs-page .chip-hr { background: #3a0b0b; color: #ffb4b4; border: 1px solid #6b1515; }
+.hitting-logs-page .chip-3b { background: #1b2a0f; color: #c7f9cc; border: 1px solid #28441a; }
+.hitting-logs-page .chip-2b { background: #0e2430; color: #a0e7ff; border: 1px solid #1b3b4c; }
+.hitting-logs-page .chip-1b { background: #0f1f18; color: #b8f2e6; border: 1px solid #1d3b30; }
+.hitting-logs-page .chip-walk { background: #191f2e; color: #bcd2ff; border: 1px solid #2a3654; }
+.hitting-logs-page .chip-k { background: #2b1b1b; color: #ffb3ba; border: 1px solid #4a2a2a; }
+.hitting-logs-page .chip-gb { background: #1a2314; color: #b7e4c7; border: 1px solid #2a3a20; }
+.hitting-logs-page .chip-fb { background: #141e2a; color: #c2e9fb; border: 1px solid #213347; }
+.hitting-logs-page .chip-neutral { background: #101826; color: #cbd5e1; border: 1px solid #1f2937; }

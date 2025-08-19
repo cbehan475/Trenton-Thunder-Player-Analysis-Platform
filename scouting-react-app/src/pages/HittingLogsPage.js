@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
-import { Box, Typography, Grid, useMediaQuery } from '@mui/material';
+import React, { useMemo, useState } from 'react';
+import { Box, Typography, Grid, useMediaQuery, TextField, Button, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import HittersTable from '../components/HittersTable';
-import HitterDropdown from '../components/HitterDropdown';
-import InningDropdown from '../components/InningDropdown';
-import { Button } from '@mui/material';
+import { filterRows, quickStats } from '../lib/hitLogUtils';
+import './HittingLogsPage.css';
 
 const GAME_DATES = [
   '2025-06-04',
@@ -43,34 +42,58 @@ const GAME_DATES = [
 export default function HittingLogsPage() {
   const [selectedDate, setSelectedDate] = useState(GAME_DATES[0]);
   const [hittersData, setHittersData] = useState(null);
-  const [selectedHitter, setSelectedHitter] = useState('');
-  const [selectedInning, setSelectedInning] = useState('');
+  const [selectedHitter, setSelectedHitter] = useState('All');
+  const [selectedInning, setSelectedInning] = useState('All');
+  const [query, setQuery] = useState('');
   const isMobile = useMediaQuery('(max-width:600px)');
 
   React.useEffect(() => {
     async function loadData() {
       const module = await import(`../data/logs/hitters-${selectedDate}.js`);
       setHittersData(module.default);
-      setSelectedHitter('');
-      setSelectedInning('');
+      setSelectedHitter('All');
+      setSelectedInning('All');
     }
     loadData();
   }, [selectedDate]);
 
-  // Filter for table
-  let filteredData = hittersData;
-  if (selectedHitter) {
-    filteredData = hittersData?.filter(h => h.hitter === selectedHitter) || [];
-    if (selectedInning) {
-      filteredData = filteredData.map(h => ({
-        ...h,
-        atBats: h.atBats.filter(atBat => atBat.inning === Number(selectedInning))
-      }));
-    }
-  }
+  // Flatten to row-level for filtering/search and quick stats (derive-only)
+  const allRows = useMemo(() => {
+    if (!Array.isArray(hittersData)) return [];
+    return hittersData.flatMap((hitter) =>
+      hitter.atBats.map((ab, idx) => ({
+        id: `${hitter.hitter}-${idx}`,
+        hitter: hitter.hitter,
+        inning: ab.inning,
+        pitchType: ab.pitchType,
+        spinRate: ab.spinRate,
+        ev: ab.ev,
+        la: ab.la,
+        pitchHeight: ab.pitchHeight,
+        result: ab.result,
+      }))
+    );
+  }, [hittersData]);
+
+  const rows = useMemo(() => filterRows(allRows, { hitter: selectedHitter, inning: selectedInning, q: query }), [allRows, selectedHitter, selectedInning, query]);
+  const stats = useMemo(() => quickStats(rows), [rows]);
+
+  const handleClear = () => {
+    setSelectedHitter('All');
+    setSelectedInning('All');
+    setQuery('');
+  };
+
+  const hitterOptions = useMemo(() => {
+    if (!Array.isArray(hittersData)) return ['All'];
+    const names = Array.from(new Set(hittersData.map((h) => h.hitter))).sort((a, b) => a.localeCompare(b));
+    return ['All', ...names];
+  }, [hittersData]);
+
+  const inningOptions = useMemo(() => ['All', 1, 2, 3, 4, 5, 6, 7, 8, 9], []);
 
   return (
-    <Box sx={{ width: '100%', minHeight: '100vh', bgcolor: '#0b1426', py: isMobile ? 2 : 5 }}>
+    <Box className="hitting-logs-page" sx={{ width: '100%', minHeight: '100vh', bgcolor: '#0b1426', py: isMobile ? 2 : 5 }}>
       <Typography
         variant={isMobile ? 'h5' : 'h4'}
         align="center"
@@ -126,23 +149,55 @@ export default function HittingLogsPage() {
           </Grid>
         </Grid>
         {selectedDate && (
-          <>
-            <Grid item xs={12} sm={6} md={4}>
-              <HitterDropdown
-                hittersData={hittersData || []}
-                selectedHitter={selectedHitter}
-                onHitterChange={setSelectedHitter}
+          <Grid item xs={12}>
+            <Box className="filters">
+              <FormControl fullWidth size="small" sx={{ minWidth: 180 }}>
+                <InputLabel id="hitter-label">Hitter</InputLabel>
+                <Select labelId="hitter-label" value={selectedHitter} label="Hitter" onChange={(e) => setSelectedHitter(e.target.value)}>
+                  {hitterOptions.map((name) => (
+                    <MenuItem key={name} value={name}>
+                      {name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl fullWidth size="small" sx={{ minWidth: 120 }}>
+                <InputLabel id="inning-label">Inning</InputLabel>
+                <Select labelId="inning-label" value={selectedInning} label="Inning" onChange={(e) => setSelectedInning(e.target.value)}>
+                  {inningOptions.map((inn) => (
+                    <MenuItem key={String(inn)} value={inn}>
+                      {inn}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                size="small"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search hitter / pitch / result"
+                inputProps={{ 'aria-label': 'Quick search' }}
               />
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <InningDropdown
-                hittersData={hittersData || []}
-                selectedHitter={selectedHitter}
-                selectedInning={selectedInning}
-                onInningChange={setSelectedInning}
-              />
-            </Grid>
-          </>
+              <Button variant="outlined" size="small" onClick={handleClear} sx={{ justifySelf: 'end' }}>
+                Clear
+              </Button>
+            </Box>
+            <Box className="quick-stats">
+              <span>PA: {stats.pa}</span>
+              <span className="dot" />
+              <span>Contact%: {stats.contactPct}</span>
+              <span className="dot" />
+              <span>Avg EV: {stats.avgEV}</span>
+              <span className="dot" />
+              <span>Max EV: {stats.maxEV}</span>
+              <span className="dot" />
+              <span>p50 LA: {stats.p50LA}</span>
+              <span className="dot" />
+              <span>Hard-Hit%: {stats.hardHitPct}</span>
+              <span className="dot" />
+              <span>BIP: {stats.bip}</span>
+            </Box>
+          </Grid>
         )}
       </Grid>
       <Box
@@ -157,7 +212,7 @@ export default function HittingLogsPage() {
           minHeight: 300,
         }}
       >
-        {hittersData && <HittersTable hittersData={filteredData} />}
+        {hittersData && <HittersTable rows={rows} />}
       </Box>
     </Box>
   );

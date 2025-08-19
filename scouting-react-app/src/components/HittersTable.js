@@ -1,8 +1,13 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { Card, CardContent } from '@mui/material';
+import { fmt } from '../lib/formatters';
+import { resultClass } from '../lib/hitLogUtils';
 
-export default function HittersTable({ hittersData }) {
+export default function HittersTable({ rows }) {
+  const show = (v) => (v === null || v === undefined ? '—' : v);
+  const show0 = (v) => (v === null || v === undefined ? '—' : Number.isFinite(Number(v)) ? Number(v).toFixed(0) : v);
+  const show1 = (v) => (v === null || v === undefined ? '—' : Number.isFinite(Number(v)) ? Number(v).toFixed(1) : v);
   const columns = [
     {
       field: 'hitter',
@@ -20,30 +25,25 @@ export default function HittersTable({ hittersData }) {
         return '';
       },
     },
-    { field: 'inning', headerName: 'Inning', width: 100, sortable: true },
-    { field: 'pitchType', headerName: 'Pitch Type', width: 140, sortable: true },
-    { field: 'spinRate', headerName: 'Spin Rate', width: 110, sortable: true },
-    { field: 'ev', headerName: 'EV', width: 90, sortable: true },
-    { field: 'la', headerName: 'LA', width: 90, sortable: true },
-    { field: 'pitchHeight', headerName: 'Pitch Height', width: 120, sortable: true },
-    { field: 'result', headerName: 'Result', width: 120, sortable: true },
+    { field: 'inning', headerName: 'Inning', width: 100, sortable: true, renderCell: (p) => show(p.row.inning) },
+    { field: 'pitchType', headerName: 'Pitch Type', width: 140, sortable: true, renderCell: (p) => show(p.row.pitchType) },
+    { field: 'spinRate', headerName: 'Spin Rate', width: 110, sortable: true, renderCell: (p) => show0(p.row.spinRate) },
+    { field: 'ev', headerName: 'EV', width: 90, sortable: true, renderCell: (p) => show1(p.row.ev) },
+    { field: 'la', headerName: 'LA', width: 90, sortable: true, renderCell: (p) => show0(p.row.la) },
+    { field: 'pitchHeight', headerName: 'Pitch Height', width: 120, sortable: true, renderCell: (p) => show1(p.row.pitchHeight) },
+    {
+      field: 'result',
+      headerName: 'Result',
+      width: 140,
+      sortable: true,
+      renderCell: (params) => {
+        const r = params.row.result;
+        const cls = resultClass(r);
+        return <span className={`chip ${cls}`}>{fmt.text(r)}</span>;
+      },
+      sortComparator: (v1, v2) => String(v1 || '').localeCompare(String(v2 || '')),
+    },
   ];
-
-  const rows = useMemo(() => {
-    return hittersData.flatMap((hitter) =>
-      hitter.atBats.map((atBat, idx) => ({
-        id: `${hitter.hitter}-${idx}`,
-        hitter: hitter.hitter,
-        inning: atBat.inning,
-        pitchType: atBat.pitchType,
-        spinRate: atBat.spinRate,
-        ev: atBat.ev,
-        la: atBat.la,
-        pitchHeight: atBat.pitchHeight,
-        result: atBat.result
-      }))
-    );
-  }, [hittersData]);
 
   return (
     <Card elevation={0} sx={{ mb: 3, borderRadius: 2, bgcolor: '#0f172a', border: '1px solid #1f2937' }}>
@@ -55,7 +55,7 @@ export default function HittersTable({ hittersData }) {
           columns={columns}
           pagination
           pageSizeOptions={[10, 25, 50]}
-          initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
+          initialState={{ pagination: { paginationModel: { pageSize: 50 } } }}
           disableRowSelectionOnClick
           getRowClassName={(params) => `hitter-${params.row.hitter.replace(/\s+/g, '-')}`}
           sx={{
