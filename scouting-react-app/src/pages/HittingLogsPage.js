@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Box, Typography, Grid, useMediaQuery, TextField, Button, FormControl, InputLabel, Select, MenuItem, Tooltip, Drawer, IconButton, Divider } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import HittersTable from '../components/HittersTable';
@@ -81,6 +81,18 @@ export default function HittingLogsPage() {
 
   const rows = useMemo(() => filterRows(allRows, { hitter: selectedHitter, inning: selectedInning, q: query }), [allRows, selectedHitter, selectedInning, query]);
   const stats = useMemo(() => quickStats(rows), [rows]);
+  const filterBarRef = useRef(null);
+
+  // Map result string to v2 chip class
+  const chipClassFor = (res = '') => {
+    const r = String(res).toLowerCase();
+    if (/home/.test(r)) return 'chip-bad';
+    if (/triple|double/.test(r)) return 'chip-ok'; // extra-base hits treated as positive
+    if (/single|walk|hbp|reach/.test(r)) return 'chip-ok';
+    if (/field\s*error|error/.test(r)) return 'chip-warn';
+    if (/out|fly|ground|pop|line/.test(r)) return 'chip-neutral';
+    return 'chip-neutral';
+  };
 
   const handleClear = () => {
     setSelectedHitter('All');
@@ -116,16 +128,17 @@ export default function HittingLogsPage() {
   const inningOptions = useMemo(() => ['All', 1, 2, 3, 4, 5, 6, 7, 8, 9], []);
 
   return (
-    <Box className="hitting-logs-page" sx={{ width: '100%', minHeight: '100vh', bgcolor: '#0b1426', py: isMobile ? 2 : 5 }}>
+    <Box className="hitting-logs-page" sx={{ width: '100%', minHeight: '100vh', bgcolor: 'var(--hl-bg)', py: isMobile ? 2 : 5 }}>
       <Typography
-        variant={isMobile ? 'h5' : 'h4'}
+        component="h1"
         align="center"
         sx={{
-          color: '#FFD700',
-          textShadow: '0 2px 8px rgba(0,0,0,0.6)',
-          fontWeight: 800,
+          color: 'var(--hl-gold)',
+          fontWeight: 700,
+          fontSize: isMobile ? 26 : 32,
+          letterSpacing: 0.5,
+          mt: isMobile ? 1 : 2,
           mb: isMobile ? 2 : 3,
-          letterSpacing: 1.2,
         }}
       >
         Hitting Logs
@@ -143,7 +156,7 @@ export default function HittingLogsPage() {
         }}
       >
         <Grid item xs={12}>
-          <Grid container spacing={0.75} justifyContent="center" alignItems="center">
+          <Grid container spacing={0.75} justifyContent="flex-start" alignItems="center">
             {GAME_DATES.map(date => (
               <Grid item key={date}>
                 <Button
@@ -173,59 +186,104 @@ export default function HittingLogsPage() {
         </Grid>
         {selectedDate && (
           <Grid item xs={12}>
-            <Box className="filters">
-              <FormControl fullWidth size="small" sx={{ minWidth: 180 }}>
-                <InputLabel id="hitter-label">Hitter</InputLabel>
-                <Select labelId="hitter-label" value={selectedHitter} label="Hitter" onChange={(e) => setSelectedHitter(e.target.value)}>
-                  {hitterOptions.map((name) => (
-                    <MenuItem key={name} value={name}>
-                      {name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <FormControl fullWidth size="small" sx={{ minWidth: 120 }}>
-                <InputLabel id="inning-label">Inning</InputLabel>
-                <Select labelId="inning-label" value={selectedInning} label="Inning" onChange={(e) => setSelectedInning(e.target.value)}>
-                  {inningOptions.map((inn) => (
-                    <MenuItem key={String(inn)} value={inn}>
-                      {inn}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <TextField
-                size="small"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search hitter / pitch / result"
-                inputProps={{ 'aria-label': 'Quick search' }}
-              />
-              <Box sx={{ display: 'flex', gap: 1, justifySelf: 'end', justifyContent: 'flex-end' }}>
-                <Button variant="outlined" size="small" onClick={handleClear}>Clear</Button>
-                <Tooltip title={rows.length === 0 ? 'No rows to export' : ''}>
-                  <span>
-                    <Button variant="contained" size="small" disabled={rows.length === 0} onClick={() => downloadCsv(rows)}>
-                      Export CSV
-                    </Button>
-                  </span>
-                </Tooltip>
+            <Box className="hl-controls">
+              <Box ref={filterBarRef} className="filters filter-bar hl-filter-bar">
+                <FormControl className="hitter-select" fullWidth size="small" sx={{ minWidth: 180 }}>
+                  <InputLabel id="hitter-label">Hitter</InputLabel>
+                  <Select
+                    labelId="hitter-label"
+                    value={selectedHitter}
+                    label="Hitter"
+                    onChange={(e) => setSelectedHitter(e.target.value)}
+                    MenuProps={{
+                      container: typeof document !== 'undefined' ? document.body : undefined,
+                      disablePortal: false,
+                      anchorEl: () => filterBarRef.current,
+                      anchorOrigin: { vertical: 'top', horizontal: 'right' },
+                      transformOrigin: { vertical: 'top', horizontal: 'left' },
+                      slotProps: { paper: { className: 'filter-menu', sx: { mt: 1, ml: 12, zIndex: 1600 } } },
+                    }}
+                  >
+                    {hitterOptions.map((name) => (
+                      <MenuItem key={name} value={name}>
+                        {name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControl className="inning-select" fullWidth size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel id="inning-label">Inning</InputLabel>
+                  <Select
+                    labelId="inning-label"
+                    value={selectedInning}
+                    label="Inning"
+                    onChange={(e) => setSelectedInning(e.target.value)}
+                    MenuProps={{
+                      container: typeof document !== 'undefined' ? document.body : undefined,
+                      disablePortal: false,
+                      anchorEl: () => filterBarRef.current,
+                      anchorOrigin: { vertical: 'top', horizontal: 'right' },
+                      transformOrigin: { vertical: 'top', horizontal: 'left' },
+                      slotProps: { paper: { className: 'filter-menu', sx: { mt: 1, ml: 12, zIndex: 1600 } } },
+                    }}
+                  >
+                    {inningOptions.map((inn) => (
+                      <MenuItem key={String(inn)} value={inn}>
+                        {inn}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <TextField
+                  size="small"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search hitter / pitch / result"
+                  inputProps={{ 'aria-label': 'Quick search' }}
+                />
+                <Box sx={{ display: 'flex', gap: 1, justifySelf: 'end', justifyContent: 'flex-end' }}>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={handleClear}
+                    sx={{
+                      height: 36,
+                      borderColor: 'var(--hl-gold)',
+                      color: 'var(--hl-gold)',
+                      '&:hover': { backgroundColor: 'rgba(255,176,0,0.10)', borderColor: 'var(--hl-gold)' },
+                    }}
+                  >
+                    Clear
+                  </Button>
+                  <Tooltip title={rows.length === 0 ? 'No rows to export' : ''}>
+                    <span>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        disabled={rows.length === 0}
+                        onClick={() => downloadCsv(rows)}
+                        sx={{
+                          height: 36,
+                          backgroundColor: 'var(--hl-gold)',
+                          color: '#1b2231',
+                          '&:hover': { backgroundColor: '#e5a300' },
+                        }}
+                      >
+                        Export CSV
+                      </Button>
+                    </span>
+                  </Tooltip>
+                </Box>
               </Box>
             </Box>
-            <Box className="quick-stats">
-              <span>PA: {stats.pa}</span>
-              <span className="dot" />
-              <span>Contact%: {stats.contactPct}</span>
-              <span className="dot" />
-              <span>Avg EV: {stats.avgEV}</span>
-              <span className="dot" />
-              <span>Max EV: {stats.maxEV}</span>
-              <span className="dot" />
-              <span>p50 LA: {stats.p50LA}</span>
-              <span className="dot" />
-              <span>Hard-Hit%: {stats.hardHitPct}</span>
-              <span className="dot" />
-              <span>BIP: {stats.bip}</span>
+            <Box className="stats-ribbon">
+              <span className="stats-pill"><span className="dot" /><span className="label">PA</span><span className="value">{stats.pa}</span></span>
+              <span className="stats-pill"><span className="dot" /><span className="label">Contact%</span><span className="value">{stats.contactPct}</span></span>
+              <span className="stats-pill"><span className="dot" /><span className="label">Avg EV</span><span className="value">{stats.avgEV}</span></span>
+              <span className="stats-pill"><span className="dot" /><span className="label">Max EV</span><span className="value">{stats.maxEV}</span></span>
+              <span className="stats-pill"><span className="dot" /><span className="label">p50 LA</span><span className="value">{stats.p50LA}</span></span>
+              <span className="stats-pill"><span className="dot" /><span className="label">Hard-Hit%</span><span className="value">{stats.hardHitPct}</span></span>
+              <span className="stats-pill"><span className="dot" /><span className="label">BIP</span><span className="value">{stats.bip}</span></span>
             </Box>
           </Grid>
         )}
@@ -234,18 +292,18 @@ export default function HittingLogsPage() {
         sx={{
           maxWidth: 1100,
           mx: 'auto',
-          bgcolor: '#0f172a',
+          bgcolor: 'var(--hl-panel)',
           borderRadius: 3,
           boxShadow: '0 6px 24px rgba(0,0,0,0.35)',
           p: isMobile ? 1 : 3,
-          border: '1px solid #1f2937',
+          border: '1px solid var(--hl-border)',
           minHeight: 300,
         }}
       >
         {hittersData && <HittersTable rows={rows} onRowClick={handleRowClick} selectedRowId={selectedRow?.id || null} />}
       </Box>
 
-      <Drawer anchor="right" open={isOpen} onClose={() => { setIsOpen(false); setSelectedRow(null); }} PaperProps={{ sx: { width: '100%', maxWidth: 380, bgcolor: '#0d1117', color: '#e5e7eb' } }}>
+      <Drawer anchor="right" open={isOpen} onClose={() => { setIsOpen(false); setSelectedRow(null); }} PaperProps={{ sx: { width: '100%', maxWidth: 380, bgcolor: 'var(--hl-panel-2)', color: 'var(--hl-text)' } }}>
         <Box className="details-drawer" role="dialog" aria-label="Row details" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <Box className="drawer-header" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
@@ -263,7 +321,7 @@ export default function HittingLogsPage() {
             <div className="kv"><span className="label">EV</span><span className="value">{selectedRow?.ev == null ? '—' : `${Number(selectedRow.ev).toFixed(1)} mph`}</span></div>
             <div className="kv"><span className="label">LA</span><span className="value">{selectedRow?.la == null ? '—' : `${Number(selectedRow.la).toFixed(0)}°`}</span></div>
             <div className="kv"><span className="label">Pitch Height</span><span className="value">{selectedRow?.pitchHeight == null ? '—' : Number(selectedRow.pitchHeight).toFixed(1)}</span></div>
-            <div className="kv"><span className="label">Result</span><span className={`value chip ${selectedRow ? resultClass(selectedRow.result) : ''}`}>{selectedRow?.result ?? '—'}</span></div>
+            <div className="kv"><span className="label">Result</span><span className={`value result-chip ${selectedRow ? chipClassFor(selectedRow.result) : ''}`}>{selectedRow?.result ?? '—'}</span></div>
           </Box>
           <Box sx={{ mt: 'auto', p: 2, pt: 1, color: '#94a3b8', fontSize: 12 }}>
             Source: first-half logs. Values are recorded per plate appearance.
