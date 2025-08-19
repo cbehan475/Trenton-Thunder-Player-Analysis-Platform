@@ -35,9 +35,31 @@ function normalizePitchType(pitchType) {
   return KEY_MAP.get(key) || null;
 }
 
+// benchP50(level, pitchType) -> { veloP50, ivbP50, hbP50 } | null
+export function benchP50(level, pitchType) {
+  const b = getBench(level, pitchType);
+  if (!b) return null;
+  const veloP50 = (b.p50Velo != null)
+    ? b.p50Velo
+    : (Array.isArray(b.velo) && b.velo.length === 2
+      ? (Number(b.velo[0]) + Number(b.velo[1])) / 2
+      : null);
+  const ivbP50 = (b.p50IVB != null) ? b.p50IVB : (Number.isFinite(Number(b.ivb)) ? Number(b.ivb) : null);
+  const hbP50  = (b.p50HB  != null) ? b.p50HB  : (Number.isFinite(Number(b.hb))  ? Number(b.hb)  : null);
+  if (veloP50 == null && ivbP50 == null && hbP50 == null) return null;
+  return { veloP50, ivbP50, hbP50 };
+}
+
+// Signed number formatter for deltas
+export const fmtSigned = (n) => (
+  typeof n === 'number' && Number.isFinite(n)
+    ? (n > 0 ? `+${n.toFixed(1)}` : n.toFixed(1))
+    : '—'
+);
+
 // getBench(level, pitchType) -> { velo:[min,max], ivb, hb, command, p50Velo, p50IVB, p50HB, n } | null
 export function getBench(level, pitchType) {
-  const lvl = level && PITCHING_BENCHMARKS[level] ? level : null;
+  const lvl = (level && PITCHING_BENCHMARKS[level]) ? level : null;
   if (!lvl) return null;
   const norm = normalizePitchType(pitchType);
   if (!norm) return null;
