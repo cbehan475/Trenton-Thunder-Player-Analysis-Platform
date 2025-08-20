@@ -19,9 +19,23 @@ export function slugifyId(nameOrId) {
 
 function lsKey(pitcherId) { return `scoutingReport:${pitcherId}`; }
 
-export function loadSeedFor(pitcherId) {
-  const pid = slugifyId(pitcherId);
-  return (SCOUTING_REPORTS || []).find(r => slugifyId(r.pitcherId) === pid || slugifyId(r.name) === pid) || null;
+export function loadSeedFor(pitcherIdOrName) {
+  const pid = slugifyId(pitcherIdOrName);
+  const src = SCOUTING_REPORTS;
+  if (!src) return null;
+  // Object map path
+  if (!Array.isArray(src) && typeof src === 'object') {
+    if (src[pid]) return { ...src[pid] };
+    // search values by pitcherId or name slug
+    const vals = Object.values(src);
+    const hit = vals.find(r => slugifyId(r?.pitcherId) === pid || slugifyId(r?.name) === pid);
+    return hit ? { ...hit } : null;
+  }
+  // Array path (legacy)
+  if (Array.isArray(src)) {
+    return src.find(r => slugifyId(r?.pitcherId) === pid || slugifyId(r?.name) === pid) || null;
+  }
+  return null;
 }
 
 export function loadLocalFor(pitcherId) {
@@ -67,9 +81,10 @@ export function getDefaultReportForPitcher(nameOrId) {
   };
 }
 
-export function loadReport(pitcherIdOrName) {
+export function loadReport(pitcherIdOrName, displayName) {
   const pid = slugifyId(pitcherIdOrName);
-  const seed = loadSeedFor(pid) || loadSeedFor(pitcherIdOrName);
+  // Try by id, then by provided display name (fallback for id/name mismatch)
+  const seed = loadSeedFor(pid) || (displayName ? loadSeedFor(displayName) : null) || loadSeedFor(pitcherIdOrName);
   const local = loadLocalFor(pid) || loadLocalFor(pitcherIdOrName);
   const merged = mergeReport(seed || getDefaultReportForPitcher(pitcherIdOrName), local);
   return merged;

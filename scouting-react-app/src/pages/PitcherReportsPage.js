@@ -76,8 +76,12 @@ export default function PitcherReportsPage() {
   const [selected, setSelected] = useState(pitcherOptions[0]?.id || '');
   const stats = getPitchingLogStats();
 
-  // Load/merge report for selected pitcher
-  const report = useMemo(() => (selected ? loadReport(selected) : null), [selected]);
+  // Load/merge report for selected pitcher (tolerate id vs name slug)
+  const report = useMemo(() => {
+    if (!selected) return null;
+    const displayName = pitcherOptions.find(p => p.id === selected)?.name || selected;
+    return loadReport(selected, displayName);
+  }, [selected, pitcherOptions]);
   const [draft, setDraft] = useState(report);
   useEffect(() => { setDraft(report); }, [report]);
 
