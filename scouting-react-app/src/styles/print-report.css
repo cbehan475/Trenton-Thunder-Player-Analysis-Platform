@@ -4,11 +4,33 @@
   html, body { background: #fff !important; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
+  /* Force light background/foreground for print readability */
+  :root {
+    --bg-top: #ffffff !important;
+    --bg-bottom: #ffffff !important;
+    --text-color: #000000 !important;
+  }
+
   /* Hide interactive UI */
   .no-print, nav, .navbar, .site-nav { display: none !important; }
 
   /* Show print-only blocks */
   .print-only { display: block !important; }
+
+  /* Ensure long notes wrap and are fully visible in PDFs */
+  .gradesTable .notesCell {
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+    vertical-align: top;
+    min-height: 44px;
+  }
+
+  /* Give notes column extra room in condensed print table if widths apply */
+  .gradesTable tr > td:nth-child(5),
+  .gradesTable tr > th:nth-child(5) {
+    width: 40%;
+  }
 
   /* Layout tighten */
   .report-wrap { padding: 0 !important; margin: 0 !important; }

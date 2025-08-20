@@ -4,7 +4,7 @@ import ScoutingGradeInput from '../components/ScoutingGradeInput.jsx';
 import FVBadge from '../components/FVBadge.jsx';
 import { loadReport, saveReport, downloadJSON, importJSON, pitchAutoContext, slugifyId } from '../lib/scoutingReportsStore.js';
 import { PITCHERS_SEASON_AGG } from '../data/pitchersSeasonAggregates.js';
-import { getAllPitcherNames, getPitchingLogStats } from '../data/logs/pitchingIndex.js';
+import ALL_PITCH_EVENTS, { getAllPitcherNames, getPitchingLogStats } from '../data/logs/pitchingIndex.js';
 import { fmt } from '../lib/formatters.js';
 import { BENCH_LEVEL, benchP50 } from '../lib/benchmarks.js';
 import '../styles/print-report.css';
@@ -76,12 +76,53 @@ export default function PitcherReportsPage() {
   const [selected, setSelected] = useState(pitcherOptions[0]?.id || '');
   const stats = getPitchingLogStats();
 
+  const displayName = useMemo(() => (pitcherOptions.find(p=>p.id===selected)?.name || selected), [pitcherOptions, selected]);
+
+  // Compute Usage % per pitch from logs for selected pitcher (read-only)
+  const usagePct = useMemo(() => {
+    if (!displayName) return {};
+    const normalize = (s) => {
+      const x = String(s||'').toLowerCase();
+      if (/sweep/.test(x)) return 'sweeper';
+      if (/curve/.test(x)) return 'curveball';
+      if (/slider/.test(x)) return 'slider';
+      if (/change/.test(x)) return 'changeup';
+      if (/cutt/.test(x)) return 'cutter';
+      if (/sink|two[- ]?seam|2s|2-seam/.test(x)) return 'sinker';
+      if (/four|4s|4-seam|four[- ]?seam|ff|fastball|fb/.test(x)) return 'fourSeam';
+      return null;
+    };
+    const counts = Object.create(null);
+    let total = 0;
+    for (const e of ALL_PITCH_EVENTS) {
+      if (e?.pitcher !== displayName) continue;
+      const key = normalize(e.pitchType || e.type || e.pitch || e.pitch_name || e.pitchClass);
+      if (!key) continue;
+      counts[key] = (counts[key] || 0) + 1;
+      total += 1;
+    }
+    if (!total) return {};
+    const pct = {};
+    for (const k of Object.keys(counts)) pct[k] = Math.round((counts[k] / total) * 1000) / 10; // 1-decimal
+    return pct;
+  }, [displayName]);
+
+  // Merge seeded usage (from report) over log-derived usage for display/filters
+  const mergedUsage = useMemo(() => {
+    const base = { ...usagePct };
+    const seed = report?.pitches || {};
+    for (const k of Object.keys(seed)) {
+      const u = seed[k]?.usage;
+      if (Number.isFinite(u)) base[k] = u;
+    }
+    return base;
+  }, [usagePct, report]);
+
   // Load/merge report for selected pitcher (tolerate id vs name slug)
   const report = useMemo(() => {
     if (!selected) return null;
-    const displayName = pitcherOptions.find(p => p.id === selected)?.name || selected;
     return loadReport(selected, displayName);
-  }, [selected, pitcherOptions]);
+  }, [selected, displayName]);
   const [draft, setDraft] = useState(report);
   useEffect(() => { setDraft(report); }, [report]);
 
@@ -200,6 +241,7 @@ export default function PitcherReportsPage() {
         .overall-meta .risk-field select,
         .overall-meta .role-field input{ height:40px; line-height:40px; min-width:0; }
         .overall-tools .section-label{ display:flex; align-items:baseline; gap:8px; }
+        .gradesTable .notesCell{ white-space: normal; overflow-wrap: anywhere; word-break: break-word; vertical-align: top; min-height:44px; }
       `}</style>
       <div style={styles.wrap} className="report-wrap">
         {/* Report Header */}
@@ -268,7 +310,7 @@ export default function PitcherReportsPage() {
           <div>
             <div style={{ ...styles.panel }} className="no-print section">
               <div style={styles.h2}>Pitch Grades</div>
-              <table style={styles.table}>
+              <table style={styles.table} className="gradesTable">
                 <thead>
                   <tr>
                     <th style={styles.th}>Pitch</th>
@@ -279,8 +321,14 @@ export default function PitcherReportsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {defaultPitchOrder.map((k) => {
-                    const row = draft?.pitches?.[k] || { present:null, future:null, usage:null, notes:'' };
+                  {defaultPitchOrder.filter((k) => {
+                    const row = draft?.pitches?.[k] || {};
+                    const hasGrade = (row.present != null) || (row.future != null);
+                    const u = draft?.pitches?.[k]?.usage ?? mergedUsage[k];
+                    return (Number(u) > 0) || hasGrade;
+                  }).map((k) => {
+                    const row = draft?.pitches?.[k] || {};
+                    const guide = '20–80 even grades, P/F';
                     return (
                       <tr key={`row-${k}`}>
                         <td style={styles.td}>{pitchDisplay[k] || k}</td>
@@ -296,13 +344,8 @@ export default function PitcherReportsPage() {
                             title={guide}
                             style={{ width:80, minWidth:80, background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'4px 8px', outlineColor: gold }} />
                         </td>
-                        <td style={styles.td}>
-                          <input type="number" min={0} max={100} step={1} value={row.usage ?? ''}
-                            onChange={(e)=>onPitchField(k,'usage', e.target.value === '' ? null : Number(e.target.value))}
-                            title="Usage percentage"
-                            style={{ width:80, minWidth:80, background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'4px 8px', outlineColor: gold }} />
-                        </td>
-                        <td style={styles.td}>
+                        <td style={styles.td}>{ mergedUsage[k] != null ? `${Number(mergedUsage[k]).toFixed(1)}` : '—' }</td>
+                        <td style={styles.td} className="notesCell">
                           <input type="text" value={row.notes || ''}
                             onChange={(e)=>onPitchField(k,'notes', e.target.value)}
                             style={{ width:'100%', minWidth:160, background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'4px 8px', outlineColor: gold }} />
@@ -318,7 +361,7 @@ export default function PitcherReportsPage() {
             {/* Print-only condensed grades */}
             <div className="print-only section" style={{ ...styles.panel }}>
               <div style={styles.h2}>Pitch Grades</div>
-              <table style={{ width:'100%', borderCollapse:'collapse' }}>
+              <table style={{ width:'100%', borderCollapse:'collapse' }} className="gradesTable">
                 <thead>
                   <tr>
                     <th style={{ textAlign:'left', padding:'4px 6px', borderBottom:'1px solid rgba(0,0,0,0.2)' }}>Pitch</th>
@@ -329,11 +372,16 @@ export default function PitcherReportsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {defaultPitchOrder.map((k) => {
+                  {defaultPitchOrder.filter((k) => {
+                    const row = draft?.pitches?.[k] || {};
+                    const hasGrade = (row.present != null) || (row.future != null);
+                    const u = mergedUsage[k];
+                    return (Number(u) > 0) || hasGrade;
+                  }).map((k) => {
                     const row = draft?.pitches?.[k] || {};
                     const p = row.present ?? '—';
                     const f = row.future ?? '—';
-                    const u = row.usage != null ? `${row.usage}%` : '—';
+                    const u = mergedUsage[k] != null ? `${Number(mergedUsage[k]).toFixed(1)}%` : '—';
                     const n = row.notes || '';
                     return (
                       <tr key={`prow-${k}`}>
@@ -341,7 +389,7 @@ export default function PitcherReportsPage() {
                         <td style={{ padding:'4px 6px', borderTop:'1px solid rgba(0,0,0,0.1)' }}>{p}</td>
                         <td style={{ padding:'4px 6px', borderTop:'1px solid rgba(0,0,0,0.1)' }}>{f}</td>
                         <td style={{ padding:'4px 6px', borderTop:'1px solid rgba(0,0,0,0.1)' }}>{u}</td>
-                        <td style={{ padding:'4px 6px', borderTop:'1px solid rgba(0,0,0,0.1)' }}>{n}</td>
+                        <td className="notesCell" style={{ padding:'4px 6px', borderTop:'1px solid rgba(0,0,0,0.1)' }}>{n}</td>
                       </tr>
                     );
                   })}
