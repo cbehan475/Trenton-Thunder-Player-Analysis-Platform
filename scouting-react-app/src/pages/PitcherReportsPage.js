@@ -190,6 +190,13 @@ export default function PitcherReportsPage() {
   return (
     <div className="pitcher-reports-page" style={{ ...styles.root, minHeight:'100vh', background:'linear-gradient(180deg, var(--bg-top), var(--bg-bottom))' }}>
       <style>{`@media print{ .no-print{ display:none!important } .pitcher-reports-page{ background:#fff } }`}</style>
+      <style>{`
+        .overall-meta{ display:grid; grid-template-columns: minmax(180px,1fr) 200px minmax(220px,1.2fr); gap:12px; align-items:center; margin-top:8px; }
+        .overall-meta .fv-field select,
+        .overall-meta .risk-field select,
+        .overall-meta .role-field input{ height:40px; line-height:40px; min-width:0; }
+        .overall-tools .section-label{ display:flex; align-items:baseline; gap:8px; }
+      `}</style>
       <div style={styles.wrap} className="report-wrap">
         {/* Report Header */}
         <div style={{ ...styles.headerRow, marginBottom: 10 }} className="section">
@@ -318,44 +325,6 @@ export default function PitcherReportsPage() {
               </table>
             </div>
 
-            <div style={{ ...styles.panel, marginTop:10 }} className="no-print section">
-              <div style={styles.h2}>Overall Tools</div>
-              <div style={{ display:'grid', gap:10 }}>
-                <ScoutingGradeInput label="Command" value={draft?.tools?.command} onChange={(v)=>onTool('command', v)} tooltip={`${guide} • Command = execute to spots`} />
-                <ScoutingGradeInput label="Control" value={draft?.tools?.control} onChange={(v)=>onTool('control', v)} tooltip={`${guide} • Control = strikes rate`} />
-                <ScoutingGradeInput label="Athleticism" value={draft?.tools?.athleticism} onChange={(v)=>onTool('athleticism', v)} tooltip={guide} />
-                <ScoutingGradeInput label="Delivery" value={draft?.tools?.delivery} onChange={(v)=>onTool('delivery', v)} tooltip={guide} />
-                <ScoutingGradeInput label="Fielding" value={draft?.tools?.fielding} onChange={(v)=>onTool('fielding', v)} tooltip={guide} />
-              </div>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginTop:10 }}>
-                <div>
-                  <div style={styles.label}>Overall FV (20–80)</div>
-                  <div className="no-print" style={{ marginBottom:6 }}>
-                    <FVBadge fv={draft?.overallFV} size="sm" />
-                  </div>
-                  <input type="number" min={20} max={80} step={2} value={draft?.overallFV ?? ''}
-                    onChange={(e)=>setDraft(d=>({ ...d, overallFV: e.target.value===''?null:Number(e.target.value) }))}
-                    style={{ width:'100%', background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'6px 8px', outlineColor: gold }} />
-                </div>
-                <div>
-                  <div style={styles.label}>Risk</div>
-                  <select value={draft?.risk || 'Medium'}
-                    onChange={(e)=>setDraft(d=>({ ...d, risk: e.target.value }))}
-                    style={{ width:'100%', background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'8px 10px', fontWeight:800, outlineColor: gold }}>
-                    <option>Low</option>
-                    <option>Medium</option>
-                    <option>High</option>
-                  </select>
-                </div>
-                <div>
-                  <div style={styles.label}>Role Projection</div>
-                  <input type="text" value={draft?.roleProjection || ''}
-                    onChange={(e)=>setDraft(d=>({ ...d, roleProjection: e.target.value }))}
-                    style={{ width:'100%', background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'6px 8px', outlineColor: gold }} />
-                </div>
-              </div>
-            </div>
-
             {/* Print-only condensed tools */}
             <div className="print-only section pb-before" style={{ ...styles.panel }}>
               <div style={styles.h2}>Overall Tools</div>
@@ -382,18 +351,12 @@ export default function PitcherReportsPage() {
               <textarea rows={4} value={draft?.summary || ''}
                 onChange={(e)=>setDraft(d=>({ ...d, summary: e.target.value }))}
                 style={{ width:'100%', background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'8px', outlineColor: gold }} />
-              <div style={{ ...styles.h2, marginTop:12 }}>Development Plan</div>
-              <textarea rows={4} value={draft?.devPlan || ''}
-                onChange={(e)=>setDraft(d=>({ ...d, devPlan: e.target.value }))}
-                style={{ width:'100%', background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'8px', outlineColor: gold }} />
             </div>
 
-            {/* Print-only Summary/Dev Plan */}
+            {/* Print-only Summary */}
             <div className="print-only section" style={{ ...styles.panel, marginTop:10 }}>
               <div style={styles.h2}>Summary</div>
               <div style={{ whiteSpace:'pre-wrap', lineHeight:1.4 }}>{draft?.summary || '—'}</div>
-              <div style={{ ...styles.h2, marginTop:8 }}>Development Plan</div>
-              <div style={{ whiteSpace:'pre-wrap', lineHeight:1.4 }}>{draft?.devPlan || '—'}</div>
             </div>
 
             <div style={{ ...styles.panel, marginTop:10 }} className="section pb-before">
@@ -425,12 +388,7 @@ export default function PitcherReportsPage() {
               {draft?.summary && (
                 <div style={{ marginTop:6, whiteSpace:'pre-wrap', lineHeight:1.5 }}>{draft.summary}</div>
               )}
-              {draft?.devPlan && (
-                <div style={{ marginTop:10 }}>
-                  <div style={{ color: gold, fontWeight:900, marginBottom:4 }}>Dev Plan</div>
-                  <div style={{ whiteSpace:'pre-wrap', lineHeight:1.5 }}>{draft.devPlan}</div>
-                </div>
-              )}
+              {/* Dev Plan removed */}
             </div>
 
           </div>
