@@ -82,6 +82,15 @@ export function downloadJSON(filename, data) {
   a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
 }
 
+// Import a single report JSON file. Expects shape to include pitcherId.
+export async function importJSON(file, onLoad) {
+  const text = await file.text();
+  const obj = JSON.parse(text);
+  const pid = slugifyId(obj.pitcherId || obj.id || obj.name || '');
+  if (!pid) throw new Error('Invalid report: missing pitcherId');
+  if (typeof onLoad === 'function') onLoad(pid, obj);
+}
+
 export function pitchAutoContext(pidOrName, pitchKey) {
   const agg = getPitcherSeasonAgg(pidOrName, pitchKey);
   const bench = benchP50(BENCH_LEVEL, pitchKey);

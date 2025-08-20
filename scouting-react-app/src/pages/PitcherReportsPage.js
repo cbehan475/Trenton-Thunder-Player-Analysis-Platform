@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import ScoutingGradeInput from '../components/ScoutingGradeInput.jsx';
 import FVBadge from '../components/FVBadge.jsx';
-import { loadReport, saveReport, downloadJSON, pitchAutoContext, slugifyId } from '../lib/scoutingReportsStore.js';
+import { loadReport, saveReport, downloadJSON, importJSON, pitchAutoContext, slugifyId } from '../lib/scoutingReportsStore.js';
 import { PITCHERS_SEASON_AGG } from '../data/pitchersSeasonAggregates.js';
 import { getAllPitcherNames, getPitchingLogStats } from '../data/logs/pitchingIndex.js';
 import { fmt } from '../lib/formatters.js';
@@ -81,7 +81,7 @@ export default function PitcherReportsPage() {
   const [draft, setDraft] = useState(report);
   useEffect(() => { setDraft(report); }, [report]);
 
-  // Autosave: debounce 1s after last change
+  // Autosave: debounce 500ms after last change
   const [lastSavedAt, setLastSavedAt] = useState(null);
   const autosaveTimer = useRef(null);
   useEffect(() => {
@@ -94,7 +94,7 @@ export default function PitcherReportsPage() {
       } catch (e) {
         // swallow autosave errors; explicit Save remains available
       }
-    }, 1000);
+    }, 500);
     return () => {
       if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
     };
@@ -220,6 +220,26 @@ export default function PitcherReportsPage() {
               </select>
               <button type="button" style={styles.btn} onClick={save}>Save</button>
               <button type="button" style={styles.btn} onClick={exportJSON}>Download JSON</button>
+              <label className="no-print" style={{ ...styles.btn, display:'inline-flex', alignItems:'center', cursor:'pointer' }}>
+                Import JSON
+                <input type="file" accept="application/json" style={{ display:'none' }}
+                  onChange={async (e)=>{
+                    const file = e.target.files && e.target.files[0]; if (!file) return;
+                    try {
+                      await importJSON(file, (pid, obj) => {
+                        const merged = { ...(draft||{}), ...(obj||{}), pitcherId: pid };
+                        setDraft(merged);
+                        const saved = saveReport(merged);
+                        setDraft(saved);
+                        setLastSavedAt(new Date());
+                      });
+                    } catch(err) {
+                      alert((err && err.message) || 'Import failed');
+                    } finally {
+                      e.target.value = '';
+                    }
+                  }} />
+              </label>
               <button type="button" style={styles.btn} onClick={printPDF}>Export PDF</button>
             </div>
             <div style={styles.savedNote} aria-live="polite">
