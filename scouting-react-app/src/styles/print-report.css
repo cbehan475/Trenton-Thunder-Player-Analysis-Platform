@@ -1,0 +1,32 @@
+/* src/styles/print-report.css */
+@media print {
+  @page { size: letter; margin: 0.5in; }
+  html, body { background: #fff !important; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* Hide interactive UI */
+  .no-print, nav, .navbar, .site-nav { display: none !important; }
+
+  /* Show print-only blocks */
+  .print-only { display: block !important; }
+
+  /* Layout tighten */
+  .report-wrap { padding: 0 !important; margin: 0 !important; }
+
+  /* Avoid page breaks inside key sections */
+  .section { page-break-inside: avoid; }
+  table { page-break-inside: avoid; }
+  thead { display: table-header-group; }
+
+  /* Optional forced breaks for long content */
+  .pb-before { break-before: page; page-break-before: always; }
+
+  /* Colors */
+  .gold { color: #FFD600 !important; }
+
+  /* Footer */
+  .print-footer { position: fixed; bottom: 0.25in; right: 0.5in; font-size: 10px; color: #6B7280; }
+}
+
+/* Default: hide print-only in screen */
+.print-only { display: none; }

@@ -3,7 +3,8 @@ import React from 'react';
 
 // Simple input pair for MLB 20–80 grades (even numbers only)
 // Props: { label, value: {present, future}, onChange({present, future}) }
-export default function ScoutingGradeInput({ label, value, onChange }) {
+// Props: { label, value:{present,future}, onChange, tooltip }
+export default function ScoutingGradeInput({ label, value, onChange, tooltip }) {
   const present = value?.present ?? '';
   const future = value?.future ?? '';
 
@@ -24,21 +25,21 @@ export default function ScoutingGradeInput({ label, value, onChange }) {
   };
 
   const inputStyle = {
-    width: 70,
+    width: 80, minWidth: 80,
     background: '#122448', color: 'white', border: '1px solid rgba(255,255,255,0.12)',
     borderRadius: 8, padding: '6px 8px'
   };
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-      <div style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 700 }}>{label}</div>
+      <div style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 700 }} title={tooltip}>{label}</div>
       <div style={cellStyle}>
-        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>Present</label>
+        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }} title={tooltip}>Present</label>
         <input type="number" min={20} max={80} step={2} value={present}
-          onChange={handle('present')} style={inputStyle} />
-        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>Future</label>
+          onChange={handle('present')} style={inputStyle} title={tooltip} />
+        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }} title={tooltip}>Future</label>
         <input type="number" min={20} max={80} step={2} value={future}
-          onChange={handle('future')} style={inputStyle} />
+          onChange={handle('future')} style={inputStyle} title={tooltip} />
       </div>
     </div>
   );

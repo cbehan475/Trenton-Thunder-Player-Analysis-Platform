@@ -1,11 +1,13 @@
 // src/pages/PitcherReportsPage.js
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import ScoutingGradeInput from '../components/ScoutingGradeInput.jsx';
-import { PITCH_KEYS, loadReport, saveReport, downloadJSON, pitchAutoContext, slugifyId } from '../lib/scoutingReportsStore.js';
+import FVBadge from '../components/FVBadge.jsx';
+import { loadReport, saveReport, downloadJSON, pitchAutoContext, slugifyId } from '../lib/scoutingReportsStore.js';
 import { PITCHERS_SEASON_AGG } from '../data/pitchersSeasonAggregates.js';
 import { getAllPitcherNames, getPitchingLogStats } from '../data/logs/pitchingIndex.js';
 import { fmt } from '../lib/formatters.js';
-import { BENCH_LEVEL, benchP50, fmtSigned } from '../lib/benchmarks.js';
+import { BENCH_LEVEL, benchP50 } from '../lib/benchmarks.js';
+import '../styles/print-report.css';
 
 const gold = '#FFD600';
 
@@ -79,6 +81,25 @@ export default function PitcherReportsPage() {
   const [draft, setDraft] = useState(report);
   useEffect(() => { setDraft(report); }, [report]);
 
+  // Autosave: debounce 1s after last change
+  const [lastSavedAt, setLastSavedAt] = useState(null);
+  const autosaveTimer = useRef(null);
+  useEffect(() => {
+    if (!draft || !selected) return;
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = setTimeout(() => {
+      try {
+        saveReport({ ...draft, pitcherId: selected });
+        setLastSavedAt(new Date());
+      } catch (e) {
+        // swallow autosave errors; explicit Save remains available
+      }
+    }, 1000);
+    return () => {
+      if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    };
+  }, [draft, selected]);
+
   const onPitchField = (key, field, value) => {
     setDraft((d) => ({
       ...d,
@@ -97,6 +118,7 @@ export default function PitcherReportsPage() {
   const save = () => {
     const saved = saveReport({ ...(draft||{}), pitcherId: selected });
     setDraft(saved);
+    setLastSavedAt(new Date());
   };
 
   const exportJSON = () => {
@@ -106,51 +128,96 @@ export default function PitcherReportsPage() {
 
   const printPDF = () => { window.print(); };
 
-  const leftPitchKeys = useMemo(() => defaultPitchOrder.filter(k => (draft?.pitches && k in draft.pitches) || true), [draft]);
+  // Ensure re-render when draft changes; left column shows all default pitch keys for now
 
   const styles = useMemo(() => ({
     root: {
       '--bg-top': '#0A0C10', '--bg-bottom': '#111827', '--panel': 'rgba(20,26,36,0.9)', '--border': 'rgba(255,214,0,0.18)', '--text': '#E5E7EB', '--muted': '#94A3B8'
     },
-    wrap: { maxWidth: 1200, margin:'0 auto', padding:'24px 16px 48px' },
-    headerRow: { display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, marginBottom:8 },
-    title: { color: gold, fontWeight:900, letterSpacing:0.4, fontSize:32, margin:0 },
-    sub: { color: 'var(--muted)', marginTop:4 },
-    controls: { display:'flex', gap:8, alignItems:'center' },
-    select: { background:'rgba(0,0,0,0.25)', color:'var(--text)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:8, padding:'8px 10px', fontWeight:800 },
-    btn: { background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.18)', color:'var(--text)', borderRadius:8, padding:'8px 10px', fontWeight:800, fontSize:12, cursor:'pointer' },
-    grid: { display:'grid', gridTemplateColumns:'1fr 1.3fr', gap:16, alignItems:'start', marginTop:12 },
-    panel: { background:'var(--panel)', border:'1px solid var(--border)', borderRadius:12, padding:12, color:'var(--text)' },
+    wrap: { maxWidth: 1200, margin:'0 auto', padding:'20px 14px 36px' },
+    headerRow: { display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, marginBottom:6 },
+    title: { color: gold, fontWeight:900, letterSpacing:0.4, fontSize:30, margin:0 },
+    sub: { color: 'var(--muted)', marginTop:2 },
+    controls: { display:'flex', gap:8, alignItems:'center', position:'relative', zIndex:1000 },
+    savedNote: { textAlign:'right', color:'#9CA3AF', fontSize:11, marginTop:4 },
+    select: { background:'rgba(0,0,0,0.25)', color:'var(--text)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:8, padding:'8px 10px', fontWeight:800, outlineColor: gold },
+    btn: { background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.18)', color:'var(--text)', borderRadius:8, padding:'8px 10px', fontWeight:800, fontSize:12, cursor:'pointer', outlineColor: gold },
+    grid: { display:'grid', gridTemplateColumns:'1fr 1.25fr', gap:12, alignItems:'start', marginTop:8 },
+    panel: { background:'var(--panel)', border:'1px solid var(--border)', borderRadius:12, padding:10, color:'var(--text)' },
     label: { color:'var(--muted)', fontSize:12 },
-    h2: { color: gold, fontWeight:900, margin:'4px 0 8px' },
+    h2: { color: gold, fontWeight:900, margin:'2px 0 6px' },
     table: { width:'100%', borderCollapse:'collapse' },
-    th: { textAlign:'left', color:'var(--text)', padding:'8px 8px', borderBottom:'1px solid rgba(255,255,255,0.12)' },
-    td: { color:'var(--text)', padding:'8px 8px', borderTop:'1px solid rgba(255,255,255,0.08)' },
-    guide: { color:'var(--muted)', fontSize:12, marginTop:6 },
+    th: { position:'sticky', top:0, background:'rgba(20,26,36,0.95)', textAlign:'left', color:'var(--text)', padding:'4px 8px', borderBottom:'1px solid rgba(255,255,255,0.12)' },
+    td: { color:'var(--text)', padding:'4px 8px', borderTop:'1px solid rgba(255,255,255,0.08)' },
+    guide: { color:'var(--muted)', fontSize:12, marginTop:4 },
   }), []);
 
   const guide = '20 Poor • 30 Well-below • 40 Below • 50 Avg • 60 Above • 70 Plus-plus • 80 Elite';
 
+  // Compute suggested FV from future mix + command/control
+  const suggestedFV = useMemo(() => {
+    const f = (k) => draft?.pitches?.[k]?.future ?? null;
+    const best = (arr) => {
+      const vals = arr.map(f).filter(v => Number.isFinite(v));
+      if (!vals.length) return null;
+      return Math.max(...vals);
+    };
+    const fb = best(['fourSeam','sinker','cutter']);
+    const brk = best(['slider','curveball','sweeper']);
+    const off = best(['changeup','other']);
+    const cmd = draft?.tools?.command?.future ?? null;
+    const ctl = draft?.tools?.control?.future ?? null;
+    const parts = [];
+    if (Number.isFinite(fb)) parts.push(fb * 0.35);
+    if (Number.isFinite(brk)) parts.push(brk * 0.25);
+    if (Number.isFinite(off)) parts.push(off * 0.15);
+    if (Number.isFinite(cmd)) parts.push(cmd * 0.15);
+    if (Number.isFinite(ctl)) parts.push(ctl * 0.10);
+    if (!parts.length) return null;
+    const raw = parts.reduce((a,b)=>a+b,0);
+    const even = Math.round(raw / 2) * 2;
+    return Math.max(20, Math.min(80, even));
+  }, [draft]);
+
+  const handedness = useMemo(() => {
+    const name = pitcherOptions.find(p=>p.id===selected)?.name || '';
+    const s = String(name).toUpperCase();
+    if (/(\bLHP\b|\(LHP\)|LEFT-HANDED|LEFTY)/.test(s)) return 'LHP';
+    if (/(\bRHP\b|\(RHP\)|RIGHT-HANDED|RIGHTY)/.test(s)) return 'RHP';
+    return 'RHP';
+  }, [selected, pitcherOptions]);
+
   return (
     <div className="pitcher-reports-page" style={{ ...styles.root, minHeight:'100vh', background:'linear-gradient(180deg, var(--bg-top), var(--bg-bottom))' }}>
-      <style>{`@media print{ .no-print{ display:none!important } .print-only{ display:block!important } body{ background:#fff } .pitcher-reports-page{ background:#fff } } .print-only{ display:none }`}</style>
-      <div style={styles.wrap}>
-        {/* Header */}
-        <div style={styles.headerRow}>
-          <div>
-            <h1 style={styles.title}>Pitcher Scouting Reports (20–80)</h1>
-            <div style={styles.sub}>Editable MLB-style scouting report with pitch-by-pitch grades and auto context from season aggregates.</div>
-            <div style={{ ...styles.sub, fontSize:12 }}>Logs: {stats.files} games · {stats.entries} pitches</div>
+      <style>{`@media print{ .no-print{ display:none!important } .pitcher-reports-page{ background:#fff } }`}</style>
+      <div style={styles.wrap} className="report-wrap">
+        {/* Report Header */}
+        <div style={{ ...styles.headerRow, marginBottom: 10 }} className="section">
+          <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+              <h1 style={styles.title}>{pitcherOptions.find(p=>p.id===selected)?.name || selected}</h1>
+              <FVBadge handedness={handedness} fv={suggestedFV ?? null} size="md" />
+            </div>
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+              <span style={{ display:'inline-block', padding:'2px 8px', borderRadius:999, background:'rgba(148,163,184,0.15)', color:'#94A3B8', fontWeight:800, fontSize:11 }}>Risk: {draft?.risk || 'Medium'}</span>
+              <span style={{ display:'inline-block', padding:'2px 8px', borderRadius:999, background:'rgba(148,163,184,0.15)', color:'#94A3B8', fontWeight:800, fontSize:11 }}>Role: {draft?.roleProjection || '—'}</span>
+              <span style={{ display:'inline-block', padding:'2px 8px', borderRadius:999, background:'rgba(148,163,184,0.15)', color:'#94A3B8', fontWeight:800, fontSize:11 }}>Logs: {stats.files} games • {stats.entries} pitches</span>
+            </div>
           </div>
-          <div className="no-print" style={styles.controls}>
-            <select value={selected} onChange={(e)=>setSelected(e.target.value)} style={styles.select} aria-label="Select Pitcher">
-              {pitcherOptions.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-            <button type="button" style={styles.btn} onClick={save}>Save</button>
-            <button type="button" style={styles.btn} onClick={exportJSON}>Download JSON</button>
-            <button type="button" style={styles.btn} onClick={printPDF}>Export PDF</button>
+          <div className="no-print" style={{ display:'flex', flexDirection:'column', alignItems:'flex-end' }}>
+            <div style={styles.controls}>
+              <select value={selected} onChange={(e)=>setSelected(e.target.value)} style={styles.select} aria-label="Select Pitcher">
+                {pitcherOptions.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              <button type="button" style={styles.btn} onClick={save}>Save</button>
+              <button type="button" style={styles.btn} onClick={exportJSON}>Download JSON</button>
+              <button type="button" style={styles.btn} onClick={printPDF}>Export PDF</button>
+            </div>
+            <div style={styles.savedNote} aria-live="polite">
+              {lastSavedAt ? `Saved • ${lastSavedAt.toLocaleTimeString()}` : ' '}
+            </div>
           </div>
         </div>
 
@@ -168,14 +235,14 @@ export default function PitcherReportsPage() {
 
           {/* Right: Editable form */}
           <div>
-            <div style={{ ...styles.panel }}>
+            <div style={{ ...styles.panel }} className="no-print section">
               <div style={styles.h2}>Pitch Grades</div>
               <table style={styles.table}>
                 <thead>
                   <tr>
                     <th style={styles.th}>Pitch</th>
-                    <th style={styles.th}>Present</th>
-                    <th style={styles.th}>Future</th>
+                    <th style={styles.th} title={guide}>Present</th>
+                    <th style={styles.th} title={guide}>Future</th>
                     <th style={styles.th}>Usage %</th>
                     <th style={styles.th}>Notes</th>
                   </tr>
@@ -189,52 +256,92 @@ export default function PitcherReportsPage() {
                         <td style={styles.td}>
                           <input type="number" min={20} max={80} step={2} value={row.present ?? ''}
                             onChange={(e)=>onPitchField(k,'present', e.target.value === '' ? null : Number(e.target.value))}
-                            style={{ width:70, background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'6px 8px' }} />
+                            title={guide}
+                            style={{ width:80, minWidth:80, background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'4px 8px', outlineColor: gold }} />
                         </td>
                         <td style={styles.td}>
                           <input type="number" min={20} max={80} step={2} value={row.future ?? ''}
                             onChange={(e)=>onPitchField(k,'future', e.target.value === '' ? null : Number(e.target.value))}
-                            style={{ width:70, background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'6px 8px' }} />
+                            title={guide}
+                            style={{ width:80, minWidth:80, background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'4px 8px', outlineColor: gold }} />
                         </td>
                         <td style={styles.td}>
                           <input type="number" min={0} max={100} step={1} value={row.usage ?? ''}
                             onChange={(e)=>onPitchField(k,'usage', e.target.value === '' ? null : Number(e.target.value))}
-                            style={{ width:70, background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'6px 8px' }} />
+                            title="Usage percentage"
+                            style={{ width:80, minWidth:80, background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'4px 8px', outlineColor: gold }} />
                         </td>
                         <td style={styles.td}>
                           <input type="text" value={row.notes || ''}
                             onChange={(e)=>onPitchField(k,'notes', e.target.value)}
-                            style={{ width:'100%', background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'6px 8px' }} />
+                            style={{ width:'100%', minWidth:160, background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'4px 8px', outlineColor: gold }} />
                         </td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
-              <div style={styles.guide}>{guide}</div>
+              <div className="no-print" style={styles.guide}>{guide}</div>
             </div>
 
-            <div style={{ ...styles.panel, marginTop:12 }}>
+            {/* Print-only condensed grades */}
+            <div className="print-only section" style={{ ...styles.panel }}>
+              <div style={styles.h2}>Pitch Grades</div>
+              <table style={{ width:'100%', borderCollapse:'collapse' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign:'left', padding:'4px 6px', borderBottom:'1px solid rgba(0,0,0,0.2)' }}>Pitch</th>
+                    <th style={{ textAlign:'left', padding:'4px 6px', borderBottom:'1px solid rgba(0,0,0,0.2)' }}>P</th>
+                    <th style={{ textAlign:'left', padding:'4px 6px', borderBottom:'1px solid rgba(0,0,0,0.2)' }}>F</th>
+                    <th style={{ textAlign:'left', padding:'4px 6px', borderBottom:'1px solid rgba(0,0,0,0.2)' }}>Usage</th>
+                    <th style={{ textAlign:'left', padding:'4px 6px', borderBottom:'1px solid rgba(0,0,0,0.2)' }}>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {defaultPitchOrder.map((k) => {
+                    const row = draft?.pitches?.[k] || {};
+                    const p = row.present ?? '—';
+                    const f = row.future ?? '—';
+                    const u = row.usage != null ? `${row.usage}%` : '—';
+                    const n = row.notes || '';
+                    return (
+                      <tr key={`prow-${k}`}>
+                        <td style={{ padding:'4px 6px', borderTop:'1px solid rgba(0,0,0,0.1)' }}>{pitchDisplay[k] || k}</td>
+                        <td style={{ padding:'4px 6px', borderTop:'1px solid rgba(0,0,0,0.1)' }}>{p}</td>
+                        <td style={{ padding:'4px 6px', borderTop:'1px solid rgba(0,0,0,0.1)' }}>{f}</td>
+                        <td style={{ padding:'4px 6px', borderTop:'1px solid rgba(0,0,0,0.1)' }}>{u}</td>
+                        <td style={{ padding:'4px 6px', borderTop:'1px solid rgba(0,0,0,0.1)' }}>{n}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ ...styles.panel, marginTop:10 }} className="no-print section">
               <div style={styles.h2}>Overall Tools</div>
               <div style={{ display:'grid', gap:10 }}>
-                <ScoutingGradeInput label="Command" value={draft?.tools?.command} onChange={(v)=>onTool('command', v)} />
-                <ScoutingGradeInput label="Control" value={draft?.tools?.control} onChange={(v)=>onTool('control', v)} />
-                <ScoutingGradeInput label="Athleticism" value={draft?.tools?.athleticism} onChange={(v)=>onTool('athleticism', v)} />
-                <ScoutingGradeInput label="Delivery" value={draft?.tools?.delivery} onChange={(v)=>onTool('delivery', v)} />
-                <ScoutingGradeInput label="Fielding" value={draft?.tools?.fielding} onChange={(v)=>onTool('fielding', v)} />
+                <ScoutingGradeInput label="Command" value={draft?.tools?.command} onChange={(v)=>onTool('command', v)} tooltip={`${guide} • Command = execute to spots`} />
+                <ScoutingGradeInput label="Control" value={draft?.tools?.control} onChange={(v)=>onTool('control', v)} tooltip={`${guide} • Control = strikes rate`} />
+                <ScoutingGradeInput label="Athleticism" value={draft?.tools?.athleticism} onChange={(v)=>onTool('athleticism', v)} tooltip={guide} />
+                <ScoutingGradeInput label="Delivery" value={draft?.tools?.delivery} onChange={(v)=>onTool('delivery', v)} tooltip={guide} />
+                <ScoutingGradeInput label="Fielding" value={draft?.tools?.fielding} onChange={(v)=>onTool('fielding', v)} tooltip={guide} />
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginTop:12 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginTop:10 }}>
                 <div>
                   <div style={styles.label}>Overall FV (20–80)</div>
+                  <div className="no-print" style={{ marginBottom:6 }}>
+                    <FVBadge fv={draft?.overallFV} size="sm" />
+                  </div>
                   <input type="number" min={20} max={80} step={2} value={draft?.overallFV ?? ''}
                     onChange={(e)=>setDraft(d=>({ ...d, overallFV: e.target.value===''?null:Number(e.target.value) }))}
-                    style={{ width:'100%', background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'6px 8px' }} />
+                    style={{ width:'100%', background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'6px 8px', outlineColor: gold }} />
                 </div>
                 <div>
                   <div style={styles.label}>Risk</div>
                   <select value={draft?.risk || 'Medium'}
                     onChange={(e)=>setDraft(d=>({ ...d, risk: e.target.value }))}
-                    style={{ width:'100%', background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'8px 10px', fontWeight:800 }}>
+                    style={{ width:'100%', background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'8px 10px', fontWeight:800, outlineColor: gold }}>
                     <option>Low</option>
                     <option>Medium</option>
                     <option>High</option>
@@ -244,40 +351,92 @@ export default function PitcherReportsPage() {
                   <div style={styles.label}>Role Projection</div>
                   <input type="text" value={draft?.roleProjection || ''}
                     onChange={(e)=>setDraft(d=>({ ...d, roleProjection: e.target.value }))}
-                    style={{ width:'100%', background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'6px 8px' }} />
+                    style={{ width:'100%', background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'6px 8px', outlineColor: gold }} />
                 </div>
               </div>
             </div>
 
-            <div style={{ ...styles.panel, marginTop:12 }}>
+            {/* Print-only condensed tools */}
+            <div className="print-only section pb-before" style={{ ...styles.panel }}>
+              <div style={styles.h2}>Overall Tools</div>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:8 }}>
+                {['command','control','athleticism','delivery','fielding'].map((k)=>{
+                  const val = draft?.tools?.[k] || {};
+                  return (
+                    <div key={`pt-${k}`} style={{ padding:'6px 8px', border:'1px solid rgba(0,0,0,0.15)', borderRadius:8 }}>
+                      <div style={{ fontWeight:800, fontSize:12, color:'#111827', textTransform:'capitalize' }}>{k}</div>
+                      <div style={{ fontSize:12 }}>P {val.present ?? '—'} • F {val.future ?? '—'}</div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ marginTop:8 }}>
+                <span style={{ marginRight:8 }}><strong>FV:</strong> {draft?.overallFV ?? '—'}</span>
+                <span style={{ marginRight:8 }}><strong>Risk:</strong> {draft?.risk || 'Medium'}</span>
+                <span><strong>Role:</strong> {draft?.roleProjection || '—'}</span>
+              </div>
+            </div>
+
+            <div style={{ ...styles.panel, marginTop:10 }} className="no-print section">
               <div style={styles.h2}>Summary</div>
               <textarea rows={4} value={draft?.summary || ''}
                 onChange={(e)=>setDraft(d=>({ ...d, summary: e.target.value }))}
-                style={{ width:'100%', background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'8px' }} />
+                style={{ width:'100%', background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'8px', outlineColor: gold }} />
               <div style={{ ...styles.h2, marginTop:12 }}>Development Plan</div>
               <textarea rows={4} value={draft?.devPlan || ''}
                 onChange={(e)=>setDraft(d=>({ ...d, devPlan: e.target.value }))}
-                style={{ width:'100%', background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'8px' }} />
+                style={{ width:'100%', background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'8px', outlineColor: gold }} />
             </div>
 
-            <div style={{ ...styles.panel, marginTop:12 }}>
+            {/* Print-only Summary/Dev Plan */}
+            <div className="print-only section" style={{ ...styles.panel, marginTop:10 }}>
+              <div style={styles.h2}>Summary</div>
+              <div style={{ whiteSpace:'pre-wrap', lineHeight:1.4 }}>{draft?.summary || '—'}</div>
+              <div style={{ ...styles.h2, marginTop:8 }}>Development Plan</div>
+              <div style={{ whiteSpace:'pre-wrap', lineHeight:1.4 }}>{draft?.devPlan || '—'}</div>
+            </div>
+
+            <div style={{ ...styles.panel, marginTop:10 }} className="section pb-before">
               <div style={styles.h2}>Rendered Report</div>
-              <div style={{ color:'var(--text)' }}>
-                <strong>{pitcherOptions.find(p=>p.id===selected)?.name || selected}</strong>{draft?.overallFV ? ` • FV ${draft.overallFV}` : ''}{draft?.risk ? ` • Risk ${draft.risk}` : ''}{draft?.roleProjection ? ` • Role ${draft.roleProjection}` : ''}
+              <div style={{ color:'var(--text)', lineHeight: 1.5 }}>
+                {(() => {
+                  const name = pitcherOptions.find(p=>p.id===selected)?.name || selected;
+                  const cmd = draft?.tools?.command || {};
+                  const role = draft?.roleProjection || '—';
+                  const risk = draft?.risk || 'Medium';
+                  const fv = draft?.overallFV ?? '—';
+                  const pCmd = cmd.present ?? '—';
+                  const fCmd = cmd.future ?? '—';
+                  // Simple mix guess from entered pitches with usage
+                  const mix = defaultPitchOrder
+                    .filter(k => (draft?.pitches?.[k]?.usage ?? 0) > 0)
+                    .sort((a,b)=> (draft?.pitches?.[b]?.usage||0) - (draft?.pitches?.[a]?.usage||0))
+                    .slice(0,3)
+                    .map(k => (pitchDisplay[k] || k).split('-')[0])
+                    .join('/');
+                  const mixText = mix ? `${mix} mix; ` : '';
+                  return (
+                    <p>
+                      <strong>{name}</strong> — {mixText}present command {pCmd}, future {fCmd}. Role: {role}. FV {fv} (Risk {risk}).
+                    </p>
+                  );
+                })()}
               </div>
               {draft?.summary && (
-                <div style={{ marginTop:6, whiteSpace:'pre-wrap' }}>{draft.summary}</div>
+                <div style={{ marginTop:6, whiteSpace:'pre-wrap', lineHeight:1.5 }}>{draft.summary}</div>
               )}
               {draft?.devPlan && (
                 <div style={{ marginTop:10 }}>
                   <div style={{ color: gold, fontWeight:900, marginBottom:4 }}>Dev Plan</div>
-                  <div style={{ whiteSpace:'pre-wrap' }}>{draft.devPlan}</div>
+                  <div style={{ whiteSpace:'pre-wrap', lineHeight:1.5 }}>{draft.devPlan}</div>
                 </div>
               )}
             </div>
 
           </div>
         </div>
+        {/* Print footer with generated label */}
+        <div className="print-only print-footer">Generated by Trenton Thunder Player Analysis Platform</div>
       </div>
     </div>
   );
