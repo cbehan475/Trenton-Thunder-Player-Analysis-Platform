@@ -77,6 +77,67 @@ export default function PitcherReportsPage() {
   const stats = getPitchingLogStats();
 
   const displayName = useMemo(() => (pitcherOptions.find(p=>p.id===selected)?.name || selected), [pitcherOptions, selected]);
+  const pitcherId = selected;
+
+  // Compute a safe empty report up-front to avoid TDZ / undefined on first render
+  const emptyReport = useMemo(() => {
+    const pitches = {};
+    for (const k of defaultPitchOrder) pitches[k] = { present: null, future: null, usage: null, notes: '' };
+    return {
+      pitcherId,
+      name: displayName || pitcherId,
+      lastUpdated: null,
+      overallFV: null,
+      risk: 'Medium',
+      roleProjection: '',
+      tools: { command: {present:null,future:null}, control: {present:null,future:null}, athleticism: {present:null,future:null}, delivery: {present:null,future:null}, fielding: {present:null,future:null} },
+      pitches,
+      summary: '',
+      devPlan: ''
+    };
+  }, [pitcherId, displayName]);
+
+  // Load/merge report for selected pitcher early (tolerate id vs name slug)
+  const scoutReport = useMemo(() => {
+    if (!pitcherId) return emptyReport;
+    const seeded = loadReport(pitcherId, displayName);
+    return seeded || emptyReport;
+  }, [pitcherId, displayName, emptyReport]);
+
+  // Jude Abbadessa: merge scout-style defaults without overwriting user edits
+  const isJude = useMemo(() => {
+    const sid = slugifyId(pitcherId || '');
+    const sname = slugifyId(displayName || '');
+    return sid === 'jude-abbadessa' || sname === 'jude-abbadessa';
+  }, [pitcherId, displayName]);
+
+  const enrichedReport = useMemo(() => {
+    if (!isJude) return scoutReport;
+    const base = { ...(scoutReport || emptyReport) };
+    base.pitches = { ...(base.pitches || {}) };
+    // Helper to set pitch fields only if missing
+    const setPitch = (k, present, future, notes) => {
+      const cur = base.pitches[k] || { present: null, future: null, usage: base.pitches[k]?.usage ?? null, notes: '' };
+      base.pitches[k] = {
+        present: cur.present ?? present,
+        future: cur.future ?? future,
+        usage: cur.usage ?? null,
+        notes: (cur.notes && cur.notes.length ? cur.notes : notes) || ''
+      };
+    };
+    setPitch('fourSeam', 40, 45, 'Firm velo; below avg ride; used sparingly');
+    setPitch('sinker', 45, 50, 'Heavy usage; armside run; groundball shape');
+    setPitch('sweeper', 55, 60, '82.0 avg (84.2 max); plus miss pitch');
+    setPitch('changeup', 40, 45, 'Flashes fade; inconsistent execution');
+    setPitch('cutter', 40, 45, '83.0 avg (84.9 max); shorter action');
+    // Ensure slider/curveball are not considered (no grades, no notes)
+    if (base.pitches.slider) base.pitches.slider = { present: null, future: null, usage: null, notes: '' };
+    if (base.pitches.curveball) base.pitches.curveball = { present: null, future: null, usage: null, notes: '' };
+    // Summary default
+    const defaultSummary = 'Abbadessa relies on a Sinker/Sweeper mix with heavy usage of the sinker to generate weak contact. Sweeper is his best pitch with above-average projection. Fastball and cutter are secondary looks, while the changeup remains a work in progress. Profiles as a depth starter or middle reliever with potential to miss bats when the sweeper is on.';
+    base.summary = (base.summary && base.summary.trim().length) ? base.summary : defaultSummary;
+    return base;
+  }, [isJude, scoutReport, emptyReport]);
 
   // Compute Usage % per pitch from logs for selected pitcher (read-only)
   const usagePct = useMemo(() => {
@@ -110,21 +171,22 @@ export default function PitcherReportsPage() {
   // Merge seeded usage (from report) over log-derived usage for display/filters
   const mergedUsage = useMemo(() => {
     const base = { ...usagePct };
-    const seed = report?.pitches || {};
+    const seed = scoutReport?.pitches || {};
     for (const k of Object.keys(seed)) {
       const u = seed[k]?.usage;
       if (Number.isFinite(u)) base[k] = u;
     }
+    // For Jude, ensure slider/curveball are zeroed so rows never render
+    if (isJude) {
+      base.slider = 0;
+      base.curveball = 0;
+    }
     return base;
-  }, [usagePct, report]);
+  }, [usagePct, scoutReport, isJude]);
 
-  // Load/merge report for selected pitcher (tolerate id vs name slug)
-  const report = useMemo(() => {
-    if (!selected) return null;
-    return loadReport(selected, displayName);
-  }, [selected, displayName]);
-  const [draft, setDraft] = useState(report);
-  useEffect(() => { setDraft(report); }, [report]);
+  // Draft state mirrors the current report and is editable
+  const [draft, setDraft] = useState(enrichedReport);
+  useEffect(() => { setDraft(enrichedReport); }, [enrichedReport]);
 
   // Autosave: debounce 500ms after last change
   const [lastSavedAt, setLastSavedAt] = useState(null);
