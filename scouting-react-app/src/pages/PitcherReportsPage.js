@@ -38,13 +38,13 @@ function usePitcherOptions() {
   return base;
 }
 
-function PitchMetricCard({ pidOrName, pitchKey }) {
+function PitchMetricCard({ pidOrName, pitchKey, displayNameFor }) {
   const ctx = pitchAutoContext(pidOrName, pitchKey);
   const bench = benchP50(BENCH_LEVEL, pitchKey);
   return (
     <div style={{ background:'rgba(20,26,36,0.9)', border:'1px solid rgba(255,214,0,0.18)', borderRadius:12, padding:12 }}>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-        <div style={{ color: gold, fontWeight:900 }}>{pitchDisplay[pitchKey] || pitchKey}</div>
+        <div style={{ color: gold, fontWeight:900 }}>{(displayNameFor && displayNameFor(pitchKey)) || pitchDisplay[pitchKey] || pitchKey}</div>
         <span style={{ display:'inline-block', padding:'2px 8px', borderRadius:999, background:'rgba(148,163,184,0.15)', color:'#94A3B8', fontWeight:800, fontSize:11 }}>
           {`Velo ${ctx?.dV!=null ? (ctx.dV>0?`+${ctx.dV.toFixed(1)}`:ctx.dV.toFixed(1)) : '—'} • IVB ${ctx?.dIVB!=null ? (ctx.dIVB>0?`+${ctx.dIVB.toFixed(1)}`:ctx.dIVB.toFixed(1)) : '—'}`}
         </span>
@@ -141,12 +141,47 @@ export default function PitcherReportsPage() {
     return base;
   }, [isJude, scoutReport, emptyReport]);
 
+  // Chris Billingsley: seed grades/notes and limit shown pitches; treat splitter label
+  const isBillingsley = useMemo(() => {
+    const sid = slugifyId(pitcherId || '');
+    const sname = slugifyId(displayName || '');
+    return sid === 'chris-billingsley' || sname === 'chris-billingsley';
+  }, [pitcherId, displayName]);
+
+  const enrichedForBillingsley = useMemo(() => {
+    if (!isBillingsley) return enrichedReport;
+    const base = { ...(enrichedReport || emptyReport) };
+    base.pitches = { ...(base.pitches || {}) };
+    const setPitch = (k, present, future, notes) => {
+      const cur = base.pitches[k] || { present: null, future: null, usage: base.pitches[k]?.usage ?? null, notes: '' };
+      base.pitches[k] = {
+        present: present,
+        future: future,
+        usage: cur.usage ?? null,
+        notes: (cur.notes && cur.notes.length ? cur.notes : notes) || ''
+      };
+    };
+    // Four thrown pitches
+    setPitch('fourSeam', 50, 55, 'Firm velo; touches 97; avg ride/run');
+    setPitch('slider', 55, 60, 'Mid-80s; sharp tilt; bat-miss potential');
+    setPitch('curveball', 45, 50, 'Low-80s; depth; spot use');
+    setPitch('changeup', 40, 45, 'Mid-80s; low spin; inconsistent'); // Splitter mapped to changeup
+    // Clear others so rows don’t render unless usage > 0
+    for (const k of ['sinker','sweeper','cutter','other']) {
+      if (base.pitches[k]) base.pitches[k] = { present: null, future: null, usage: null, notes: '' };
+    }
+    // Summary default
+    const defaultSummary = 'Billingsley works off a firm fastball that can reach 97, complemented by a sharp mid-80s slider that shows true bat-miss potential. He mixes in a curveball with depth and a splitter that flashes but remains inconsistent. Profiles as a power right-hander with potential for swing-and-miss when the fastball/slider combo is on.';
+    base.summary = (base.summary && base.summary.trim().length) ? base.summary : defaultSummary;
+    return base;
+  }, [isBillingsley, enrichedReport, emptyReport]);
+
   // Declare the initial state object above the useState call
-  const initialReport = enrichedReport;
+  const initialReport = enrichedForBillingsley;
 
   // Draft state mirrors the current report and is editable
   const [draft, setDraft] = useState(initialReport);
-  useEffect(() => { setDraft(enrichedReport); }, [enrichedReport]);
+  useEffect(() => { setDraft(enrichedForBillingsley); }, [enrichedForBillingsley]);
 
   // Autosize the Summary textarea to avoid scrollbars
   useEffect(() => {
@@ -190,7 +225,7 @@ export default function PitcherReportsPage() {
   // Merge seeded usage (from report) over log-derived usage for display/filters
   const mergedUsage = useMemo(() => {
     const base = { ...usagePct };
-    const seed = scoutReport?.pitches || {};
+    const seed = (enrichedForBillingsley || scoutReport)?.pitches || {};
     for (const k of Object.keys(seed)) {
       const u = seed[k]?.usage;
       if (Number.isFinite(u)) base[k] = u;
@@ -200,8 +235,21 @@ export default function PitcherReportsPage() {
       base.slider = 0;
       base.curveball = 0;
     }
+    // For Billingsley, explicitly zero non-thrown pitches so they hide
+    if (isBillingsley) {
+      base.sinker = 0;
+      base.sweeper = 0;
+      base.cutter = 0;
+      base.other = 0;
+    }
     return base;
-  }, [usagePct, scoutReport, isJude]);
+  }, [usagePct, scoutReport, enrichedForBillingsley, isJude, isBillingsley]);
+
+  // Display helper to show Splitter for Billingsley instead of Changeup label
+  const displayNameFor = useMemo(() => (k) => {
+    if (isBillingsley && k === 'changeup') return 'Splitter';
+    return pitchDisplay[k] || k;
+  }, [isBillingsley]);
 
   // Autosave: debounce 500ms after last change
   const [lastSavedAt, setLastSavedAt] = useState(null);
@@ -384,7 +432,7 @@ export default function PitcherReportsPage() {
             <div style={styles.h2}>Pitch Context</div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))', gap:12 }}>
               {defaultPitchOrder.filter(k => (mergedUsage[k] ?? 0) > 0).map((k) => (
-                <PitchMetricCard key={k} pidOrName={selected} pitchKey={k} />
+                <PitchMetricCard key={k} pidOrName={selected} pitchKey={k} displayNameFor={displayNameFor} />
               ))}
             </div>
           </div>
@@ -414,7 +462,7 @@ export default function PitcherReportsPage() {
                     const guide = '20–80 even grades, P/F';
                     return (
                       <tr key={`row-${k}`}>
-                        <td style={styles.td}>{pitchDisplay[k] || k}</td>
+                        <td style={styles.td}>{displayNameFor(k)}</td>
                         <td style={styles.td}>
                           <input type="number" min={20} max={80} step={2} value={row.present ?? ''}
                             onChange={(e)=>onPitchField(k,'present', e.target.value === '' ? null : Number(e.target.value))}
@@ -491,7 +539,7 @@ export default function PitcherReportsPage() {
                     const n = row.notes || '';
                     return (
                       <tr key={`prow-${k}`}>
-                        <td style={{ padding:'4px 6px', borderTop:'1px solid rgba(0,0,0,0.1)' }}>{pitchDisplay[k] || k}</td>
+                        <td style={{ padding:'4px 6px', borderTop:'1px solid rgba(0,0,0,0.1)' }}>{displayNameFor(k)}</td>
                         <td style={{ padding:'4px 6px', borderTop:'1px solid rgba(0,0,0,0.1)' }}>{p}</td>
                         <td style={{ padding:'4px 6px', borderTop:'1px solid rgba(0,0,0,0.1)' }}>{f}</td>
                         <td style={{ padding:'4px 6px', borderTop:'1px solid rgba(0,0,0,0.1)' }}>{u}</td>
@@ -572,7 +620,7 @@ export default function PitcherReportsPage() {
                     .filter(k => (draft?.pitches?.[k]?.usage ?? 0) > 0)
                     .sort((a,b)=> (draft?.pitches?.[b]?.usage||0) - (draft?.pitches?.[a]?.usage||0))
                     .slice(0,3)
-                    .map(k => (pitchDisplay[k] || k).split('-')[0])
+                    .map(k => (displayNameFor(k) || k).split('-')[0])
                     .join('/');
                   const mixText = mix ? `${mix} mix; ` : '';
                   return (
