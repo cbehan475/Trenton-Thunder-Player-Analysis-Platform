@@ -68,6 +68,20 @@ const PITCHER_REPORTS = {
     },
     summary: 'Bonet mixes a four-seam fastball and sinker to attack hitters with different looks at ~93–95 mph. His slider flashes swing-and-miss potential with tight break, while the cutter provides a shorter, firm look in the upper-80s. If the changeup is confirmed, it adds a valuable offspeed option with fade to keep hitters off balance. Profiles as a versatile right-hander with a balanced mix and potential to generate both weak contact and chase swings.',
   },
+  'Noah Edders': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show the four listed pitches; hide all others
+    hidden: ['sweeper', 'curveball', 'cutter', 'other'],
+    reclassify: null,
+    grades: {
+      fourSeam: { present: 45, future: 50, notes: 'Low-90s velo; avg ride/run; plays best up in zone' },
+      sinker:   { present: 45, future: 50, notes: 'Armside run, lower IVB; situational groundball pitch' },
+      slider:   { present: 50, future: 55, notes: 'Low-80s; 2400+ RPM; miss potential; main secondary' },
+      changeup: { present: 40, future: 45, notes: 'Upper-80s; low spin; occasional use' },
+    },
+    summary: 'Edders mixes a low-90s fastball and sinker with a slider that has above-average spin and miss potential. The changeup is a seldom-used fourth pitch that flashes fade. Profiles as a right-hander with a FB/SL base, with the sinker giving him a groundball look.',
+  },
 };
 
 const defaultPitchOrder = ['fourSeam','sinker','slider','curveball','sweeper','changeup','cutter','other'];
