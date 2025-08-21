@@ -27,6 +27,7 @@ const PITCHER_REPORTS = {
   'Chris Billingsley': {
     alwaysInclude: ['fourSeam'],
     labels: { changeup: 'Splitter' },
+    hidden: ['cutter'],
     reclassify: (key, r) => {
       // Reclassify FF with HB>IVB as Sinker
       if (key === 'fourSeam' && Number.isFinite(r.h) && Number.isFinite(r.i) && r.h > r.i) return 'sinker';
@@ -43,6 +44,7 @@ const PITCHER_REPORTS = {
   'Jarrette Bonet': {
     alwaysInclude: ['fourSeam'],
     labels: {},
+    requireDetected: ['changeup'],
     reclassify: (key, r) => {
       // Detect Changeup: 82–87 velo, IVB < 12, HB > 10
       const v = r.v, i = r.i, h = r.h;
@@ -298,13 +300,21 @@ export default function PitcherReportsPage() {
   const mergedUsageEffective = useMemo(() => {
     const m = { ...mergedUsage };
     const always = new Set(currentReportCfg?.alwaysInclude || []);
+    const hidden = new Set(currentReportCfg?.hidden || []);
+    const requireDet = new Set(currentReportCfg?.requireDetected || []);
+    // Zero hidden and undetected required pitches
     for (const k of Object.keys(m)) {
+      if (hidden.has(k)) { m[k] = 0; continue; }
+      if (requireDet.has(k)) {
+        const detected = !!(rowsByKey && rowsByKey[k] && rowsByKey[k].length);
+        if (!detected) { m[k] = 0; continue; }
+      }
       if (!always.has(k) && !(m[k] > 0)) m[k] = 0;
     }
-    // Always ensure alwaysInclude keys are present
+    // Ensure alwaysInclude keys exist
     for (const k of always) if (m[k] == null) m[k] = 0;
     return m;
-  }, [mergedUsage, currentReportCfg]);
+  }, [mergedUsage, currentReportCfg, rowsByKey]);
 
   // Seed grades/summary based on current report config on first load/when switching pitcher
   useEffect(() => {
@@ -515,7 +525,16 @@ export default function PitcherReportsPage() {
           <div>
             <div style={styles.h2}>Pitch Context</div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))', gap:12 }}>
-              {defaultPitchOrder.filter(k => (currentReportCfg?.alwaysInclude?.includes(k)) || (mergedUsageEffective[k] ?? 0) > 0).map((k) => (
+              {defaultPitchOrder.filter(k => {
+                const hidden = new Set(currentReportCfg?.hidden || []);
+                const requireDet = new Set(currentReportCfg?.requireDetected || []);
+                if (hidden.has(k)) return false;
+                if (requireDet.has(k)) {
+                  const detected = !!(rowsByKey && rowsByKey[k] && rowsByKey[k].length);
+                  if (!detected) return false;
+                }
+                return (currentReportCfg?.alwaysInclude?.includes(k)) || (mergedUsageEffective[k] ?? 0) > 0;
+              }).map((k) => (
                 <PitchMetricCard
                   key={k}
                   pidOrName={selected}
@@ -543,6 +562,13 @@ export default function PitcherReportsPage() {
                 </thead>
                 <tbody>
                   {defaultPitchOrder.filter((k) => {
+                    const hidden = new Set(currentReportCfg?.hidden || []);
+                    const requireDet = new Set(currentReportCfg?.requireDetected || []);
+                    if (hidden.has(k)) return false;
+                    if (requireDet.has(k)) {
+                      const detected = !!(rowsByKey && rowsByKey[k] && rowsByKey[k].length);
+                      if (!detected) return false;
+                    }
                     const row = draft?.pitches?.[k] || {};
                     const hasGrade = (row.present != null) || (row.future != null);
                     const u = draft?.pitches?.[k]?.usage ?? mergedUsageEffective[k];
@@ -617,6 +643,13 @@ export default function PitcherReportsPage() {
                 </thead>
                 <tbody>
                   {defaultPitchOrder.filter((k) => {
+                    const hidden = new Set(currentReportCfg?.hidden || []);
+                    const requireDet = new Set(currentReportCfg?.requireDetected || []);
+                    if (hidden.has(k)) return false;
+                    if (requireDet.has(k)) {
+                      const detected = !!(rowsByKey && rowsByKey[k] && rowsByKey[k].length);
+                      if (!detected) return false;
+                    }
                     const row = draft?.pitches?.[k] || {};
                     const hasGrade = (row.present != null) || (row.future != null);
                     const u = mergedUsageEffective[k];
