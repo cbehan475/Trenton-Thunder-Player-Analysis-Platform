@@ -96,6 +96,20 @@ const PITCHER_REPORTS = {
     },
     summary: 'Calvert mixes a low-90s fastball with strong ride/run and leans heavily on a high-spin curveball as his best secondary. He complements it with a developing cutter and a slider that gives him another firm breaking option. Profiles as a right-hander with a FB/CB foundation and emerging cutter/slider looks.',
   },
+  'John Carver': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Four-Seam, Changeup, Slider, Curveball; hide others
+    hidden: ['sinker', 'sweeper', 'cutter', 'other'],
+    reclassify: null,
+    grades: {
+      fourSeam: { present: 50, future: 55, notes: 'Low-90s velo; ride/run; reliable foundation' },
+      changeup: { present: 50, future: 55, notes: 'Mid-80s; heavy fade; high-usage weapon' },
+      slider:   { present: 45, future: 50, notes: 'Low-80s; 2400+ RPM; shorter break; avg whiff pitch' },
+      curveball:{ present: 45, future: 50, notes: 'High-70s; spin ~2450; depth; secondary look' },
+    },
+    summary: 'Carver works primarily off a low-90s fastball and a heavily-used changeup with strong armside fade. He mixes in a slider and curveball to give multiple breaking looks. Profiles as a right-hander with a FB/CH base and two breaking ball variations.',
+  },
 };
 
 const defaultPitchOrder = ['fourSeam','sinker','slider','curveball','sweeper','changeup','cutter','other'];
