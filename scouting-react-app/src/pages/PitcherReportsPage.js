@@ -124,6 +124,20 @@ const PITCHER_REPORTS = {
     },
     summary: 'Bosley-Smith works off a firm four-seam fastball with strong ride and consistent mid-90s velocity. His slider is the primary secondary, showing tight horizontal action with above-average spin. He mixes in a changeup with fade and a high-spin curveball to change eye levels. Profiles as a fastball/slider right-hander with developing offspeed depth.',
   },
+  'Tommy Case': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Four-Seam, Curveball, Changeup, Sinker; hide others
+    hidden: ['slider', 'sweeper', 'cutter', 'other'],
+    reclassify: null,
+    grades: {
+      fourSeam: { present: 45, future: 50, notes: 'Low-90s velo; 20 IVB; solid ride; foundation pitch' },
+      curveball:{ present: 50, future: 55, notes: 'High-70s; 2680 spin; depth; main secondary' },
+      changeup: { present: 45, future: 50, notes: 'Mid-80s; fade/run; limited usage' },
+      sinker:   { present: 40, future: 45, notes: 'Occasional usage; small sample; alternative FB look' },
+    },
+    summary: 'Case works primarily off a low-90s fastball with solid ride. His curveball is his main secondary, showing above-average spin and depth. He mixes in a changeup with fade and will occasionally flash a sinker. Profiles as a FB/CB right-hander with developing offspeed depth.',
+  },
 };
 
 const defaultPitchOrder = ['fourSeam','sinker','slider','curveball','sweeper','changeup','cutter','other'];
