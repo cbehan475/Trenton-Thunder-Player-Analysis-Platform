@@ -1,5 +1,6 @@
 // src/pages/PitcherReportsPage.js
 import React, { useEffect, useMemo, useState, useRef } from 'react';
+import { produce } from 'immer';
 import ScoutingGradeInput from '../components/ScoutingGradeInput.jsx';
 import FVBadge from '../components/FVBadge.jsx';
 import { loadReport, saveReport, downloadJSON, importJSON, pitchAutoContext, slugifyId } from '../lib/scoutingReportsStore.js';
@@ -72,6 +73,7 @@ function PitchMetricCard({ pidOrName, pitchKey }) {
 }
 
 export default function PitcherReportsPage() {
+  const summaryRef = useRef(null);
   const pitcherOptions = usePitcherOptions();
   const [selected, setSelected] = useState(pitcherOptions[0]?.id || '');
   const stats = getPitchingLogStats();
@@ -139,18 +141,35 @@ export default function PitcherReportsPage() {
     return base;
   }, [isJude, scoutReport, emptyReport]);
 
+  // Declare the initial state object above the useState call
+  const initialReport = enrichedReport;
+
+  // Draft state mirrors the current report and is editable
+  const [draft, setDraft] = useState(initialReport);
+  useEffect(() => { setDraft(enrichedReport); }, [enrichedReport]);
+
+  // Autosize the Summary textarea to avoid scrollbars
+  useEffect(() => {
+    const el = summaryRef.current;
+    if (el && el instanceof HTMLTextAreaElement) {
+      el.style.height = 'auto';
+      el.style.height = `${el.scrollHeight}px`;
+    }
+  }, [draft?.summary, selected]);
+
   // Compute Usage % per pitch from logs for selected pitcher (read-only)
   const usagePct = useMemo(() => {
     if (!displayName) return {};
     const normalize = (s) => {
-      const x = String(s||'').toLowerCase();
-      if (/sweep/.test(x)) return 'sweeper';
-      if (/curve/.test(x)) return 'curveball';
-      if (/slider/.test(x)) return 'slider';
-      if (/change/.test(x)) return 'changeup';
-      if (/cutt/.test(x)) return 'cutter';
-      if (/sink|two[- ]?seam|2s|2-seam/.test(x)) return 'sinker';
-      if (/four|4s|4-seam|four[- ]?seam|ff|fastball|fb/.test(x)) return 'fourSeam';
+      const x = String(s||'').toUpperCase().trim();
+      // Canonical map for common tags/codes
+      if (/(^|\b)(FF|FA|FOUR[- ]?SEAM|4S|FASTBALL|FB)(\b|$)/.test(x)) return 'fourSeam';
+      if (/(^|\b)(SI|SNK|SINKER|TWO[- ]?SEAM|2S|2-SEAM)(\b|$)/.test(x)) return 'sinker';
+      if (/(^|\b)(SW|SWEEPER|SLD[- ]?SW|GYRO[- ]?SWEEPER)(\b|$)/.test(x)) return 'sweeper';
+      if (/(^|\b)(CH|CHANGEUP|SPL)(\b|$)/.test(x)) return 'changeup';
+      if (/(^|\b)(FC|CT|CUTTER)(\b|$)/.test(x)) return 'cutter';
+      if (/(^|\b)(CU|CB|KC|CURVEBALL|CURVE)(\b|$)/.test(x)) return 'curveball';
+      if (/(^|\b)(SL|SLIDER)(\b|$)/.test(x)) return 'slider';
       return null;
     };
     const counts = Object.create(null);
@@ -184,10 +203,6 @@ export default function PitcherReportsPage() {
     return base;
   }, [usagePct, scoutReport, isJude]);
 
-  // Draft state mirrors the current report and is editable
-  const [draft, setDraft] = useState(enrichedReport);
-  useEffect(() => { setDraft(enrichedReport); }, [enrichedReport]);
-
   // Autosave: debounce 500ms after last change
   const [lastSavedAt, setLastSavedAt] = useState(null);
   const autosaveTimer = useRef(null);
@@ -208,18 +223,24 @@ export default function PitcherReportsPage() {
   }, [draft, selected]);
 
   const onPitchField = (key, field, value) => {
-    setDraft((d) => ({
-      ...d,
-      pitches: {
-        ...(d?.pitches||{}),
-        [key]: { present: d?.pitches?.[key]?.present ?? null, future: d?.pitches?.[key]?.future ?? null, usage: d?.pitches?.[key]?.usage ?? null, notes: d?.pitches?.[key]?.notes ?? '',
-                  [field]: value }
-      }
+    setDraft(prev => produce(prev, d => {
+      const cur = d.pitches?.[key] || { present: null, future: null, usage: null, notes: '' };
+      if (!d.pitches) d.pitches = {};
+      d.pitches[key] = {
+        present: cur.present ?? null,
+        future: cur.future ?? null,
+        usage: cur.usage ?? null,
+        notes: cur.notes ?? '',
+        [field]: value,
+      };
     }));
   };
 
   const onTool = (toolKey, val) => {
-    setDraft((d) => ({ ...d, tools: { ...(d?.tools||{}), [toolKey]: val } }));
+    setDraft(prev => produce(prev, d => {
+      if (!d.tools) d.tools = {};
+      d.tools[toolKey] = val;
+    }));
   };
 
   const save = () => {
@@ -358,11 +379,11 @@ export default function PitcherReportsPage() {
 
         {/* Grid */}
         <div style={styles.grid}>
-          {/* Left: Auto context cards */}
+          {/* Left: Auto context cards (visible only if usage > 0) */}
           <div>
             <div style={styles.h2}>Pitch Context</div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))', gap:12 }}>
-              {defaultPitchOrder.map((k) => (
+              {defaultPitchOrder.filter(k => (mergedUsage[k] ?? 0) > 0).map((k) => (
                 <PitchMetricCard key={k} pidOrName={selected} pitchKey={k} />
               ))}
             </div>
@@ -408,9 +429,32 @@ export default function PitcherReportsPage() {
                         </td>
                         <td style={styles.td}>{ mergedUsage[k] != null ? `${Number(mergedUsage[k]).toFixed(1)}` : '—' }</td>
                         <td style={styles.td} className="notesCell">
-                          <input type="text" value={row.notes || ''}
-                            onChange={(e)=>onPitchField(k,'notes', e.target.value)}
-                            style={{ width:'100%', minWidth:160, background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'4px 8px', outlineColor: gold }} />
+                          <textarea
+                            value={row.notes || ''}
+                            onChange={(e)=>{
+                              // autosize
+                              const el = e.target;
+                              el.style.height = 'auto';
+                              el.style.height = `${el.scrollHeight}px`;
+                              onPitchField(k,'notes', e.target.value);
+                            }}
+                            rows={1}
+                            style={{
+                              width:'100%',
+                              minWidth:160,
+                              background:'#122448',
+                              color:'white',
+                              border:'1px solid rgba(255,255,255,0.12)',
+                              borderRadius:8,
+                              padding:'4px 8px',
+                              outlineColor: gold,
+                              resize:'none',
+                              overflow:'hidden',
+                              whiteSpace:'pre-wrap',
+                              wordBreak:'break-word',
+                              lineHeight:1.35,
+                            }}
+                          />
                         </td>
                       </tr>
                     );
@@ -482,9 +526,28 @@ export default function PitcherReportsPage() {
 
             <div style={{ ...styles.panel, marginTop:10 }} className="no-print section">
               <div style={styles.h2}>Summary</div>
-              <textarea rows={4} value={draft?.summary || ''}
-                onChange={(e)=>setDraft(d=>({ ...d, summary: e.target.value }))}
-                style={{ width:'100%', background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'8px', outlineColor: gold }} />
+              <div style={{ marginTop:6, padding:10, borderRadius:10, background:'rgba(148,163,184,0.10)', overflow:'hidden' }}>
+                <textarea
+                  ref={summaryRef}
+                  rows={4}
+                  value={draft?.summary || ''}
+                  onChange={(e)=>setDraft(prev => produce(prev, d => { d.summary = e.target.value; }))}
+                  style={{
+                    width:'100%',
+                    background:'transparent',
+                    color:'white',
+                    border:'none',
+                    outline:'none',
+                    padding:0,
+                    boxSizing:'border-box',
+                    whiteSpace:'pre-wrap',
+                    wordBreak:'break-word',
+                    lineHeight:1.5,
+                    overflow:'hidden',
+                    resize:'none',
+                  }}
+                />
+              </div>
             </div>
 
             {/* Print-only Summary */}

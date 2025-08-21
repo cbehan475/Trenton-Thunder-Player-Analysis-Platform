@@ -5,6 +5,7 @@
 
 import { SCOUTING_REPORTS } from '../data/scoutingReports.js';
 import { getPitcherSeasonAgg, benchP50, BENCH_LEVEL, fmtSigned } from './benchmarks.js';
+import ALL_PITCH_EVENTS from '../data/logs/pitchingIndex.js';
 
 const PITCH_KEYS = [
   'fourSeam', 'sinker', 'slider', 'curveball', 'sweeper', 'changeup', 'cutter', 'other'
@@ -106,12 +107,55 @@ export async function importJSON(file, onLoad) {
   if (typeof onLoad === 'function') onLoad(pid, obj);
 }
 
+// Canonicalize free-form pitch tags to internal keys
+function canonKey(s) {
+  const x = String(s||'').toUpperCase().trim();
+  if (/(^|\b)(FF|FA|FOUR[- ]?SEAM|4S|FASTBALL|FB)(\b|$)/.test(x)) return 'fourSeam';
+  if (/(^|\b)(SI|SNK|SINKER|TWO[- ]?SEAM|2S|2-SEAM)(\b|$)/.test(x)) return 'sinker';
+  if (/(^|\b)(SW|SWEEPER|SLD[- ]?SW|GYRO[- ]?SWEEPER)(\b|$)/.test(x)) return 'sweeper';
+  if (/(^|\b)(CH|CHANGEUP|SPL)(\b|$)/.test(x)) return 'changeup';
+  if (/(^|\b)(FC|CT|CUTTER)(\b|$)/.test(x)) return 'cutter';
+  if (/(^|\b)(CU|CB|KC|CURVEBALL|CURVE)(\b|$)/.test(x)) return 'curveball';
+  if (/(^|\b)(SL|SLIDER)(\b|$)/.test(x)) return 'slider';
+  return null;
+}
+
+function num(v) { return typeof v === 'number' ? v : Number(v); }
+function median(arr) {
+  const xs = arr.filter((n) => Number.isFinite(n)).slice().sort((a,b)=>a-b);
+  if (!xs.length) return null;
+  return xs[Math.floor(xs.length/2)];
+}
+
 export function pitchAutoContext(pidOrName, pitchKey) {
+  // Try season aggregates first
   const agg = getPitcherSeasonAgg(pidOrName, pitchKey);
+  let velo = agg?.p50Velo ?? null;
+  let ivb  = agg?.p50IVB  ?? null;
+  let hb   = agg?.p50HB   ?? null;
+
+  // Fallback to raw logs p50 medians if aggregates missing
+  if (velo == null && ivb == null && hb == null && ALL_PITCH_EVENTS && pidOrName) {
+    const needle = String(pidOrName);
+    const want = String(pitchKey);
+    const rows = [];
+    for (const e of ALL_PITCH_EVENTS) {
+      if (e?.pitcher !== needle) continue;
+      const t = canonKey(e.pitchType || e.type || e.pitch || e.pitch_name || e.pitchClass);
+      if (!t || t !== want) continue;
+      const v = num(e.velo ?? e.velocity ?? e.v ?? e.speed);
+      const i = num(e.ivb ?? e.vert ?? e.rise);
+      const h = num(e.hb  ?? e.horz ?? e.run);
+      rows.push({ v, i, h });
+    }
+    if (rows.length) {
+      velo = median(rows.map(r=>r.v));
+      ivb  = median(rows.map(r=>r.i));
+      hb   = median(rows.map(r=>r.h));
+    }
+  }
+
   const bench = benchP50(BENCH_LEVEL, pitchKey);
-  const velo = agg?.p50Velo ?? null;
-  const ivb  = agg?.p50IVB  ?? null;
-  const hb   = agg?.p50HB   ?? null;
   const dv = bench?.veloP50 != null ? (velo!=null ? velo - bench.veloP50 : null) : null;
   const di = bench?.ivbP50  != null ? (ivb!=null  ? ivb  - bench.ivbP50  : null) : null;
   const dh = bench?.hbP50   != null ? (hb!=null   ? hb   - bench.hbP50   : null) : null;
