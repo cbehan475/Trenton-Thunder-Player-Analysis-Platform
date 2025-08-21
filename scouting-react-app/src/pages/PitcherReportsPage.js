@@ -18,7 +18,12 @@ const PITCHER_REPORTS = {
   'Jude Abbadessa': {
     alwaysInclude: ['fourSeam'],
     labels: {},
-    reclassify: null, // no special reclass rules
+    hidden: ['slider', 'curveball'],
+    reclassify: (key, r) => {
+      // Reclassify all Curveball to Sweeper
+      if (key === 'curveball') return 'sweeper';
+      return key;
+    },
     grades: {
       // Keep Jude's structure minimal; existing saved report will fill specifics
     },
