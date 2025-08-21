@@ -82,6 +82,20 @@ const PITCHER_REPORTS = {
     },
     summary: 'Edders mixes a low-90s fastball and sinker with a slider that has above-average spin and miss potential. The changeup is a seldom-used fourth pitch that flashes fade. Profiles as a right-hander with a FB/SL base, with the sinker giving him a groundball look.',
   },
+  'Ryan Calvert': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Four-Seam, Curveball, Cutter, Slider; hide others
+    hidden: ['sinker', 'changeup', 'sweeper', 'other'],
+    reclassify: null,
+    grades: {
+      fourSeam: { present: 45, future: 50, notes: 'Low-90s velo; above avg IVB; plays best up' },
+      curveball:{ present: 50, future: 55, notes: 'Mid-70s; 2500 RPM; depth; bat-miss potential' },
+      cutter:   { present: 45, future: 50, notes: 'Mid-80s; shorter action; developing' },
+      slider:   { present: 45, future: 50, notes: 'Low-80s; shorter break; secondary look' },
+    },
+    summary: 'Calvert mixes a low-90s fastball with strong ride/run and leans heavily on a high-spin curveball as his best secondary. He complements it with a developing cutter and a slider that gives him another firm breaking option. Profiles as a right-hander with a FB/CB foundation and emerging cutter/slider looks.',
+  },
 };
 
 const defaultPitchOrder = ['fourSeam','sinker','slider','curveball','sweeper','changeup','cutter','other'];
