@@ -137,6 +137,20 @@ const PITCHER_REPORTS = {
     },
     summary: 'Case works primarily off a low-90s fastball with solid ride. His curveball is his main secondary, showing above-average spin and depth. He mixes in a changeup with fade. Profiles as a FB/CB right-hander with developing offspeed depth.',
   },
+  'Bryson Dudley': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Four-Seam, Slider, Cutter, Curveball; hide others
+    hidden: ['sinker', 'changeup', 'sweeper', 'other'],
+    reclassify: null,
+    grades: {
+      fourSeam: { present: 55, future: 60, notes: 'Mid-90s velo; 19 IVB / 10 HB; power pitch; foundational' },
+      slider:   { present: 50, future: 55, notes: 'Mid-upper 80s; 2400+ RPM; miss potential' },
+      cutter:   { present: 45, future: 50, notes: 'High-80s; firm, shorter action' },
+      curveball:{ present: 45, future: 50, notes: 'Low-80s; 2500+ spin; depth; mix pitch' },
+    },
+    summary: 'Dudley works off a mid-90s fastball with ride/run, showing it as his primary weapon. He complements it with a firm slider that flashes miss potential and a developing cutter. His curveball adds another look with spin and depth. Profiles as a power right-hander with a FB/SL base and supplemental cutter/curveball.',
+  },
 };
 
 const defaultPitchOrder = ['fourSeam','sinker','slider','curveball','sweeper','changeup','cutter','other'];
