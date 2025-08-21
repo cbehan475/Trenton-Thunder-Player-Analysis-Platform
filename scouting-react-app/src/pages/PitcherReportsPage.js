@@ -127,16 +127,15 @@ const PITCHER_REPORTS = {
   'Tommy Case': {
     alwaysInclude: ['fourSeam'],
     labels: {},
-    // Only show Four-Seam, Curveball, Changeup, Sinker; hide others
-    hidden: ['slider', 'sweeper', 'cutter', 'other'],
+    // Only show Four-Seam, Curveball, Changeup; hide others (no sinker in arsenal)
+    hidden: ['sinker', 'slider', 'sweeper', 'cutter', 'other'],
     reclassify: null,
     grades: {
       fourSeam: { present: 45, future: 50, notes: 'Low-90s velo; 20 IVB; solid ride; foundation pitch' },
       curveball:{ present: 50, future: 55, notes: 'High-70s; 2680 spin; depth; main secondary' },
       changeup: { present: 45, future: 50, notes: 'Mid-80s; fade/run; limited usage' },
-      sinker:   { present: 40, future: 45, notes: 'Occasional usage; small sample; alternative FB look' },
     },
-    summary: 'Case works primarily off a low-90s fastball with solid ride. His curveball is his main secondary, showing above-average spin and depth. He mixes in a changeup with fade and will occasionally flash a sinker. Profiles as a FB/CB right-hander with developing offspeed depth.',
+    summary: 'Case works primarily off a low-90s fastball with solid ride. His curveball is his main secondary, showing above-average spin and depth. He mixes in a changeup with fade. Profiles as a FB/CB right-hander with developing offspeed depth.',
   },
 };
 
