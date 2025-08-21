@@ -110,6 +110,20 @@ const PITCHER_REPORTS = {
     },
     summary: 'Carver works primarily off a low-90s fastball and a heavily-used changeup with strong armside fade. He mixes in a slider and curveball to give multiple breaking looks. Profiles as a right-hander with a FB/CH base and two breaking ball variations.',
   },
+  'Collin Bosley-Smith': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Four-Seam, Slider, Changeup, Curveball; hide others
+    hidden: ['sinker', 'sweeper', 'cutter', 'other'],
+    reclassify: null,
+    grades: {
+      fourSeam: { present: 50, future: 55, notes: 'Low-mid 90s velo; 20+ IVB; main pitch' },
+      slider:   { present: 50, future: 55, notes: 'Low-80s; 2500+ RPM; tight horizontal action' },
+      changeup: { present: 45, future: 50, notes: 'Low-80s; ~1600 spin; armside fade' },
+      curveball:{ present: 45, future: 50, notes: 'High-70s; 2600+ RPM; depth; occasional use' },
+    },
+    summary: 'Bosley-Smith works off a firm four-seam fastball with strong ride and consistent mid-90s velocity. His slider is the primary secondary, showing tight horizontal action with above-average spin. He mixes in a changeup with fade and a high-spin curveball to change eye levels. Profiles as a fastball/slider right-hander with developing offspeed depth.',
+  },
 };
 
 const defaultPitchOrder = ['fourSeam','sinker','slider','curveball','sweeper','changeup','cutter','other'];
