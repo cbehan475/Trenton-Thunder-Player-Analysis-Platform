@@ -1,6 +1,7 @@
 // src/pages/PitcherReportsPage.js
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { produce } from 'immer';
+import TextareaAutosize from '../components/TextareaAutosize.jsx';
 import ScoutingGradeInput from '../components/ScoutingGradeInput.jsx';
 import FVBadge from '../components/FVBadge.jsx';
 import { loadReport, saveReport, downloadJSON, importJSON, pitchAutoContext, slugifyId } from '../lib/scoutingReportsStore.js';
@@ -38,8 +39,28 @@ function usePitcherOptions() {
   return base;
 }
 
-function PitchMetricCard({ pidOrName, pitchKey, displayNameFor }) {
-  const ctx = pitchAutoContext(pidOrName, pitchKey);
+function PitchMetricCard({ pidOrName, pitchKey, displayNameFor, overrideRows }) {
+  // Optional override: compute medians from provided rows (for Billingsley sinker reclass)
+  const ctx = useMemo(() => {
+    if (overrideRows && overrideRows.length) {
+      const nums = (arr) => arr.filter(n => Number.isFinite(n));
+      const median = (arr) => {
+        const a = nums(arr).slice().sort((a,b)=>a-b);
+        if (!a.length) return null;
+        const m = Math.floor(a.length/2);
+        return a.length % 2 ? a[m] : (a[m-1] + a[m]) / 2;
+      };
+      const velo = median(overrideRows.map(r=>r.v));
+      const ivb  = median(overrideRows.map(r=>r.i));
+      const hb   = median(overrideRows.map(r=>r.h));
+      const bench = benchP50(BENCH_LEVEL, pitchKey);
+      const dv = bench?.veloP50 != null ? (velo!=null ? velo - bench.veloP50 : null) : null;
+      const di = bench?.ivbP50  != null ? (ivb!=null  ? ivb  - bench.ivbP50  : null) : null;
+      const dh = bench?.hbP50   != null ? (hb!=null   ? hb   - bench.hbP50   : null) : null;
+      return { velo, ivb, hb, dV: dv, dIVB: di, dHB: dh };
+    }
+    return pitchAutoContext(pidOrName, pitchKey);
+  }, [pidOrName, pitchKey, overrideRows]);
   const bench = benchP50(BENCH_LEVEL, pitchKey);
   return (
     <div style={{ background:'rgba(20,26,36,0.9)', border:'1px solid rgba(255,214,0,0.18)', borderRadius:12, padding:12 }}>
@@ -209,10 +230,24 @@ export default function PitcherReportsPage() {
     };
     const counts = Object.create(null);
     let total = 0;
+    const events = [];
     for (const e of ALL_PITCH_EVENTS) {
       if (e?.pitcher !== displayName) continue;
       const key = normalize(e.pitchType || e.type || e.pitch || e.pitch_name || e.pitchClass);
       if (!key) continue;
+      const v = Number(e.velo ?? e.velocity ?? e.v ?? e.speed);
+      const i = Number(e.ivb ?? e.vert ?? e.rise);
+      const h = Number(e.hb  ?? e.horz ?? e.run);
+      events.push({ key, v, i, h, raw: e });
+    }
+
+    // Billingsley-specific reclassification: four-seams with HB > IVB become sinkers
+    const reclass = isBillingsley;
+    for (const r of events) {
+      let key = r.key;
+      if (reclass && key === 'fourSeam' && Number.isFinite(r.h) && Number.isFinite(r.i) && r.h > r.i) {
+        key = 'sinker';
+      }
       counts[key] = (counts[key] || 0) + 1;
       total += 1;
     }
@@ -220,7 +255,7 @@ export default function PitcherReportsPage() {
     const pct = {};
     for (const k of Object.keys(counts)) pct[k] = Math.round((counts[k] / total) * 1000) / 10; // 1-decimal
     return pct;
-  }, [displayName]);
+  }, [displayName, isBillingsley]);
 
   // Merge seeded usage (from report) over log-derived usage for display/filters
   const mergedUsage = useMemo(() => {
@@ -237,13 +272,82 @@ export default function PitcherReportsPage() {
     }
     // For Billingsley, explicitly zero non-thrown pitches so they hide
     if (isBillingsley) {
-      base.sinker = 0;
+      // sinker handled below based on detection; keep fourSeam always
       base.sweeper = 0;
       base.cutter = 0;
       base.other = 0;
     }
     return base;
   }, [usagePct, scoutReport, enrichedForBillingsley, isJude, isBillingsley]);
+
+  // Build Billingsley-specific reclassified rows for sinker p50s
+  const billRowsByKey = useMemo(() => {
+    if (!isBillingsley || !displayName) return null;
+    const rows = { fourSeam: [], sinker: [], slider: [], curveball: [], changeup: [], cutter: [], sweeper: [], other: [] };
+    const normalize = (s) => {
+      const x = String(s||'').toUpperCase().trim();
+      if (/(^|\b)(FF|FA|FOUR[- ]?SEAM|4S|FASTBALL|FB)(\b|$)/.test(x)) return 'fourSeam';
+      if (/(^|\b)(SI|SNK|SINKER|TWO[- ]?SEAM|2S|2-SEAM)(\b|$)/.test(x)) return 'sinker';
+      if (/(^|\b)(SW|SWEEPER|SLD[- ]?SW|GYRO[- ]?SWEEPER)(\b|$)/.test(x)) return 'sweeper';
+      if (/(^|\b)(CH|CHANGEUP|SPL)(\b|$)/.test(x)) return 'changeup';
+      if (/(^|\b)(FC|CT|CUTTER)(\b|$)/.test(x)) return 'cutter';
+      if (/(^|\b)(CU|CB|KC|CURVEBALL|CURVE)(\b|$)/.test(x)) return 'curveball';
+      if (/(^|\b)(SL|SLIDER)(\b|$)/.test(x)) return 'slider';
+      return null;
+    };
+    for (const e of ALL_PITCH_EVENTS) {
+      if (e?.pitcher !== displayName) continue;
+      let key = normalize(e.pitchType || e.type || e.pitch || e.pitch_name || e.pitchClass);
+      if (!key) continue;
+      const v = Number(e.velo ?? e.velocity ?? e.v ?? e.speed);
+      const i = Number(e.ivb ?? e.vert ?? e.rise);
+      const h = Number(e.hb  ?? e.horz ?? e.run);
+      if (key === 'fourSeam' && Number.isFinite(h) && Number.isFinite(i) && h > i) {
+        key = 'sinker';
+      }
+      rows[key].push({ v, i, h });
+    }
+    return rows;
+  }, [isBillingsley, displayName]);
+
+  const hasBillSinker = useMemo(() => !!(billRowsByKey && billRowsByKey.sinker && billRowsByKey.sinker.length), [billRowsByKey]);
+
+  // Ensure mergedUsage hides sinker if none confirmed
+  const mergedUsageWithSinker = useMemo(() => {
+    if (!isBillingsley) return mergedUsage;
+    const m = { ...mergedUsage };
+    if (!hasBillSinker) m.sinker = 0;
+    return m;
+  }, [isBillingsley, mergedUsage, hasBillSinker]);
+
+  // Seed sinker grades/notes if confirmed and values are not already set by user
+  useEffect(() => {
+    if (!isBillingsley || !hasBillSinker) return;
+    setDraft(prev => produce(prev, d => {
+      if (!d.pitches) d.pitches = {};
+      const cur = d.pitches.sinker || {};
+      const needPresent = cur.present == null;
+      const needFuture = cur.future == null;
+      const needNotes = !cur.notes;
+      if (needPresent || needFuture || needNotes) {
+        d.pitches.sinker = {
+          present: needPresent ? 45 : cur.present,
+          future: needFuture ? 50 : cur.future,
+          usage: cur.usage ?? null,
+          notes: needNotes ? 'Armside run; more HB than IVB; groundball shape' : cur.notes,
+        };
+      }
+    }));
+  }, [isBillingsley, hasBillSinker]);
+
+  // Seed Billingsley Summary if empty
+  useEffect(() => {
+    if (!isBillingsley) return;
+    if (!draft?.summary || draft.summary.trim() === '') {
+      const text = 'Billingsley works off a firm four-seam fastball that can reach 97, complemented by a sharp mid-80s slider that shows true bat-miss potential. He mixes in a curveball with depth and a splitter that flashes but remains inconsistent. If logs confirm a sinker variant, it gives him an extra groundball weapon alongside the four-seam. Profiles as a power right-hander with potential swing-and-miss when the fastball/slider combo is on.';
+      setDraft(prev => produce(prev, d => { d.summary = text; }));
+    }
+  }, [isBillingsley, draft?.summary]);
 
   // Display helper to show Splitter for Billingsley instead of Changeup label
   const displayNameFor = useMemo(() => (k) => {
@@ -431,8 +535,14 @@ export default function PitcherReportsPage() {
           <div>
             <div style={styles.h2}>Pitch Context</div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))', gap:12 }}>
-              {defaultPitchOrder.filter(k => (mergedUsage[k] ?? 0) > 0).map((k) => (
-                <PitchMetricCard key={k} pidOrName={selected} pitchKey={k} displayNameFor={displayNameFor} />
+              {defaultPitchOrder.filter(k => k==='fourSeam' || (mergedUsageWithSinker[k] ?? 0) > 0).map((k) => (
+                <PitchMetricCard
+                  key={k}
+                  pidOrName={selected}
+                  pitchKey={k}
+                  displayNameFor={displayNameFor}
+                  overrideRows={isBillingsley && k==='sinker' && billRowsByKey ? billRowsByKey.sinker : null}
+                />
               ))}
             </div>
           </div>
@@ -455,8 +565,8 @@ export default function PitcherReportsPage() {
                   {defaultPitchOrder.filter((k) => {
                     const row = draft?.pitches?.[k] || {};
                     const hasGrade = (row.present != null) || (row.future != null);
-                    const u = draft?.pitches?.[k]?.usage ?? mergedUsage[k];
-                    return (Number(u) > 0) || hasGrade;
+                    const u = draft?.pitches?.[k]?.usage ?? mergedUsageWithSinker[k];
+                    return k==='fourSeam' || (Number(u) > 0) || hasGrade;
                   }).map((k) => {
                     const row = draft?.pitches?.[k] || {};
                     const guide = '20–80 even grades, P/F';
@@ -529,13 +639,13 @@ export default function PitcherReportsPage() {
                   {defaultPitchOrder.filter((k) => {
                     const row = draft?.pitches?.[k] || {};
                     const hasGrade = (row.present != null) || (row.future != null);
-                    const u = mergedUsage[k];
-                    return (Number(u) > 0) || hasGrade;
+                    const u = mergedUsageWithSinker[k];
+                    return k==='fourSeam' || (Number(u) > 0) || hasGrade;
                   }).map((k) => {
                     const row = draft?.pitches?.[k] || {};
                     const p = row.present ?? '—';
                     const f = row.future ?? '—';
-                    const u = mergedUsage[k] != null ? `${Number(mergedUsage[k]).toFixed(1)}%` : '—';
+                    const u = mergedUsageWithSinker[k] != null ? `${Number(mergedUsageWithSinker[k]).toFixed(1)}%` : '—';
                     const n = row.notes || '';
                     return (
                       <tr key={`prow-${k}`}>
@@ -575,9 +685,8 @@ export default function PitcherReportsPage() {
             <div style={{ ...styles.panel, marginTop:10 }} className="no-print section">
               <div style={styles.h2}>Summary</div>
               <div style={{ marginTop:6, padding:10, borderRadius:10, background:'rgba(148,163,184,0.10)', overflow:'hidden' }}>
-                <textarea
+                <TextareaAutosize
                   ref={summaryRef}
-                  rows={4}
                   value={draft?.summary || ''}
                   onChange={(e)=>setDraft(prev => produce(prev, d => { d.summary = e.target.value; }))}
                   style={{
@@ -592,7 +701,6 @@ export default function PitcherReportsPage() {
                     wordBreak:'break-word',
                     lineHeight:1.5,
                     overflow:'hidden',
-                    resize:'none',
                   }}
                 />
               </div>
