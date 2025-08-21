@@ -20,8 +20,9 @@ const PITCHER_REPORTS = {
     labels: {},
     hidden: ['slider', 'curveball'],
     reclassify: (key, r) => {
-      // Reclassify all Curveball to Sweeper
+      // Reclassify all Curveball to Sweeper; any Slider to Cutter
       if (key === 'curveball') return 'sweeper';
+      if (key === 'slider') return 'cutter';
       return key;
     },
     grades: {
