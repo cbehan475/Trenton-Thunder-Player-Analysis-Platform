@@ -13,6 +13,55 @@ import '../styles/print-report.css';
 
 const gold = '#FFD600';
 
+// Centralized per-pitcher configuration
+const PITCHER_REPORTS = {
+  'Jude Abbadessa': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    reclassify: null, // no special reclass rules
+    grades: {
+      // Keep Jude's structure minimal; existing saved report will fill specifics
+    },
+    summary: 'Abbadessa relies on a Sinker/Sweeper mix with heavy usage of the sinker to generate weak contact. Sweeper is his best pitch with above-average projection. Fastball and cutter are secondary looks, while the changeup remains a work in progress. Profiles as a depth starter or middle reliever with potential to miss bats when the sweeper is on.',
+  },
+  'Chris Billingsley': {
+    alwaysInclude: ['fourSeam'],
+    labels: { changeup: 'Splitter' },
+    reclassify: (key, r) => {
+      // Reclassify FF with HB>IVB as Sinker
+      if (key === 'fourSeam' && Number.isFinite(r.h) && Number.isFinite(r.i) && r.h > r.i) return 'sinker';
+      return key;
+    },
+    grades: {
+      fourSeam: { present: 50, future: 55, notes: 'Firm velo; touches 97; avg ride/run' },
+      slider: { present: 55, future: 60, notes: 'Mid-80s; sharp tilt; bat-miss potential' },
+      curveball: { present: 45, future: 50, notes: 'Low-80s; depth; spot use' },
+      changeup: { present: 40, future: 45, notes: 'Mid-80s; low spin; inconsistent' },
+    },
+    summary: 'Billingsley works off a firm four-seam fastball that can reach 97, complemented by a sharp mid-80s slider that shows true bat-miss potential. He mixes in a curveball with depth and a splitter that flashes but remains inconsistent. If logs confirm a sinker variant, it gives him an extra groundball weapon alongside the four-seam. Profiles as a power right-hander with potential swing-and-miss when the fastball/slider combo is on.',
+  },
+  'Jarrette Bonet': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    reclassify: (key, r) => {
+      // Detect Changeup: 82–87 velo, IVB < 12, HB > 10
+      const v = r.v, i = r.i, h = r.h;
+      if (Number.isFinite(v) && Number.isFinite(i) && Number.isFinite(h)) {
+        if (v >= 82 && v <= 87 && i < 12 && h > 10) return 'changeup';
+      }
+      return key;
+    },
+    grades: {
+      fourSeam: { present: 50, future: 55, notes: 'Firm velo; avg ride/run; touches 96' },
+      sinker: { present: 50, future: 55, notes: 'Lower IVB, armside run; groundball option' },
+      cutter: { present: 45, future: 50, notes: 'Upper-80s; short, tight movement' },
+      slider: { present: 50, future: 55, notes: 'Mid-80s; 2400+ RPM; horizontal tilt; miss potential' },
+      changeup: { present: 45, future: 50, notes: 'Flashes fade; separation from FB; developing' },
+    },
+    summary: 'Bonet mixes a four-seam fastball and sinker to attack hitters with different looks at ~93–95 mph. His slider flashes swing-and-miss potential with tight break, while the cutter provides a shorter, firm look in the upper-80s. If the changeup is confirmed, it adds a valuable offspeed option with fade to keep hitters off balance. Profiles as a versatile right-hander with a balanced mix and potential to generate both weak contact and chase swings.',
+  },
+};
+
 const defaultPitchOrder = ['fourSeam','sinker','slider','curveball','sweeper','changeup','cutter','other'];
 const pitchDisplay = {
   fourSeam: 'Four-Seam',
@@ -127,82 +176,36 @@ export default function PitcherReportsPage() {
     return seeded || emptyReport;
   }, [pitcherId, displayName, emptyReport]);
 
-  // Jude Abbadessa: merge scout-style defaults without overwriting user edits
-  const isJude = useMemo(() => {
-    const sid = slugifyId(pitcherId || '');
-    const sname = slugifyId(displayName || '');
-    return sid === 'jude-abbadessa' || sname === 'jude-abbadessa';
-  }, [pitcherId, displayName]);
+  // Active per-pitcher configuration
+  const currentReportCfg = useMemo(() => (displayName && PITCHER_REPORTS[displayName]) || null, [displayName]);
 
-  const enrichedReport = useMemo(() => {
-    if (!isJude) return scoutReport;
+  // Seed from PITCHER_REPORTS config into saved report shape (grades/summary); no format changes
+  const enrichedFromConfig = useMemo(() => {
     const base = { ...(scoutReport || emptyReport) };
     base.pitches = { ...(base.pitches || {}) };
-    // Helper to set pitch fields only if missing
-    const setPitch = (k, present, future, notes) => {
-      const cur = base.pitches[k] || { present: null, future: null, usage: base.pitches[k]?.usage ?? null, notes: '' };
-      base.pitches[k] = {
-        present: cur.present ?? present,
-        future: cur.future ?? future,
-        usage: cur.usage ?? null,
-        notes: (cur.notes && cur.notes.length ? cur.notes : notes) || ''
-      };
-    };
-    setPitch('fourSeam', 40, 45, 'Firm velo; below avg ride; used sparingly');
-    setPitch('sinker', 45, 50, 'Heavy usage; armside run; groundball shape');
-    setPitch('sweeper', 55, 60, '82.0 avg (84.2 max); plus miss pitch');
-    setPitch('changeup', 40, 45, 'Flashes fade; inconsistent execution');
-    setPitch('cutter', 40, 45, '83.0 avg (84.9 max); shorter action');
-    // Ensure slider/curveball are not considered (no grades, no notes)
-    if (base.pitches.slider) base.pitches.slider = { present: null, future: null, usage: null, notes: '' };
-    if (base.pitches.curveball) base.pitches.curveball = { present: null, future: null, usage: null, notes: '' };
-    // Summary default
-    const defaultSummary = 'Abbadessa relies on a Sinker/Sweeper mix with heavy usage of the sinker to generate weak contact. Sweeper is his best pitch with above-average projection. Fastball and cutter are secondary looks, while the changeup remains a work in progress. Profiles as a depth starter or middle reliever with potential to miss bats when the sweeper is on.';
-    base.summary = (base.summary && base.summary.trim().length) ? base.summary : defaultSummary;
-    return base;
-  }, [isJude, scoutReport, emptyReport]);
-
-  // Chris Billingsley: seed grades/notes and limit shown pitches; treat splitter label
-  const isBillingsley = useMemo(() => {
-    const sid = slugifyId(pitcherId || '');
-    const sname = slugifyId(displayName || '');
-    return sid === 'chris-billingsley' || sname === 'chris-billingsley';
-  }, [pitcherId, displayName]);
-
-  const enrichedForBillingsley = useMemo(() => {
-    if (!isBillingsley) return enrichedReport;
-    const base = { ...(enrichedReport || emptyReport) };
-    base.pitches = { ...(base.pitches || {}) };
-    const setPitch = (k, present, future, notes) => {
-      const cur = base.pitches[k] || { present: null, future: null, usage: base.pitches[k]?.usage ?? null, notes: '' };
-      base.pitches[k] = {
-        present: present,
-        future: future,
-        usage: cur.usage ?? null,
-        notes: (cur.notes && cur.notes.length ? cur.notes : notes) || ''
-      };
-    };
-    // Four thrown pitches
-    setPitch('fourSeam', 50, 55, 'Firm velo; touches 97; avg ride/run');
-    setPitch('slider', 55, 60, 'Mid-80s; sharp tilt; bat-miss potential');
-    setPitch('curveball', 45, 50, 'Low-80s; depth; spot use');
-    setPitch('changeup', 40, 45, 'Mid-80s; low spin; inconsistent'); // Splitter mapped to changeup
-    // Clear others so rows don’t render unless usage > 0
-    for (const k of ['sinker','sweeper','cutter','other']) {
-      if (base.pitches[k]) base.pitches[k] = { present: null, future: null, usage: null, notes: '' };
+    if (currentReportCfg?.grades) {
+      for (const [k, g] of Object.entries(currentReportCfg.grades)) {
+        const cur = base.pitches[k] || {};
+        base.pitches[k] = {
+          present: cur.present ?? g.present ?? null,
+          future: cur.future ?? g.future ?? null,
+          usage: cur.usage ?? null,
+          notes: cur.notes || g.notes || '',
+        };
+      }
     }
-    // Summary default
-    const defaultSummary = 'Billingsley works off a firm fastball that can reach 97, complemented by a sharp mid-80s slider that shows true bat-miss potential. He mixes in a curveball with depth and a splitter that flashes but remains inconsistent. Profiles as a power right-hander with potential for swing-and-miss when the fastball/slider combo is on.';
-    base.summary = (base.summary && base.summary.trim().length) ? base.summary : defaultSummary;
+    if (!base.summary || !base.summary.trim()) {
+      if (currentReportCfg?.summary) base.summary = currentReportCfg.summary;
+    }
     return base;
-  }, [isBillingsley, enrichedReport, emptyReport]);
+  }, [scoutReport, emptyReport, currentReportCfg]);
 
   // Declare the initial state object above the useState call
-  const initialReport = enrichedForBillingsley;
+  const initialReport = enrichedFromConfig;
 
   // Draft state mirrors the current report and is editable
   const [draft, setDraft] = useState(initialReport);
-  useEffect(() => { setDraft(enrichedForBillingsley); }, [enrichedForBillingsley]);
+  useEffect(() => { setDraft(enrichedFromConfig); }, [enrichedFromConfig]);
 
   // Autosize the Summary textarea to avoid scrollbars
   useEffect(() => {
@@ -240,14 +243,9 @@ export default function PitcherReportsPage() {
       const h = Number(e.hb  ?? e.horz ?? e.run);
       events.push({ key, v, i, h, raw: e });
     }
-
-    // Billingsley-specific reclassification: four-seams with HB > IVB become sinkers
-    const reclass = isBillingsley;
     for (const r of events) {
       let key = r.key;
-      if (reclass && key === 'fourSeam' && Number.isFinite(r.h) && Number.isFinite(r.i) && r.h > r.i) {
-        key = 'sinker';
-      }
+      if (currentReportCfg?.reclassify) key = currentReportCfg.reclassify(key, r) || key;
       counts[key] = (counts[key] || 0) + 1;
       total += 1;
     }
@@ -255,34 +253,22 @@ export default function PitcherReportsPage() {
     const pct = {};
     for (const k of Object.keys(counts)) pct[k] = Math.round((counts[k] / total) * 1000) / 10; // 1-decimal
     return pct;
-  }, [displayName, isBillingsley]);
+  }, [displayName, currentReportCfg]);
 
   // Merge seeded usage (from report) over log-derived usage for display/filters
   const mergedUsage = useMemo(() => {
     const base = { ...usagePct };
-    const seed = (enrichedForBillingsley || scoutReport)?.pitches || {};
+    const seed = (enrichedFromConfig || scoutReport)?.pitches || {};
     for (const k of Object.keys(seed)) {
       const u = seed[k]?.usage;
       if (Number.isFinite(u)) base[k] = u;
     }
-    // For Jude, ensure slider/curveball are zeroed so rows never render
-    if (isJude) {
-      base.slider = 0;
-      base.curveball = 0;
-    }
-    // For Billingsley, explicitly zero non-thrown pitches so they hide
-    if (isBillingsley) {
-      // sinker handled below based on detection; keep fourSeam always
-      base.sweeper = 0;
-      base.cutter = 0;
-      base.other = 0;
-    }
     return base;
-  }, [usagePct, scoutReport, enrichedForBillingsley, isJude, isBillingsley]);
+  }, [usagePct, scoutReport, enrichedFromConfig]);
 
-  // Build Billingsley-specific reclassified rows for sinker p50s
-  const billRowsByKey = useMemo(() => {
-    if (!isBillingsley || !displayName) return null;
+  // Build rows by key applying current pitcher reclassify rules (if any)
+  const rowsByKey = useMemo(() => {
+    if (!displayName) return null;
     const rows = { fourSeam: [], sinker: [], slider: [], curveball: [], changeup: [], cutter: [], sweeper: [], other: [] };
     const normalize = (s) => {
       const x = String(s||'').toUpperCase().trim();
@@ -302,58 +288,52 @@ export default function PitcherReportsPage() {
       const v = Number(e.velo ?? e.velocity ?? e.v ?? e.speed);
       const i = Number(e.ivb ?? e.vert ?? e.rise);
       const h = Number(e.hb  ?? e.horz ?? e.run);
-      if (key === 'fourSeam' && Number.isFinite(h) && Number.isFinite(i) && h > i) {
-        key = 'sinker';
-      }
+      if (currentReportCfg?.reclassify) key = currentReportCfg.reclassify(key, { v, i, h }) || key;
       rows[key].push({ v, i, h });
     }
     return rows;
-  }, [isBillingsley, displayName]);
+  }, [displayName, currentReportCfg]);
 
-  const hasBillSinker = useMemo(() => !!(billRowsByKey && billRowsByKey.sinker && billRowsByKey.sinker.length), [billRowsByKey]);
-
-  // Ensure mergedUsage hides sinker if none confirmed
-  const mergedUsageWithSinker = useMemo(() => {
-    if (!isBillingsley) return mergedUsage;
+  // Hide pitches with zero usage unless alwaysInclude requires showing
+  const mergedUsageEffective = useMemo(() => {
     const m = { ...mergedUsage };
-    if (!hasBillSinker) m.sinker = 0;
+    const always = new Set(currentReportCfg?.alwaysInclude || []);
+    for (const k of Object.keys(m)) {
+      if (!always.has(k) && !(m[k] > 0)) m[k] = 0;
+    }
+    // Always ensure alwaysInclude keys are present
+    for (const k of always) if (m[k] == null) m[k] = 0;
     return m;
-  }, [isBillingsley, mergedUsage, hasBillSinker]);
+  }, [mergedUsage, currentReportCfg]);
 
-  // Seed sinker grades/notes if confirmed and values are not already set by user
+  // Seed grades/summary based on current report config on first load/when switching pitcher
   useEffect(() => {
-    if (!isBillingsley || !hasBillSinker) return;
+    if (!currentReportCfg) return;
     setDraft(prev => produce(prev, d => {
       if (!d.pitches) d.pitches = {};
-      const cur = d.pitches.sinker || {};
-      const needPresent = cur.present == null;
-      const needFuture = cur.future == null;
-      const needNotes = !cur.notes;
-      if (needPresent || needFuture || needNotes) {
-        d.pitches.sinker = {
-          present: needPresent ? 45 : cur.present,
-          future: needFuture ? 50 : cur.future,
-          usage: cur.usage ?? null,
-          notes: needNotes ? 'Armside run; more HB than IVB; groundball shape' : cur.notes,
-        };
+      if (currentReportCfg.grades) {
+        for (const [k, g] of Object.entries(currentReportCfg.grades)) {
+          const cur = d.pitches[k] || {};
+          d.pitches[k] = {
+            present: cur.present ?? g.present ?? null,
+            future: cur.future ?? g.future ?? null,
+            usage: cur.usage ?? null,
+            notes: cur.notes || g.notes || '',
+          };
+        }
+      }
+      if ((!d.summary || !d.summary.trim()) && currentReportCfg.summary) {
+        d.summary = currentReportCfg.summary;
       }
     }));
-  }, [isBillingsley, hasBillSinker]);
+  }, [currentReportCfg]);
 
-  // Seed Billingsley Summary if empty
-  useEffect(() => {
-    if (!isBillingsley) return;
-    if (!draft?.summary || draft.summary.trim() === '') {
-      const text = 'Billingsley works off a firm four-seam fastball that can reach 97, complemented by a sharp mid-80s slider that shows true bat-miss potential. He mixes in a curveball with depth and a splitter that flashes but remains inconsistent. If logs confirm a sinker variant, it gives him an extra groundball weapon alongside the four-seam. Profiles as a power right-hander with potential swing-and-miss when the fastball/slider combo is on.';
-      setDraft(prev => produce(prev, d => { d.summary = text; }));
-    }
-  }, [isBillingsley, draft?.summary]);
-
-  // Display helper to show Splitter for Billingsley instead of Changeup label
+  // Display helper: allow per-pitcher label overrides (e.g., Splitter)
   const displayNameFor = useMemo(() => (k) => {
-    if (isBillingsley && k === 'changeup') return 'Splitter';
+    const lbl = currentReportCfg?.labels?.[k];
+    if (lbl) return lbl;
     return pitchDisplay[k] || k;
-  }, [isBillingsley]);
+  }, [currentReportCfg]);
 
   // Autosave: debounce 500ms after last change
   const [lastSavedAt, setLastSavedAt] = useState(null);
@@ -535,13 +515,13 @@ export default function PitcherReportsPage() {
           <div>
             <div style={styles.h2}>Pitch Context</div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))', gap:12 }}>
-              {defaultPitchOrder.filter(k => k==='fourSeam' || (mergedUsageWithSinker[k] ?? 0) > 0).map((k) => (
+              {defaultPitchOrder.filter(k => (currentReportCfg?.alwaysInclude?.includes(k)) || (mergedUsageEffective[k] ?? 0) > 0).map((k) => (
                 <PitchMetricCard
                   key={k}
                   pidOrName={selected}
                   pitchKey={k}
                   displayNameFor={displayNameFor}
-                  overrideRows={isBillingsley && k==='sinker' && billRowsByKey ? billRowsByKey.sinker : null}
+                  overrideRows={rowsByKey ? rowsByKey[k] : null}
                 />
               ))}
             </div>
@@ -565,8 +545,8 @@ export default function PitcherReportsPage() {
                   {defaultPitchOrder.filter((k) => {
                     const row = draft?.pitches?.[k] || {};
                     const hasGrade = (row.present != null) || (row.future != null);
-                    const u = draft?.pitches?.[k]?.usage ?? mergedUsageWithSinker[k];
-                    return k==='fourSeam' || (Number(u) > 0) || hasGrade;
+                    const u = draft?.pitches?.[k]?.usage ?? mergedUsageEffective[k];
+                    return (currentReportCfg?.alwaysInclude?.includes(k)) || (Number(u) > 0) || hasGrade;
                   }).map((k) => {
                     const row = draft?.pitches?.[k] || {};
                     const guide = '20–80 even grades, P/F';
@@ -639,13 +619,13 @@ export default function PitcherReportsPage() {
                   {defaultPitchOrder.filter((k) => {
                     const row = draft?.pitches?.[k] || {};
                     const hasGrade = (row.present != null) || (row.future != null);
-                    const u = mergedUsageWithSinker[k];
-                    return k==='fourSeam' || (Number(u) > 0) || hasGrade;
+                    const u = mergedUsageEffective[k];
+                    return (currentReportCfg?.alwaysInclude?.includes(k)) || (Number(u) > 0) || hasGrade;
                   }).map((k) => {
                     const row = draft?.pitches?.[k] || {};
                     const p = row.present ?? '—';
                     const f = row.future ?? '—';
-                    const u = mergedUsageWithSinker[k] != null ? `${Number(mergedUsageWithSinker[k]).toFixed(1)}%` : '—';
+                    const u = mergedUsageEffective[k] != null ? `${Number(mergedUsageEffective[k]).toFixed(1)}%` : '—';
                     const n = row.notes || '';
                     return (
                       <tr key={`prow-${k}`}>
