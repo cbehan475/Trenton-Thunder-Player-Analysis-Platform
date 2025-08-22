@@ -221,6 +221,20 @@ const PITCHER_REPORTS = {
     },
     summary: 'McGrath leans heavily on a firm cutter that serves as his main weapon, mixing it with a low-90s fastball. He also shows a sinker with armside action and a high-spin slider that flashes miss potential. Profiles as a right-hander with a cutter/FB base and supplemental sinker/slider.',
   },
+  'Cullen Horowicz': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Sinker, Slider, Four-Seam, Changeup; hide others
+    hidden: ['curveball', 'sweeper', 'cutter', 'other'],
+    reclassify: null,
+    grades: {
+      sinker:   { present: 50, future: 55, notes: '93–97; armside run; groundball shape; main pitch' },
+      slider:   { present: 50, future: 55, notes: 'Mid-80s; firm; miss potential; secondary weapon' },
+      fourSeam: { present: 45, future: 50, notes: 'Small sample; 94–95 velo; more ride/run than SI' },
+      changeup: { present: 35, future: 40, notes: 'One pitch in logs; not in mix' },
+    },
+    summary: 'Horowicz works primarily off a heavy sinker in the 93–97 range that drives his arsenal. His slider is the main secondary, offering firm velo and swing-and-miss potential. He has occasionally flashed a four-seam fastball with more ride/run and a rarely used changeup. Profiles as a sinker/slider right-hander with supplemental looks.',
+  },
 };
 
 const defaultPitchOrder = ['fourSeam','sinker','slider','curveball','sweeper','changeup','cutter','other'];
