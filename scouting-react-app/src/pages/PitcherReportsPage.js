@@ -263,6 +263,20 @@ const PITCHER_REPORTS = {
     },
     summary: 'King leans heavily on a fastball that can reach 96 with ride/run traits. He mixes in a curveball as his main secondary, along with a changeup that shows fade and a slider used sparingly. Profiles as a fastball-first right-hander with secondary development in progress.',
   },
+  'Miguel Sime': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Four-Seam, Curveball, Changeup, Slider; hide others
+    hidden: ['sinker', 'sweeper', 'cutter', 'other'],
+    reclassify: null,
+    grades: {
+      fourSeam: { present: 60, future: 70, notes: '98–101 velo; 18 IVB / 9 HB; power pitch; foundation' },
+      curveball:{ present: 50, future: 55, notes: 'Low-80s; 2300+ RPM; depth; secondary weapon' },
+      changeup: { present: 45, future: 50, notes: 'Mid-80s; 2200 spin; fade/run; occasional' },
+      slider:   { present: 40, future: 45, notes: 'Mid-80s; 2300+ RPM; very small sample; developing' },
+    },
+    summary: 'Sime relies on an elite fastball that sits upper-90s and has touched 101 with ride/run traits. His curveball is the primary secondary, offering above-average spin and depth. He mixes in a changeup with armside fade and has flashed a slider in a very small sample. Profiles as a power right-hander with a FB/CB base and developing offspeed depth.',
+  },
 };
 
 const defaultPitchOrder = ['fourSeam','sinker','slider','curveball','sweeper','changeup','cutter','other'];
