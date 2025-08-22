@@ -151,6 +151,20 @@ const PITCHER_REPORTS = {
     },
     summary: 'Dudley works off a mid-90s fastball with ride/run, showing it as his primary weapon. He complements it with a firm slider that flashes miss potential and a developing cutter. His curveball adds another look with spin and depth. Profiles as a power right-hander with a FB/SL base and supplemental cutter/curveball.',
   },
+  'Aidan Weaver': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Four-Seam, Slider, Changeup, Cutter; hide others
+    hidden: ['sinker', 'curveball', 'sweeper', 'other'],
+    reclassify: null,
+    grades: {
+      fourSeam: { present: 55, future: 60, notes: '94–98 velo; firm shape; primary pitch' },
+      slider:   { present: 50, future: 55, notes: 'Mid-80s; tight break; miss potential' },
+      changeup: { present: 45, future: 50, notes: 'Upper-70s/low-80s; fade/run; occasional' },
+      cutter:   { present: 40, future: 45, notes: 'Low-90s; very limited usage; developing' },
+    },
+    summary: 'Weaver relies heavily on a mid-90s fastball that can touch 98 and forms the base of his arsenal. His slider is his main secondary, showing firm velocity and bat-miss potential. He mixes in a changeup with armside fade and has flashed a cutter, though with minimal usage. Profiles as a power fastball/slider right-hander with developing offspeed depth.',
+  },
 };
 
 const defaultPitchOrder = ['fourSeam','sinker','slider','curveball','sweeper','changeup','cutter','other'];
