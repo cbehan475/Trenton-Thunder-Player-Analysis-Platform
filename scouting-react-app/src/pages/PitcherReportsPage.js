@@ -165,6 +165,20 @@ const PITCHER_REPORTS = {
     },
     summary: 'Weaver relies heavily on a mid-90s fastball that can touch 98 and forms the base of his arsenal. His slider is his main secondary, showing firm velocity and bat-miss potential. He mixes in a changeup with armside fade and has flashed a cutter, though with minimal usage. Profiles as a power fastball/slider right-hander with developing offspeed depth.',
   },
+  'Caden Spivey': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Four-Seam, Curveball, Slider, Sinker; hide others
+    hidden: ['changeup', 'sweeper', 'cutter', 'other'],
+    reclassify: null,
+    grades: {
+      fourSeam: { present: 50, future: 55, notes: 'Low-90s velo; ride/run; main pitch' },
+      curveball:{ present: 50, future: 55, notes: 'High-70s/low-80s; 2550 RPM; depth; miss potential' },
+      slider:   { present: 45, future: 50, notes: 'Mid-80s; firm; horizontal tilt; secondary breaker' },
+      sinker:   { present: 45, future: 50, notes: 'Low-90s; armside run; GB look; situational' },
+    },
+    summary: 'Spivey works primarily off a low-90s fastball with ride/run. His high-spin curveball is his best secondary, showing depth and swing-and-miss potential. He also throws a firmer mid-80s slider and mixes in a sinker to give an additional groundball look. Profiles as a right-hander with a FB/CB foundation and supplemental slider/sinker.',
+  },
 };
 
 const defaultPitchOrder = ['fourSeam','sinker','slider','curveball','sweeper','changeup','cutter','other'];
