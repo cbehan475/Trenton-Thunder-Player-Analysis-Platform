@@ -249,6 +249,20 @@ const PITCHER_REPORTS = {
     },
     summary: 'Smink mixes a low-90s fastball with a heavy sinker to attack hitters. His slider works in the upper-70s with depth, and he complements it with a changeup that shows fade. Profiles as a right-hander with a FB/SI base and developing secondary mix.',
   },
+  'Gavin King': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Four-Seam, Curveball, Changeup, Slider; hide others
+    hidden: ['sinker', 'sweeper', 'cutter', 'other'],
+    reclassify: null,
+    grades: {
+      fourSeam: { present: 50, future: 55, notes: '92–96 velo; strong IVB; main pitch' },
+      curveball:{ present: 45, future: 50, notes: 'Low-80s; spin ~2300; depth; secondary look' },
+      changeup: { present: 40, future: 45, notes: 'Mid-80s; fade/run; limited' },
+      slider:   { present: 40, future: 45, notes: 'Upper-80s; occasional use; developing' },
+    },
+    summary: 'King leans heavily on a fastball that can reach 96 with ride/run traits. He mixes in a curveball as his main secondary, along with a changeup that shows fade and a slider used sparingly. Profiles as a fastball-first right-hander with secondary development in progress.',
+  },
 };
 
 const defaultPitchOrder = ['fourSeam','sinker','slider','curveball','sweeper','changeup','cutter','other'];
