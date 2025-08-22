@@ -179,6 +179,20 @@ const PITCHER_REPORTS = {
     },
     summary: 'Spivey works primarily off a low-90s fastball with ride/run. His high-spin curveball is his best secondary, showing depth and swing-and-miss potential. He also throws a firmer mid-80s slider and mixes in a sinker to give an additional groundball look. Profiles as a right-hander with a FB/CB foundation and supplemental slider/sinker.',
   },
+  'Clayton Johnson': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Four-Seam, Sinker, Slider, Changeup; hide others
+    hidden: ['curveball', 'sweeper', 'cutter', 'other'],
+    reclassify: null,
+    grades: {
+      fourSeam: { present: 55, future: 60, notes: 'Mid-90s velo; ride/run; foundation pitch' },
+      sinker:   { present: 50, future: 55, notes: 'Mid-90s; armside run; GB shape' },
+      slider:   { present: 45, future: 50, notes: 'Mid-80s; short, inconsistent; supplemental' },
+      changeup: { present: 40, future: 45, notes: 'Low-80s; minimal usage; developing' },
+    },
+    summary: 'Johnson relies on a mid-90s fastball as his primary weapon, complemented by a hard sinker that gives him a two-seam look. He mixes in a firm slider and has occasionally flashed a changeup, though usage is minimal. Profiles as a power right-hander with a FB/SI base and supplemental offspeed.',
+  },
 };
 
 const defaultPitchOrder = ['fourSeam','sinker','slider','curveball','sweeper','changeup','cutter','other'];
