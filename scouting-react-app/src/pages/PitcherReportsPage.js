@@ -235,6 +235,20 @@ const PITCHER_REPORTS = {
     },
     summary: 'Horowicz works primarily off a heavy sinker in the 93–97 range that drives his arsenal. His slider is the main secondary, offering firm velo and swing-and-miss potential. He has occasionally flashed a four-seam fastball with more ride/run and a rarely used changeup. Profiles as a sinker/slider right-hander with supplemental looks.',
   },
+  'Eddie Smink': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Four-Seam, Sinker, Slider, Changeup; hide others
+    hidden: ['curveball', 'sweeper', 'cutter', 'other'],
+    reclassify: null,
+    grades: {
+      fourSeam: { present: 45, future: 50, notes: '91–93 velo; ride/run; primary pitch' },
+      sinker:   { present: 50, future: 55, notes: 'Hard two-seam look; armside run; groundball shape' },
+      slider:   { present: 45, future: 50, notes: 'Upper-70s; 2400 spin; depth; secondary look' },
+      changeup: { present: 45, future: 50, notes: 'Low-80s; fade/run; developing' },
+    },
+    summary: 'Smink mixes a low-90s fastball with a heavy sinker to attack hitters. His slider works in the upper-70s with depth, and he complements it with a changeup that shows fade. Profiles as a right-hander with a FB/SI base and developing secondary mix.',
+  },
 };
 
 const defaultPitchOrder = ['fourSeam','sinker','slider','curveball','sweeper','changeup','cutter','other'];
