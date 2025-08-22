@@ -277,6 +277,19 @@ const PITCHER_REPORTS = {
     },
     summary: 'Sime relies on an elite fastball that sits upper-90s and has touched 101 with ride/run traits. His curveball is the primary secondary, offering above-average spin and depth. He mixes in a changeup with armside fade and has flashed a slider in a very small sample. Profiles as a power right-hander with a FB/CB base and developing offspeed depth.',
   },
+  'Preston Prince': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Four-Seam, Cutter, Changeup; hide others
+    hidden: ['sinker', 'slider', 'curveball', 'sweeper', 'other'],
+    reclassify: null,
+    grades: {
+      fourSeam: { present: 45, future: 50, notes: 'Upper-80s/low-90s; 19 IVB; used most often' },
+      cutter:   { present: 50, future: 55, notes: 'Mid-80s; consistent shape; whiff potential; key secondary' },
+      changeup: { present: 45, future: 50, notes: 'Upper-70s/low-80s; armside fade; limited usage' },
+    },
+    summary: 'Prince works primarily off a fastball in the upper-80s to low-90s with ride traits. His cutter is his most effective secondary, generating whiffs and weak contact. He also mixes in a changeup with fade/run to disrupt timing. Profiles as a FB/CT left-hander with a developing changeup.',
+  },
 };
 
 const defaultPitchOrder = ['fourSeam','sinker','slider','curveball','sweeper','changeup','cutter','other'];
