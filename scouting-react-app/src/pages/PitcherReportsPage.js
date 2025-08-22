@@ -638,7 +638,7 @@ export default function PitcherReportsPage() {
     sub: { color: 'var(--muted)', marginTop:2 },
     controls: { display:'flex', gap:8, alignItems:'center', position:'relative', zIndex:1000 },
     savedNote: { textAlign:'right', color:'#9CA3AF', fontSize:11, marginTop:4 },
-    select: { background:'rgba(0,0,0,0.25)', color:'var(--text)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:8, padding:'8px 10px', fontWeight:800, outlineColor: gold },
+    select: { background:'#1e1e1e', color:'#ffffff', border:'1px solid rgba(255,255,255,0.25)', borderRadius:8, padding:'8px 10px', fontWeight:800, outlineColor: gold },
     btn: { background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.18)', color:'var(--text)', borderRadius:8, padding:'8px 10px', fontWeight:800, fontSize:12, cursor:'pointer', outlineColor: gold },
     grid: { display:'grid', gridTemplateColumns:'1fr 1.25fr', gap:12, alignItems:'start', marginTop:8 },
     panel: { background:'var(--panel)', border:'1px solid var(--border)', borderRadius:12, padding:10, color:'var(--text)' },
@@ -695,6 +695,12 @@ export default function PitcherReportsPage() {
         .overall-meta .role-field input{ height:40px; line-height:40px; min-width:0; }
         .overall-tools .section-label{ display:flex; align-items:baseline; gap:8px; }
         .gradesTable .notesCell{ white-space: normal; overflow-wrap: anywhere; word-break: break-word; vertical-align: top; min-height:44px; }
+        /* Dropdown readability (scoped to this page) */
+        .pitcher-reports-page select { background-color:#1e1e1e; color:#ffffff; }
+        .pitcher-reports-page select option { background-color:#1e1e1e; color:#ffffff; }
+        /* Highlight hovered and selected options */
+        .pitcher-reports-page select option:hover,
+        .pitcher-reports-page select option:checked { background-color:#d4af37; color:#000000; }
       `}</style>
       <div style={styles.wrap} className="report-wrap">
         {/* Report Header */}
