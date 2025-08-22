@@ -207,6 +207,20 @@ const PITCHER_REPORTS = {
     },
     summary: 'Scott leans heavily on his slider, a low-80s pitch with solid shape and swing-and-miss ability. He uses a below-average fastball to set it up and mixes in a developing cutter. A high-spin curveball has shown in limited doses. Profiles as a slider-first left-hander with secondary looks off of it.',
   },
+  'Cooper McGrath': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Cutter, Fastball (Four-Seam), Sinker, Slider; hide others
+    hidden: ['changeup', 'curveball', 'sweeper', 'other'],
+    reclassify: null,
+    grades: {
+      cutter:   { present: 50, future: 55, notes: 'Mid-upper 80s; 2600 RPM; main weapon; firm, short action' },
+      fourSeam: { present: 50, future: 55, notes: 'Low-90s velo; ride/run; playable in zone' },
+      sinker:   { present: 45, future: 50, notes: 'Low-90s; armside run; GB option' },
+      slider:   { present: 50, future: 55, notes: 'Low-80s; 2800 RPM; sharp tilt; bat-miss potential' },
+    },
+    summary: 'McGrath leans heavily on a firm cutter that serves as his main weapon, mixing it with a low-90s fastball. He also shows a sinker with armside action and a high-spin slider that flashes miss potential. Profiles as a right-hander with a cutter/FB base and supplemental sinker/slider.',
+  },
 };
 
 const defaultPitchOrder = ['fourSeam','sinker','slider','curveball','sweeper','changeup','cutter','other'];
