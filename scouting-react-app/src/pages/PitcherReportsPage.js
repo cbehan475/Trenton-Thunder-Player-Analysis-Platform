@@ -193,6 +193,20 @@ const PITCHER_REPORTS = {
     },
     summary: 'Johnson relies on a mid-90s fastball as his primary weapon, complemented by a hard sinker that gives him a two-seam look. He mixes in a firm slider and has occasionally flashed a changeup, though usage is minimal. Profiles as a power right-hander with a FB/SI base and supplemental offspeed.',
   },
+  'Codi Scott': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Slider, Fastball (Four-Seam), Cutter, Curveball; hide others
+    hidden: ['sinker', 'changeup', 'sweeper', 'other'],
+    reclassify: null,
+    grades: {
+      slider:   { present: 55, future: 60, notes: 'Low-80s; firm; heavy usage; miss potential' },
+      fourSeam: { present: 45, future: 50, notes: 'Upper-80s/low-90s; below avg velo; pairs with slider' },
+      cutter:   { present: 45, future: 50, notes: 'Mid-upper 80s; shorter shape; developing' },
+      curveball:{ present: 40, future: 45, notes: 'Mid-70s; 2500+ RPM; limited use' },
+    },
+    summary: 'Scott leans heavily on his slider, a low-80s pitch with solid shape and swing-and-miss ability. He uses a below-average fastball to set it up and mixes in a developing cutter. A high-spin curveball has shown in limited doses. Profiles as a slider-first left-hander with secondary looks off of it.',
+  },
 };
 
 const defaultPitchOrder = ['fourSeam','sinker','slider','curveball','sweeper','changeup','cutter','other'];
