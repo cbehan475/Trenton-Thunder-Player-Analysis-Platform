@@ -44,6 +44,19 @@ const PITCHER_REPORTS = {
     },
     summary: 'Finn works primarily off a low-90s fastball with ride/run traits. His slider is the main secondary, showing firm break and swing-and-miss potential. He also mixes a changeup with fade and a curveball that offers depth. Profiles as a right-hander with a FB/SL foundation and supplemental CH/CB looks.',
   },
+  'Nick Frusco': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Four-Seam, Curveball, Slider; hide others
+    hidden: ['sinker', 'changeup', 'sweeper', 'cutter', 'other'],
+    reclassify: null,
+    grades: {
+      fourSeam: { present: 45, future: 50, notes: '88–91 velo; ride traits; primary pitch' },
+      curveball:{ present: 45, future: 50, notes: '79–82; spin ~2150; depth; occasional' },
+      slider:   { present: 35, future: 40, notes: 'One pitch in logs; not in mix' },
+    },
+    summary: 'Frusco relies heavily on his fastball, sitting 88–91 with ride traits. His curveball serves as his primary secondary offering, showing depth but limited consistency. He has only thrown one slider in the sample, not a real part of his mix. Profiles as a FB/CB left-hander with developing command.',
+  },
   'Chris Billingsley': {
     alwaysInclude: ['fourSeam'],
     labels: { changeup: 'Splitter' },
