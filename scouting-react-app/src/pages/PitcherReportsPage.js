@@ -85,6 +85,18 @@ const PITCHER_REPORTS = {
     },
     summary: 'Garrett works primarily off a sinker in the low-90s with armside run. He complements it with a four-seam fastball that shows more ride/run separation. His slider is a firm low-80s breaking ball, while the changeup has only shown once in the logs. Profiles as a sinker/slider right-hander with supplemental fastball usage.',
   },
+  'Luis Misla': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Four-Seam and Slider; hide others
+    hidden: ['sinker', 'curveball', 'changeup', 'sweeper', 'cutter', 'other'],
+    reclassify: null,
+    grades: {
+      fourSeam: { present: 45, future: 50, notes: '88–91 velo; high spin; ride traits; main pitch' },
+      slider:   { present: 55, future: 60, notes: 'Upper-70s/low-80s; 2800 RPM; depth; bat-miss pitch' },
+    },
+    summary: 'Misla relies on a fastball/slider mix, with a high-spin fastball in the upper-80s and a sweeping slider that shows elite spin and miss potential. Profiles as a FB/SL left-hander who can generate swing-and-miss with his breaking ball.',
+  },
   'Chris Billingsley': {
     alwaysInclude: ['fourSeam'],
     labels: { changeup: 'Splitter' },
