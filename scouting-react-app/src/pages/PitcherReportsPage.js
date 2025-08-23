@@ -125,6 +125,20 @@ const PITCHER_REPORTS = {
     },
     summary: 'Ronne works primarily off a mid-90s fastball, complemented by a high-spin slider that shows sharp tilt and miss potential. His curveball provides another strong breaking option, while a rarely used sinker has flashed as an additional look. Profiles as a power right-hander with a FB/SL foundation and supplemental CB/SI depth.',
   },
+  'Zach Silfies': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Slider, Four-Seam, Curveball, Sinker; hide others
+    hidden: ['changeup', 'sweeper', 'cutter', 'other'],
+    reclassify: null,
+    grades: {
+      slider:   { present: 50, future: 55, notes: 'Upper-70s/low-80s; miss pitch; primary weapon' },
+      fourSeam: { present: 45, future: 50, notes: 'Upper-80s/low-90s; ride/run traits; secondary' },
+      curveball:{ present: 45, future: 50, notes: 'High-60s/70; 2350 spin; depth; supplemental breaker' },
+      sinker:   { present: 40, future: 45, notes: 'Low-90s; very small usage; situational look' },
+    },
+    summary: 'Silfies leans heavily on his slider, his most consistent offering and primary weapon. He mixes in a below-average fastball and a low-velo curveball to change speeds. A sinker has shown in very small usage. Profiles as a slider-first right-hander with supplemental FB/CB and rare sinker.',
+  },
   'Chris Billingsley': {
     alwaysInclude: ['fourSeam'],
     labels: { changeup: 'Splitter' },
