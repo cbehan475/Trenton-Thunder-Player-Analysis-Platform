@@ -153,6 +153,19 @@ const PITCHER_REPORTS = {
     },
     summary: 'Young works primarily off a mid-80s fastball, complemented by a slider and curveball that give two breaking ball looks. He mixes in a changeup that shows some fade. Profiles as a left-hander with a FB foundation and supplemental secondaries.',
   },
+  'JJ Almeda': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Four-Seam, Slider, Curveball; hide others
+    hidden: ['sinker', 'changeup', 'sweeper', 'cutter', 'other'],
+    reclassify: null,
+    grades: {
+      fourSeam: { present: 45, future: 50, notes: 'Upper-80s/low-90s; ride/run traits; main pitch' },
+      slider:   { present: 50, future: 55, notes: 'High-70s/low-80s; 2600+ RPM; firm, bat-miss potential' },
+      curveball:{ present: 45, future: 50, notes: 'High-70s; 2500+ RPM; depth; supplemental breaker' },
+    },
+    summary: 'Almeda mixes a fastball with ride/run traits in the upper-80s to low-90s and leans heavily on a firm, high-spin slider as his main secondary. His curveball gives him another breaking look. Profiles as a right-hander with a FB/SL foundation and supplemental CB.',
+  },
   'Chris Billingsley': {
     alwaysInclude: ['fourSeam'],
     labels: { changeup: 'Splitter' },
