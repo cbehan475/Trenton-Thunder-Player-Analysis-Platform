@@ -57,6 +57,20 @@ const PITCHER_REPORTS = {
     },
     summary: 'Frusco relies heavily on his fastball, sitting 88–91 with ride traits. His curveball serves as his primary secondary offering, showing depth but limited consistency. He has only thrown one slider in the sample, not a real part of his mix. Profiles as a FB/CB left-hander with developing command.',
   },
+  'Kai Fyke': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Four-Seam, Curveball, Changeup, Cutter; hide others
+    hidden: ['sinker', 'slider', 'sweeper', 'other'],
+    reclassify: null,
+    grades: {
+      fourSeam: { present: 50, future: 55, notes: 'Low-90s velo; ride/run; main pitch' },
+      curveball:{ present: 50, future: 55, notes: 'Low-80s; 2670 RPM; depth; secondary' },
+      changeup: { present: 45, future: 50, notes: 'Mid-80s; ~1450 spin; fade/run' },
+      cutter:   { present: 40, future: 45, notes: 'Upper-80s; limited sample; developing' },
+    },
+    summary: 'Fyke works primarily off a low-90s fastball with ride/run traits. His curveball is the top secondary, flashing depth and above-average spin. He mixes in a changeup with fade and occasionally flashes a cutter. Profiles as a FB/CB right-hander with developing offspeed support.',
+  },
   'Chris Billingsley': {
     alwaysInclude: ['fourSeam'],
     labels: { changeup: 'Splitter' },
