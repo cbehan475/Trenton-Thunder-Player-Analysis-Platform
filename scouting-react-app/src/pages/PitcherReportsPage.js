@@ -30,6 +30,20 @@ const PITCHER_REPORTS = {
     },
     summary: 'Abbadessa relies on a Sinker/Sweeper mix with heavy usage of the sinker to generate weak contact. Sweeper is his best pitch with above-average projection. Fastball and cutter are secondary looks, while the changeup remains a work in progress. Profiles as a depth starter or middle reliever with potential to miss bats when the sweeper is on.',
   },
+  'Sean Finn': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Four-Seam, Slider, Changeup, Curveball; hide others
+    hidden: ['sinker', 'sweeper', 'cutter', 'other'],
+    reclassify: null,
+    grades: {
+      fourSeam: { present: 50, future: 55, notes: '92–95 velo; ride/run; main pitch' },
+      slider:   { present: 50, future: 55, notes: 'Low-80s; 2570 RPM; firm break; miss potential' },
+      changeup: { present: 45, future: 50, notes: 'Mid-80s; fade/run; developing' },
+      curveball:{ present: 45, future: 50, notes: 'Low-80s; ~2560 spin; depth; secondary look' },
+    },
+    summary: 'Finn works primarily off a low-90s fastball with ride/run traits. His slider is the main secondary, showing firm break and swing-and-miss potential. He also mixes a changeup with fade and a curveball that offers depth. Profiles as a right-hander with a FB/SL foundation and supplemental CH/CB looks.',
+  },
   'Chris Billingsley': {
     alwaysInclude: ['fourSeam'],
     labels: { changeup: 'Splitter' },
