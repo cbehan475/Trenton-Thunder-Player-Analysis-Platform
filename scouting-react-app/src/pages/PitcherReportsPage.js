@@ -139,6 +139,20 @@ const PITCHER_REPORTS = {
     },
     summary: 'Silfies leans heavily on his slider, his most consistent offering and primary weapon. He mixes in a below-average fastball and a low-velo curveball to change speeds. A sinker has shown in very small usage. Profiles as a slider-first right-hander with supplemental FB/CB and rare sinker.',
   },
+  'Brian Young': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Four-Seam, Slider, Curveball, Changeup; hide others
+    hidden: ['sinker', 'sweeper', 'cutter', 'other'],
+    reclassify: null,
+    grades: {
+      fourSeam: { present: 40, future: 45, notes: 'Mid-80s velo; ride traits; main pitch' },
+      slider:   { present: 45, future: 50, notes: 'Upper-70s/low-80s; horizontal break; developing' },
+      curveball:{ present: 45, future: 50, notes: 'High-70s/low-80s; ~2080 spin; depth; secondary look' },
+      changeup: { present: 40, future: 45, notes: 'Low-80s; fade/run; occasional' },
+    },
+    summary: 'Young works primarily off a mid-80s fastball, complemented by a slider and curveball that give two breaking ball looks. He mixes in a changeup that shows some fade. Profiles as a left-hander with a FB foundation and supplemental secondaries.',
+  },
   'Chris Billingsley': {
     alwaysInclude: ['fourSeam'],
     labels: { changeup: 'Splitter' },
