@@ -71,6 +71,20 @@ const PITCHER_REPORTS = {
     },
     summary: 'Fyke works primarily off a low-90s fastball with ride/run traits. His curveball is the top secondary, flashing depth and above-average spin. He mixes in a changeup with fade and occasionally flashes a cutter. Profiles as a FB/CB right-hander with developing offspeed support.',
   },
+  'Miles Garrett': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Sinker, Four-Seam, Slider, Changeup; hide others
+    hidden: ['curveball', 'sweeper', 'cutter', 'other'],
+    reclassify: null,
+    grades: {
+      sinker:   { present: 50, future: 55, notes: '92–95; armside run; main pitch' },
+      fourSeam: { present: 45, future: 50, notes: 'Low-90s; ride/run; secondary to sinker' },
+      slider:   { present: 45, future: 50, notes: 'Low-80s; firm; supplemental breaker' },
+      changeup: { present: 35, future: 40, notes: 'One pitch; not a factor' },
+    },
+    summary: 'Garrett works primarily off a sinker in the low-90s with armside run. He complements it with a four-seam fastball that shows more ride/run separation. His slider is a firm low-80s breaking ball, while the changeup has only shown once in the logs. Profiles as a sinker/slider right-hander with supplemental fastball usage.',
+  },
   'Chris Billingsley': {
     alwaysInclude: ['fourSeam'],
     labels: { changeup: 'Splitter' },
