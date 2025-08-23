@@ -296,7 +296,24 @@ const PITCHER_REPORTS = {
     labels: { changeup: 'Splitter' },
     // Only show Four-Seam, Curveball, Cutter, Splitter (via changeup key); hide others
     hidden: ['sinker', 'slider', 'sweeper', 'other'],
-    reclassify: null,
+    reclassify: (key, r) => {
+      // Strict Cutter detection for Ariola based on velocity, spin, IVB, HB
+      // Criteria: Velo 84–89 mph; Spin 2000–2400 RPM (when available); IVB 5–9 in; HB -2 to +2 in
+      const v = r?.v, i = r?.i, h = r?.h;
+      // Try to read spin from various fields if available (usage% path passes raw)
+      const s = Number(r?.s ?? r?.raw?.s ?? r?.raw?.spin ?? r?.raw?.rpm);
+      if (Number.isFinite(v) && Number.isFinite(i) && Number.isFinite(h)) {
+        const vOk = v >= 84 && v <= 89;
+        const iOk = i >= 5 && i <= 9;
+        const hOk = h >= -2 && h <= 2;
+        const sOk = Number.isFinite(s) ? (s >= 2000 && s <= 2400) : true; // require spin range only when present
+        if (vOk && iOk && hOk && sOk) {
+          // Allow reclassifying common mis-tags into cutter
+          if (key === 'slider' || key === 'fourSeam' || key === 'cutter' || key === 'other') return 'cutter';
+        }
+      }
+      return key;
+    },
     grades: {
       fourSeam: { present: 50, future: 55, notes: '91–94 velo; 21 IVB; ride traits; main pitch' },
       curveball:{ present: 50, future: 55, notes: '80–81; 2625 spin; depth; secondary weapon' },
