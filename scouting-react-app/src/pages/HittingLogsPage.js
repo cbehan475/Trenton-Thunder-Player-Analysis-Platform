@@ -128,12 +128,12 @@ export default function HittingLogsPage() {
   const inningOptions = useMemo(() => ['All', 1, 2, 3, 4, 5, 6, 7, 8, 9], []);
 
   return (
-    <Box className="hitting-logs-page" sx={{ width: '100%', minHeight: '100vh', bgcolor: 'var(--hl-bg)', py: isMobile ? 2 : 5 }}>
+    <Box className="hitting-logs-page pageHittingLogs" sx={{ width: '100%', minHeight: '100vh', py: isMobile ? 2 : 5 }}>
       <Typography
         component="h1"
         align="center"
         sx={{
-          color: 'var(--hl-gold)',
+          color: 'var(--color-gold)',
           fontWeight: 700,
           fontSize: isMobile ? 26 : 32,
           letterSpacing: 0.5,
@@ -143,6 +143,19 @@ export default function HittingLogsPage() {
       >
         Hitting Logs
       </Typography>
+      {/* Top controls bar to mirror Pitching Logs: Date on left */}
+      <Box className="hl-top-controls">
+        <div className="controls">
+          <div className="field">
+            <label className="gold">Date</label>
+            <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)}>
+              {GAME_DATES.map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </Box>
       <Grid
         container
         spacing={isMobile ? 1 : 2}
@@ -155,35 +168,7 @@ export default function HittingLogsPage() {
           px: isMobile ? 1 : 0,
         }}
       >
-        <Grid item xs={12}>
-          <Grid container spacing={0.75} justifyContent="flex-start" alignItems="center">
-            {GAME_DATES.map(date => (
-              <Grid item key={date}>
-                <Button
-                  size="small"
-                  variant={selectedDate === date ? 'contained' : 'outlined'}
-                  onClick={() => setSelectedDate(date)}
-                  sx={{
-                    minWidth: 58,
-                    height: 28,
-                    lineHeight: 1,
-                    px: 1,
-                    fontWeight: 700,
-                    bgcolor: selectedDate === date ? '#FFD700' : 'transparent',
-                    color: selectedDate === date ? '#0b1426' : '#cdd7e3',
-                    borderColor: '#2a3a52',
-                    '&:hover': {
-                      bgcolor: selectedDate === date ? '#FFE066' : 'rgba(255,215,0,0.1)',
-                      borderColor: '#3b4f6a',
-                    },
-                  }}
-                >
-                  {date.slice(5).replace('-', '-')}
-                </Button>
-              </Grid>
-            ))}
-          </Grid>
-        </Grid>
+        {/* Date pills removed in favor of top-left selector for consistency */}
         {selectedDate && (
           <Grid item xs={12}>
             <Box className="hl-controls">

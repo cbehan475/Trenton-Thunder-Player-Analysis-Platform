@@ -226,3 +226,43 @@
 .hitting-logs-page .chip-bad { background: rgba(255,90,90,0.18); border-color: rgba(255,90,90,0.35); }
 .hitting-logs-page .chip-neutral { background: rgba(255,255,255,0.08); }
 .hitting-logs-page .chip-blue { background: rgba(43,176,255,0.18); border-color: rgba(43,176,255,0.35); }
+
+/* Page variant to mirror Pitching Logs gradient */
+.pageHittingLogs { min-height: 100vh; background: linear-gradient(180deg, #0e1a2b 0%, #0b2142 60%, #0a2a57 100%); padding: 24px; }
+
+/* Top controls bar (date selector) aligned with Pitching Logs */
+.pageHittingLogs .hl-top-controls .controls {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  background: rgba(255,255,255,0.06);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin: 0 auto 14px;
+  border: 1px solid rgba(255,255,255,0.10);
+  max-width: 1100px;
+}
+.pageHittingLogs .hl-top-controls .field { display: flex; flex-direction: column; }
+.pageHittingLogs .hl-top-controls .field .gold { color: var(--color-gold); font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.pageHittingLogs .hl-top-controls .field select,
+.pageHittingLogs .hl-top-controls .field input[type="date"] {
+  height: 42px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: #1e1e1e;
+  color: #ffffff;
+  padding: 0 12px;
+  font-size: 16px;
+  line-height: 40px;
+}
+@media (min-width: 900px){
+  .pageHittingLogs .hl-top-controls .field .gold { font-size: 18px; }
+  .pageHittingLogs .hl-top-controls .field select,
+  .pageHittingLogs .hl-top-controls .field input[type="date"] { height: 46px; font-size: 17px; line-height: 44px; }
+}
+
+/* Native select highlight parity with Pitching Logs */
+.pageHittingLogs select { background-color: #1e1e1e; color: #ffffff; }
+.pageHittingLogs select option { background-color: #1e1e1e; color: #ffffff; }
+.pageHittingLogs select option:hover,
+.pageHittingLogs select option:checked { background-color: var(--color-gold); color: #000000; }
