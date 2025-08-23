@@ -263,3 +263,42 @@ body { margin: 0; overflow-x: hidden; }
   .features-grid { gap: 10px; }
   .feature-card { padding: 10px 12px; min-height: 144px; }
 }
+
+/* --- Global Gold Text Theme for Dark UI --- */
+/* Expose gold via CSS variable mapping to existing app token if present */
+:root {
+  /* Map to existing app gold token if defined; fallback to standard app gold */
+  --color-gold: var(--app-gold, #d4af37);
+}
+
+/* Tables: headers and cells (MUI DataGrid + native tables) */
+table, th, td,
+.data-table, .data-table th, .data-table td,
+.MuiTableCell-root, .MuiTableCell-head, .MuiTableCell-body,
+.MuiDataGrid-root, .MuiDataGrid-cell, .MuiDataGrid-columnHeaderTitle,
+.MuiDataGrid-columnHeader, .MuiDataGrid-cellContent {
+  color: var(--color-gold) !important;
+}
+
+/* Native selects and common dropdown libs (MUI, React-Select, AntD) */
+select, option,
+.dropdown, .dropdown *,
+.Select__control, .Select__single-value, .Select__option,
+.MuiSelect-select, .MuiMenuItem-root, .MuiListItemButton-root,
+.MuiOutlinedInput-input, .MuiInputBase-input,
+.ant-select-selector, .ant-select-item-option-content {
+  color: var(--color-gold) !important;
+}
+
+/* Generic metric/value spans and chips */
+.stat-value, .metric-value, .badge--stat, .pill--stat,
+.chip--stat, .stat-chip, .metric-chip, .MuiChip-label {
+  color: var(--color-gold) !important;
+}
+
+/* Optional: pages/components that use CSS vars for text can hook into this */
+.preset-pro-dark {
+  --text: var(--color-gold);
+  --muted: var(--color-gold);
+}
+

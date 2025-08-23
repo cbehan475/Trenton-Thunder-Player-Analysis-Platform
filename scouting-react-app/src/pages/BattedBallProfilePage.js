@@ -192,7 +192,7 @@ export default function BattedBallProfilePage() {
         variant={isMobile ? 'h5' : 'h4'}
         align="center"
         sx={{
-          color: '#F5B301',
+          color: 'var(--color-gold)',
           fontWeight: 800,
           mb: isMobile ? 2 : 4,
           letterSpacing: 0.5,
