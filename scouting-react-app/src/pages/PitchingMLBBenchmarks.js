@@ -19,7 +19,7 @@ const styles = {
   sub: { color: 'var(--muted)', margin: '4px 0 18px 0' },
   meta: { color: 'var(--muted)', margin: '2px 0 16px 0', fontSize: 12 },
   controls: { display: 'inline-flex', gap: 8, alignItems: 'center', color: 'var(--text)' },
-  select: { background:'rgba(0,0,0,0.2)', color:'var(--text)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:8, padding:'6px 10px', fontWeight:700 },
+  select: { background:'#1e1e1e', color:'#ffffff', border:'1px solid rgba(255,255,255,0.25)', borderRadius:8, padding:'8px 12px', fontWeight:700 },
   cardsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14, alignItems: 'stretch' },
   card: () => ({
     background: 'var(--panel)', color: 'var(--text)', borderRadius: 12, padding: 14,
@@ -209,6 +209,12 @@ export default function PitchingMLBBenchmarks() {
         background: 'linear-gradient(180deg, var(--bg-grad-top) 0%, var(--bg-grad-bottom) 100%)',
       }}
     >
+      <style>{`
+        .mlb-benchmarks-page select { background-color: #1e1e1e; color: #ffffff; }
+        .mlb-benchmarks-page select option { background-color: #1e1e1e; color: #ffffff; }
+        .mlb-benchmarks-page select option:hover,
+        .mlb-benchmarks-page select option:checked { background-color: #d4af37; color: #000000; }
+      `}</style>
       <div style={styles.wrap}>
         {/* Header */}
         <div style={styles.headerRow}>
