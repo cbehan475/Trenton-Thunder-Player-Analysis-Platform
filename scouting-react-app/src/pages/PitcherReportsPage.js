@@ -97,6 +97,20 @@ const PITCHER_REPORTS = {
     },
     summary: 'Misla relies on a fastball/slider mix, with a high-spin fastball in the upper-80s and a sweeping slider that shows elite spin and miss potential. Profiles as a FB/SL left-hander who can generate swing-and-miss with his breaking ball.',
   },
+  'Paulo Noris': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Four-Seam, Changeup, Slider, Cutter; hide others
+    hidden: ['sinker', 'curveball', 'sweeper', 'other'],
+    reclassify: null,
+    grades: {
+      fourSeam: { present: 40, future: 45, notes: 'Mid-80s velo; ride traits; main pitch' },
+      changeup: { present: 45, future: 50, notes: 'Upper-70s/low-80s; fade/run; best secondary' },
+      slider:   { present: 40, future: 45, notes: 'Mid-70s; depth; secondary breaker' },
+      cutter:   { present: 40, future: 45, notes: 'Upper-70s/low-80s; limited sample; developing' },
+    },
+    summary: 'Noris works primarily off a mid-80s fastball with ride traits. His changeup serves as his best secondary, showing fade and armside run. He mixes in a slider with depth and an occasional cutter. Profiles as a FB/CH right-hander with supplemental breaking looks.',
+  },
   'Chris Billingsley': {
     alwaysInclude: ['fourSeam'],
     labels: { changeup: 'Splitter' },
