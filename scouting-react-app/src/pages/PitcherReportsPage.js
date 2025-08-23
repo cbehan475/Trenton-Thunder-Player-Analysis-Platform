@@ -111,6 +111,20 @@ const PITCHER_REPORTS = {
     },
     summary: 'Noris works primarily off a mid-80s fastball with ride traits. His changeup serves as his best secondary, showing fade and armside run. He mixes in a slider with depth and an occasional cutter. Profiles as a FB/CH right-hander with supplemental breaking looks.',
   },
+  'Andrew Ronne': {
+    alwaysInclude: ['fourSeam'],
+    labels: {},
+    // Only show Four-Seam, Slider, Curveball, Sinker; hide others
+    hidden: ['changeup', 'sweeper', 'cutter', 'other'],
+    reclassify: null,
+    grades: {
+      fourSeam: { present: 55, future: 60, notes: '93–97 velo; solid ride/run; primary pitch' },
+      slider:   { present: 55, future: 60, notes: 'Low-mid 80s; 2600+ RPM; sharp tilt; whiff potential' },
+      curveball:{ present: 50, future: 55, notes: 'Low-80s; 2480 RPM; depth; good secondary' },
+      sinker:   { present: 40, future: 45, notes: 'Low-90s; very small usage; developing' },
+    },
+    summary: 'Ronne works primarily off a mid-90s fastball, complemented by a high-spin slider that shows sharp tilt and miss potential. His curveball provides another strong breaking option, while a rarely used sinker has flashed as an additional look. Profiles as a power right-hander with a FB/SL foundation and supplemental CB/SI depth.',
+  },
   'Chris Billingsley': {
     alwaysInclude: ['fourSeam'],
     labels: { changeup: 'Splitter' },
