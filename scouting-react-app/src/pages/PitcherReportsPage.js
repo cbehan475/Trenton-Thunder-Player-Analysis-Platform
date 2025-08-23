@@ -290,6 +290,21 @@ const PITCHER_REPORTS = {
     },
     summary: 'Prince works primarily off a fastball in the upper-80s to low-90s with ride traits. His cutter is his most effective secondary, generating whiffs and weak contact. He also mixes in a changeup with fade/run to disrupt timing. Profiles as a FB/CT left-hander with a developing changeup.',
   },
+  'Joe Ariola': {
+    alwaysInclude: ['fourSeam'],
+    // Display Splitter label for changeup-coded pitches
+    labels: { changeup: 'Splitter' },
+    // Only show Four-Seam, Curveball, Cutter, Splitter (via changeup key); hide others
+    hidden: ['sinker', 'slider', 'sweeper', 'other'],
+    reclassify: null,
+    grades: {
+      fourSeam: { present: 50, future: 55, notes: '91–94 velo; 21 IVB; ride traits; main pitch' },
+      curveball:{ present: 50, future: 55, notes: '80–81; 2625 spin; depth; secondary weapon' },
+      cutter:   { present: 45, future: 50, notes: 'Mid-80s; shorter action; developing third look' },
+      changeup: { present: 40, future: 45, notes: 'Low-80s; very small sample; occasional' },
+    },
+    summary: 'Ariola relies primarily on a fastball with ride traits in the low-90s. His high-spin curveball serves as his top secondary weapon. He also shows a cutter as a third look and has occasionally mixed in a splitter, though usage is minimal. Profiles as a FB/CB left-hander with supplemental CT/SP depth.',
+  },
 };
 
 const defaultPitchOrder = ['fourSeam','sinker','slider','curveball','sweeper','changeup','cutter','other'];
