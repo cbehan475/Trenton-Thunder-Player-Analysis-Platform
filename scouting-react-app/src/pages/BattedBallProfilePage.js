@@ -187,19 +187,18 @@ export default function BattedBallProfilePage() {
   }, [mergedRowsByName, displayNamesSorted, orderBy, order]);
 
   return (
-    <Box sx={{ width: '100%', minHeight: '100vh', bgcolor: '#f5f6fa', py: isMobile ? 2 : 5 }}>
+    <Box sx={{ width: '100%', minHeight: '100vh', background: 'linear-gradient(180deg, #0A0C10 0%, #111827 100%)', py: isMobile ? 2 : 5 }}>
       <Typography
         variant={isMobile ? 'h5' : 'h4'}
         align="center"
         sx={{
-          color: '#FFD700',
-          textShadow: '0 2px 8px #001f4d, 0 1px 0 #001f4d',
-          fontWeight: 700,
+          color: '#F5B301',
+          fontWeight: 800,
           mb: isMobile ? 2 : 4,
-          letterSpacing: 1.5,
+          letterSpacing: 0.5,
         }}
       >
-        Batted Ball Profiles — Summary v1
+        Batted Ball Metrics
       </Typography>
 
       {/* Toggle buttons */}

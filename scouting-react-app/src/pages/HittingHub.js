@@ -9,10 +9,7 @@ export default function HittingHub() {
           <HubCard title="Hitting Game Logs" to="/hitting/logs" />
         </Grid>
         <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
-          <HubCard title="Batting Performance Metrics" to="/hitting/performance" />
-        </Grid>
-        <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
-          <HubCard title="Batted Ball Profiles" to="/hitting/batted-ball" />
+          <HubCard title="Batted Ball Metrics" to="/hitting/batted-ball" />
         </Grid>
         <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
           <HubCard title="Player Comparisons to Pro Averages" to="/player-development/comparisons" />
