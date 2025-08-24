@@ -1,0 +1,39 @@
+/* Batted Ball Metrics professional styling (aligned with Pitching Logs) */
+.pageBattedBall { min-height: 100vh; background: linear-gradient(180deg, #0e1a2b 0%, #0b2142 60%, #0a2a57 100%); padding: 24px; }
+.pageBattedBall h1 { color: var(--color-gold); margin: 0 0 12px; font-weight: 800; letter-spacing: .5px; text-align: center; }
+
+.bb-controls { display: flex; gap: 16px; align-items: flex-end; background: rgba(255,255,255,0.06); border-radius: 10px; padding: 12px 16px; margin: 0 auto 14px; border: 1px solid rgba(255,255,255,0.10); max-width: 1100px; }
+.bb-controls .field { display: flex; flex-direction: column; }
+.bb-controls .field .gold { color: var(--color-gold); font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.bb-controls .field select,
+.bb-controls .field input[type="date"] { height: 42px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.25); background: #1e1e1e; color: #ffffff; padding: 0 12px; font-size: 16px; line-height: 40px; }
+
+/* Tabs as pill buttons */
+.bb-tabs { display: flex; gap: 10px; justify-content: center; margin: 10px auto 16px; }
+.bb-tab { padding: 6px 18px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.08); color: #fff; font-weight: 700; cursor: pointer; }
+.bb-tab.active { background: var(--color-gold); color: #111; border-color: var(--color-gold); }
+
+/* Summary stat line */
+.bb-summary { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; max-width: 1100px; margin: 8px auto 14px; }
+.bb-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); font-weight: 700; color: var(--color-gold); }
+.bb-pill .label { opacity: .9; font-size: 12px; }
+.bb-pill .value { font-size: 14px; }
+
+/* Table shell and sticky header */
+.bb-tableShell { max-width: 1100px; margin: 0 auto; background: rgba(255,255,255,0.08); border-radius: 12px; padding: 6px; }
+.bb-tableShell table { width: 100%; border-collapse: collapse; }
+.bb-tableShell thead th { position: sticky; top: 0; background: rgba(20,22,34,0.92); color: var(--color-gold); backdrop-filter: blur(6px); padding: 10px; text-align: left; font-weight: 800; font-size: 12px; letter-spacing: .3px; text-transform: uppercase; }
+.bb-tableShell tbody td { padding: 10px; border-top: 1px solid rgba(255,255,255,0.10); color: #e7eefc; }
+.bb-tableShell tbody tr:nth-of-type(even) { background: rgba(255,255,255,0.04); }
+.bb-tableShell tbody tr:hover { background: rgba(255,176,0,0.10); }
+
+/* Right-align numeric columns */
+.bb-tableShell .num { text-align: right; }
+
+/* Buttons area */
+.bb-actions { margin-left: auto; display: flex; gap: 8px; }
+
+@media (min-width: 900px){
+  .bb-controls .field .gold { font-size: 18px; }
+  .bb-controls .field select, .bb-controls .field input[type="date"] { height: 46px; font-size: 17px; line-height: 44px; }
+}

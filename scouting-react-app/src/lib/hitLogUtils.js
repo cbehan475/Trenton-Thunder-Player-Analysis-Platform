@@ -17,6 +17,24 @@ export function filterRows(rows, { hitter, inning, q }) {
   return out;
 }
 
+// Shared helper: determine if a result is a batted-ball event
+// Inclusion: single,double,triple,home run, ground/fly/line/pop outs, sac fly, forceout, field error,
+// double play, fielder's choice, sac bunt (if logged as batted), reached on error
+// Exclusion: strikeouts, walks/BB/IBB, HBP, catcher interference, pitchouts, etc.
+export function isBIP(result = '') {
+  const r = String(result).toLowerCase();
+  if (!r) return false;
+  if (/strike/.test(r)) return false;
+  if (/walk|\bbb\b|\bibb\b/.test(r)) return false;
+  if (/hbp|hit by pitch|catcher\s*interference/.test(r)) return false;
+  // Positive/neutral batted-ball outcomes
+  return (
+    /(single|double|triple|home\s*run)/.test(r) ||
+    /(ground|fly|line|pop)/.test(r) ||
+    /(sac\s*fly|forceout|field\s*error|double\s*play|fc|sac\s*bunt|reached\s*on\s*error)/.test(r)
+  );
+}
+
 // Quick stats for a set of rows (null-safe)
 export function quickStats(rows) {
   const pa = rows.length;
@@ -26,11 +44,7 @@ export function quickStats(rows) {
   const evs = rows.map((r) => Number(r.ev)).filter((n) => Number.isFinite(n));
   const las = rows.map((r) => Number(r.la)).filter((n) => Number.isFinite(n));
   const contactRows = rows.filter((r) => !String(r.result ?? '').toLowerCase().includes('strike'));
-  const bipRows = rows.filter((r) => {
-    const res = String(r.result ?? '').toLowerCase();
-    // very simple BIP proxy: has a batted-ball result keyword
-    return /(single|double|triple|home|ground|fly|line|pop|field|error|force|sac|out)/.test(res);
-  });
+  const bipRows = rows.filter((r) => isBIP(r.result));
   const hardHit = evs.filter((v) => v >= 95).length;
 
   const avg = evs.length ? evs.reduce((a, b) => a + b, 0) / evs.length : null;

@@ -12,6 +12,6 @@ test('getBench returns null for missing pitch type', () => {
   expect(getBench('MLB', 'knuckleball')).toBeNull();
 });
 
-test('percentileFromBand ~0.5 when value is near p50', () => {
-  expect(percentileFromBand(94, 93, 94, 95)).toBeCloseTo(0.5, 1);
+test('percentileFromBand ~50 when value is near p50', () => {
+  expect(percentileFromBand(94, 93, 94, 95)).toBeCloseTo(50, 1);
 });
