@@ -124,6 +124,17 @@ const BATTED_BALL_METRICS_OVERRIDES = {
     avgLa: -2.4,
     hardHit: 40.0,
   },
+  "Jayden Melendez": {
+    bip: 15,
+    gb: 46.7,
+    ld: 20.0,
+    fb: 26.7,
+    pu: 6.7,
+    avgEv: 78.6,
+    maxEv: 99.9,
+    avgLa: 11.6,
+    hardHit: 6.7,
+  },
   // Add more hitters here as needed
 };
 
