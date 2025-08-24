@@ -3,6 +3,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { Box, Typography, useMediaQuery, Button, FormControl, InputLabel, Select, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip } from '@mui/material';
 import HITTERS_BY_DATE from '../data/logs/hittersByDate';
 import { computeBattedBallMetrics, flattenEventsFromByDateMap } from '../lib/battedBallMetrics';
+import applyBattedBallOverride from '../lib/battedBallOverrides';
 import './BattedBallProfilePage.css';
 // ---- end imports ----
 
@@ -127,7 +128,8 @@ export default function BattedBallProfilePage() {
     const rows = [];
     for (const name of hitterList) {
       const m = perMapAll.get(name) || { BIP: 0, GBpct: null, LDpct: null, FBpct: null, PUpct: null, avgEV: null, maxEV: null, avgLA: null, hardHitPct: null };
-      rows.push({ name, ...m });
+      const merged = applyBattedBallOverride(name, m) || m;
+      rows.push({ name, ...merged });
     }
     rows.sort((a, b) => {
       if (orderBy === 'name') return a.name.localeCompare(b.name) * (order === 'asc' ? 1 : -1);
@@ -140,7 +142,11 @@ export default function BattedBallProfilePage() {
     return rows;
   }, [perMapAll, hitterList, orderBy, order]);
 
-  const selectedMetrics = useMemo(() => (selectedHitter ? perMapSelected.get(selectedHitter) : null), [perMapSelected, selectedHitter]);
+  const selectedMetrics = useMemo(() => {
+    if (!selectedHitter) return null;
+    const base = perMapSelected.get(selectedHitter) || null;
+    return applyBattedBallOverride(selectedHitter, base) || base;
+  }, [perMapSelected, selectedHitter]);
 
   const clearFilters = () => {
     setStartDate(defaultEnd);
