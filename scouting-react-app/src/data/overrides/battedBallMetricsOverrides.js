@@ -179,6 +179,17 @@ const BATTED_BALL_METRICS_OVERRIDES = {
     avgLa: 1.8,
     hardHit: 0.0,
   },
+  "Michael Whooley": {
+    bip: 80,
+    gb: 35.0,
+    ld: 25.0,
+    fb: 22.5,
+    pu: 17.5,
+    avgEv: 77.8,
+    maxEv: 97.9,
+    avgLa: 11.1,
+    hardHit: 13.8,
+  },
   // Add more hitters here as needed
 };
 
