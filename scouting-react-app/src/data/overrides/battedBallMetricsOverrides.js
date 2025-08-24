@@ -212,6 +212,17 @@ const BATTED_BALL_METRICS_OVERRIDES = {
     avgLa: -3.3,
     hardHit: 8.0,
   },
+  "Taylor Belza": {
+    bip: 18,
+    gb: 38.9,
+    ld: 22.2,
+    fb: 27.8,
+    pu: 11.1,
+    avgEv: 79.4,
+    maxEv: 98.6,
+    avgLa: 14.2,
+    hardHit: 22.2,
+  },
   // Add more hitters here as needed
 };
 
