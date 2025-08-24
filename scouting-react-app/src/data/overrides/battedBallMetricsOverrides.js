@@ -36,6 +36,17 @@ const BATTED_BALL_METRICS_OVERRIDES = {
     avgLa: 6.2,
     hardHit: 23.5,
   },
+  "Carsten Sabathia": {
+    bip: 32,
+    gb: 56.3,
+    ld: 21.9,
+    fb: 18.8,
+    pu: 3.1,
+    avgEv: 87.5,
+    maxEv: 108.1,
+    avgLa: -0.8,
+    hardHit: 34.4,
+  },
   // Add more hitters here as needed
 };
 
