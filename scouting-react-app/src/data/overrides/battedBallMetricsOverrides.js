@@ -157,6 +157,17 @@ const BATTED_BALL_METRICS_OVERRIDES = {
     avgLa: 13.4,
     hardHit: 45.2,
   },
+  "Justin Fogel": {
+    bip: 9,
+    gb: 55.6,
+    ld: 22.2,
+    fb: 11.1,
+    pu: 11.1,
+    avgEv: 82.2,
+    maxEv: 87.1,
+    avgLa: -5.9,
+    hardHit: 22.2,
+  },
   // Add more hitters here as needed
 };
 
