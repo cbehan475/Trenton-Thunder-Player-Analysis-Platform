@@ -168,6 +168,17 @@ const BATTED_BALL_METRICS_OVERRIDES = {
     avgLa: -5.9,
     hardHit: 22.2,
   },
+  "Logan Dawson": {
+    bip: 12,
+    gb: 41.7,
+    ld: 16.7,
+    fb: 41.7,
+    pu: 0.0,
+    avgEv: 71.6,
+    maxEv: 94.0,
+    avgLa: 1.8,
+    hardHit: 0.0,
+  },
   // Add more hitters here as needed
 };
 
