@@ -91,6 +91,17 @@ const BATTED_BALL_METRICS_OVERRIDES = {
     avgLa: 7.7,
     hardHit: 26.6,
   },
+  "Jaden Sheffield": {
+    bip: 29,
+    gb: 27.6,
+    ld: 29.3,
+    fb: 13.8,
+    pu: 29.3,
+    avgEv: 78.9,
+    maxEv: 102.7,
+    avgLa: 19.9,
+    hardHit: 6.9,
+  },
   // Add more hitters here as needed
 };
 
