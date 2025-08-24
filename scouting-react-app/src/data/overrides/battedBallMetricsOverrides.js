@@ -69,6 +69,17 @@ const BATTED_BALL_METRICS_OVERRIDES = {
     avgLa: 18.4,
     hardHit: 26.3,
   },
+  "Evin Sullivan": {
+    bip: 39,
+    gb: 55.3,
+    ld: 17.4,
+    fb: 15.5,
+    pu: 11.8,
+    avgEv: 74.4,
+    maxEv: 104.0,
+    avgLa: 3.7,
+    hardHit: 24.9,
+  },
   // Add more hitters here as needed
 };
 
