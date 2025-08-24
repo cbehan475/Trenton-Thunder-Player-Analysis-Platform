@@ -155,4 +155,16 @@ describe('BattedBallProfilePage - names and overrides', () => {
     expect(perCells[5].textContent).toBe('88.2');
     expect(perCells[8].textContent).toBe('37.3%');
   });
+
+  test('hitter Select has no numeric options', async () => {
+    render(<BattedBallProfilePage />);
+    const combo = screen.getByRole('combobox', { name: /Hitter/i });
+    fireEvent.mouseDown(combo);
+    const listbox = await screen.findByRole('listbox');
+    const options = within(listbox).getAllByRole('option');
+    const texts = options.map(o => o.textContent?.trim());
+    expect(texts.some(t => /^\d+$/.test(t ?? ''))).toBe(false);
+    // close
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+  });
 });

@@ -12,6 +12,7 @@ import './BattedBallProfilePage.css';
 const asDate = (s) => s;
 const norm = (s) => (s || '').trim().replace(/\s+/g, ' ');
 const normLower = (s) => norm(s).toLowerCase();
+const isName = (v) => typeof v === 'string' && !/^\d+$/.test(v);
 
 // Display helpers
 const showPct = (v) => (v == null ? '—' : `${v.toFixed(1)}%`);
@@ -55,7 +56,8 @@ export default function BattedBallProfilePage() {
       seen.add(key);
       out.push(c);
     }
-    return out.sort((a,b) => a.localeCompare(b));
+    // Filter to valid names (defensive) and sort
+    return out.filter(isName).sort((a,b) => a.localeCompare(b));
   }, [filteredEvents]);
 
   const [tab, setTab] = useState('per'); // 'per' | 'all'
@@ -174,7 +176,11 @@ export default function BattedBallProfilePage() {
               open={hitterMenuOpen}
               onOpen={() => setHitterMenuOpen(true)}
               onClose={() => setHitterMenuOpen(false)}
-              onChange={(e) => { setSelectedHitter(e.target.value || null); setHitterMenuOpen(false); }}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSelectedHitter(typeof val === 'string' && val ? val : null);
+                setHitterMenuOpen(false);
+              }}
               displayEmpty
               renderValue={(v) => v || 'All'}
               MenuProps={{ disableScrollLock: true, slotProps: { paper: { sx: { zIndex: 1600 } } } }}
