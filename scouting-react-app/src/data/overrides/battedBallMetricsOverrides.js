@@ -113,6 +113,17 @@ const BATTED_BALL_METRICS_OVERRIDES = {
     avgLa: 8.9,
     hardHit: 37.5,
   },
+  "Jared Beebe": {
+    bip: 10,
+    gb: 50.0,
+    ld: 40.0,
+    fb: 0.0,
+    pu: 10.0,
+    avgEv: 91.1,
+    maxEv: 103.1,
+    avgLa: -2.4,
+    hardHit: 40.0,
+  },
   // Add more hitters here as needed
 };
 
