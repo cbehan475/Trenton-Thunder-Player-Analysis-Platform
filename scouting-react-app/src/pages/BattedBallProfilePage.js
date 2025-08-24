@@ -4,11 +4,14 @@ import { Box, Typography, useMediaQuery, Button, FormControl, InputLabel, Select
 import HITTERS_BY_DATE from '../data/logs/hittersByDate';
 import { computeBattedBallMetrics, flattenEventsFromByDateMap } from '../lib/battedBallMetrics';
 import applyBattedBallOverride from '../lib/battedBallOverrides';
+import OVERRIDES from '../data/overrides/battedBallMetricsOverrides';
 import './BattedBallProfilePage.css';
 // ---- end imports ----
 
 // Helpers
 const asDate = (s) => s;
+const norm = (s) => (s || '').trim().replace(/\s+/g, ' ');
+const normLower = (s) => norm(s).toLowerCase();
 
 // Display helpers
 const showPct = (v) => (v == null ? '—' : `${v.toFixed(1)}%`);
@@ -27,9 +30,33 @@ export default function BattedBallProfilePage() {
   const [startDate, setStartDate] = useState(defaultEnd);
   const [endDate, setEndDate] = useState(defaultEnd);
 
-  // Build hitter list from filtered events to ensure coverage
+  // Build filtered events within range
   const filteredEvents = useMemo(() => allEvents.filter(e => e.date >= startDate && e.date <= endDate), [allEvents, startDate, endDate]);
-  const hitterList = useMemo(() => Array.from(new Set(filteredEvents.map(e => e.hitter))).sort((a,b) => a.localeCompare(b)), [filteredEvents]);
+
+  // Build union of hitters from events and overrides using normalization, but keep canonical display
+  const findCanonical = (name) => {
+    const n = normLower(name);
+    const fromEvents = filteredEvents.find(e => normLower(e.hitter) === n)?.hitter;
+    const fromOverride = Object.keys(OVERRIDES).find(k => normLower(k) === n);
+    return fromEvents ?? fromOverride ?? name;
+  };
+
+  const hitterList = useMemo(() => {
+    const fromEvents = new Set(filteredEvents.map(e => normLower(e.hitter)));
+    const fromOverrides = new Set(Object.keys(OVERRIDES).map(k => normLower(k)));
+    const union = new Set([...fromEvents, ...fromOverrides]);
+    const canonicals = Array.from(union).map(n => findCanonical(n));
+    // De-dupe canonicals by normalized form and sort by display
+    const seen = new Set();
+    const out = [];
+    for (const c of canonicals) {
+      const key = normLower(c);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(c);
+    }
+    return out.sort((a,b) => a.localeCompare(b));
+  }, [filteredEvents]);
 
   const [tab, setTab] = useState('per'); // 'per' | 'all'
   const isAllHitters = tab === 'all';
@@ -60,19 +87,24 @@ export default function BattedBallProfilePage() {
     if (orderBy === col) setOrder(order === 'asc' ? 'desc' : 'asc');
     else { setOrderBy(col); setOrder('desc'); }
   };
+  const EMPTY_METRICS = { BIP: 0, GBpct: null, LDpct: null, FBpct: null, PUpct: null, avgEV: null, maxEV: null, avgLA: null, hardHitPct: null };
   const allRows = useMemo(() => {
-    const rows = [];
-    for (const name of hitterList) {
-      const m = perMapAll.get(name) || { BIP: 0, GBpct: null, LDpct: null, FBpct: null, PUpct: null, avgEV: null, maxEV: null, avgLA: null, hardHitPct: null };
-      const merged = applyBattedBallOverride(name, m) || m;
-      rows.push({ name, ...merged });
+    // Build normalized map of computed metrics by normalized hitter name
+    const normMap = new Map();
+    for (const [key, val] of perMapAll.entries()) {
+      normMap.set(normLower(key), val);
     }
+    const rows = hitterList.map((display) => {
+      const base = normMap.get(normLower(display)) || EMPTY_METRICS;
+      const merged = applyBattedBallOverride(display, base) || base;
+      return { hitter: display, ...merged };
+    });
     rows.sort((a, b) => {
-      if (orderBy === 'name') return a.name.localeCompare(b.name) * (order === 'asc' ? 1 : -1);
+      if (orderBy === 'hitter') return a.hitter.localeCompare(b.hitter) * (order === 'asc' ? 1 : -1);
       const va = a[orderBy]; const vb = b[orderBy];
       const na = va == null ? -Infinity : va;
       const nb = vb == null ? -Infinity : vb;
-      if (na === nb) return a.name.localeCompare(b.name);
+      if (na === nb) return a.hitter.localeCompare(b.hitter);
       return (na > nb ? 1 : -1) * (order === 'asc' ? 1 : -1);
     });
     return rows;
@@ -80,8 +112,9 @@ export default function BattedBallProfilePage() {
 
   const selectedMetrics = useMemo(() => {
     if (!selectedHitter) return null;
-    const base = perMapSelected.get(selectedHitter) || null;
-    return applyBattedBallOverride(selectedHitter, base) || base;
+    // Prefer computed metrics if present; else empty metrics
+    const computed = perMapSelected.get(selectedHitter) || EMPTY_METRICS;
+    return applyBattedBallOverride(selectedHitter, computed) || computed;
   }, [perMapSelected, selectedHitter]);
 
   const clearFilters = () => {
@@ -97,7 +130,7 @@ export default function BattedBallProfilePage() {
     const esc = (v) => (v == null ? '' : String(v).replace(/"/g, '""'));
     let rowsOut = [];
     if (tab === 'all') {
-      rowsOut = allRows.map(r => [r.name, r.BIP, r.GBpct, r.LDpct, r.FBpct, r.PUpct, r.avgEV, r.maxEV, r.avgLA, r.hardHitPct]);
+      rowsOut = allRows.map(r => [r.hitter, r.BIP, r.GBpct, r.LDpct, r.FBpct, r.PUpct, r.avgEV, r.maxEV, r.avgLA, r.hardHitPct]);
     } else {
       const m = selectedMetrics || { BIP:0 };
       rowsOut = [[m.BIP, m.GBpct, m.LDpct, m.FBpct, m.PUpct, m.avgEV, m.maxEV, m.avgLA, m.hardHitPct]];
@@ -186,7 +219,7 @@ export default function BattedBallProfilePage() {
             <Table size="small" aria-label="All Hitters Metrics">
               <TableHead>
                 <TableRow>
-                  <TableCell scope="col" onClick={() => handleSort('name')} style={{ cursor: 'pointer' }}>Hitter</TableCell>
+                  <TableCell scope="col" onClick={() => handleSort('hitter')} style={{ cursor: 'pointer' }}>Hitter</TableCell>
                   <TableCell scope="col" onClick={() => handleSort('BIP')} style={{ cursor: 'pointer' }} className="num">BIP</TableCell>
                   <TableCell scope="col" onClick={() => handleSort('GBpct')} style={{ cursor: 'pointer' }} className="num">GB%</TableCell>
                   <TableCell scope="col" onClick={() => handleSort('LDpct')} style={{ cursor: 'pointer' }} className="num">LD%</TableCell>
@@ -200,8 +233,8 @@ export default function BattedBallProfilePage() {
               </TableHead>
               <TableBody>
                 {allRows.map((r) => (
-                  <TableRow key={r.name} hover>
-                    <TableCell component="th" scope="row">{r.name}</TableCell>
+                  <TableRow key={r.hitter} hover>
+                    <TableCell component="th" scope="row">{r.hitter}</TableCell>
                     <TableCell className="num">{showInt(r.BIP)}</TableCell>
                     <TableCell className="num">{showPct(r.GBpct)}</TableCell>
                     <TableCell className="num">{showPct(r.LDpct)}</TableCell>
