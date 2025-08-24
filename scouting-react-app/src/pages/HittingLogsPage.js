@@ -143,7 +143,7 @@ export default function HittingLogsPage() {
       >
         Hitting Logs
       </Typography>
-      {/* Top controls bar to mirror Pitching Logs: Date on left */}
+      {/* Top controls bar to mirror Pitching Logs: Date + Filters + Search + Actions */}
       <Box className="hl-top-controls">
         <div className="controls">
           <div className="field">
@@ -154,6 +154,91 @@ export default function HittingLogsPage() {
               ))}
             </select>
           </div>
+
+          <FormControl className="hitter-select" size="small" sx={{ minWidth: 200 }}>
+            <InputLabel id="hitter-label">Hitter</InputLabel>
+            <Select
+              labelId="hitter-label"
+              value={selectedHitter}
+              label="Hitter"
+              onChange={(e) => setSelectedHitter(e.target.value)}
+              MenuProps={{
+                container: typeof document !== 'undefined' ? document.body : undefined,
+                disablePortal: false,
+                anchorOrigin: { vertical: 'bottom', horizontal: 'left' },
+                transformOrigin: { vertical: 'top', horizontal: 'left' },
+                slotProps: { paper: { className: 'filter-menu', sx: { mt: 1, zIndex: 1600 } } },
+              }}
+            >
+              {hitterOptions.map((name) => (
+                <MenuItem key={name} value={name}>{name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl className="inning-select" size="small" sx={{ minWidth: 130 }}>
+            <InputLabel id="inning-label">Inning</InputLabel>
+            <Select
+              labelId="inning-label"
+              value={selectedInning}
+              label="Inning"
+              onChange={(e) => setSelectedInning(e.target.value)}
+              MenuProps={{
+                container: typeof document !== 'undefined' ? document.body : undefined,
+                disablePortal: false,
+                anchorOrigin: { vertical: 'bottom', horizontal: 'left' },
+                transformOrigin: { vertical: 'top', horizontal: 'left' },
+                slotProps: { paper: { className: 'filter-menu', sx: { mt: 1, zIndex: 1600 } } },
+              }}
+            >
+              {inningOptions.map((inn) => (
+                <MenuItem key={String(inn)} value={inn}>{inn}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <TextField
+            size="small"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search hitter / pitch / result"
+            inputProps={{ 'aria-label': 'Quick search' }}
+            sx={{ minWidth: 260, flex: 1 }}
+          />
+
+          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleClear}
+              sx={{
+                height: 36,
+                borderColor: 'var(--hl-gold)',
+                color: 'var(--hl-gold)',
+                '&:hover': { backgroundColor: 'rgba(255,176,0,0.10)', borderColor: 'var(--hl-gold)' },
+              }}
+            >
+              Clear
+            </Button>
+            <Tooltip title={rows.length === 0 ? 'No rows to export' : ''}>
+              <span>
+                <Button
+                  variant="contained"
+                  size="small"
+                  disabled={rows.length === 0}
+                  onClick={() => downloadCsv(rows)}
+                  sx={{
+                    height: 36,
+                    backgroundColor: 'var(--hl-gold)',
+                    color: '#1b2231',
+                    '&:hover': { backgroundColor: '#e5a300' },
+                  }}
+                >
+                  Export CSV
+                </Button>
+              </span>
+            </Tooltip>
+          </Box>
         </div>
       </Box>
       <Grid
@@ -171,96 +256,6 @@ export default function HittingLogsPage() {
         {/* Date pills removed in favor of top-left selector for consistency */}
         {selectedDate && (
           <Grid item xs={12}>
-            <Box className="hl-controls">
-              <Box ref={filterBarRef} className="filters filter-bar hl-filter-bar">
-                <FormControl className="hitter-select" fullWidth size="small" sx={{ minWidth: 180 }}>
-                  <InputLabel id="hitter-label">Hitter</InputLabel>
-                  <Select
-                    labelId="hitter-label"
-                    value={selectedHitter}
-                    label="Hitter"
-                    onChange={(e) => setSelectedHitter(e.target.value)}
-                    MenuProps={{
-                      container: typeof document !== 'undefined' ? document.body : undefined,
-                      disablePortal: false,
-                      anchorEl: () => filterBarRef.current,
-                      anchorOrigin: { vertical: 'top', horizontal: 'right' },
-                      transformOrigin: { vertical: 'top', horizontal: 'left' },
-                      slotProps: { paper: { className: 'filter-menu', sx: { mt: 1, ml: 12, zIndex: 1600 } } },
-                    }}
-                  >
-                    {hitterOptions.map((name) => (
-                      <MenuItem key={name} value={name}>
-                        {name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl className="inning-select" fullWidth size="small" sx={{ minWidth: 120 }}>
-                  <InputLabel id="inning-label">Inning</InputLabel>
-                  <Select
-                    labelId="inning-label"
-                    value={selectedInning}
-                    label="Inning"
-                    onChange={(e) => setSelectedInning(e.target.value)}
-                    MenuProps={{
-                      container: typeof document !== 'undefined' ? document.body : undefined,
-                      disablePortal: false,
-                      anchorEl: () => filterBarRef.current,
-                      anchorOrigin: { vertical: 'top', horizontal: 'right' },
-                      transformOrigin: { vertical: 'top', horizontal: 'left' },
-                      slotProps: { paper: { className: 'filter-menu', sx: { mt: 1, ml: 12, zIndex: 1600 } } },
-                    }}
-                  >
-                    {inningOptions.map((inn) => (
-                      <MenuItem key={String(inn)} value={inn}>
-                        {inn}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <TextField
-                  size="small"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search hitter / pitch / result"
-                  inputProps={{ 'aria-label': 'Quick search' }}
-                />
-                <Box sx={{ display: 'flex', gap: 1, justifySelf: 'end', justifyContent: 'flex-end' }}>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={handleClear}
-                    sx={{
-                      height: 36,
-                      borderColor: 'var(--hl-gold)',
-                      color: 'var(--hl-gold)',
-                      '&:hover': { backgroundColor: 'rgba(255,176,0,0.10)', borderColor: 'var(--hl-gold)' },
-                    }}
-                  >
-                    Clear
-                  </Button>
-                  <Tooltip title={rows.length === 0 ? 'No rows to export' : ''}>
-                    <span>
-                      <Button
-                        variant="contained"
-                        size="small"
-                        disabled={rows.length === 0}
-                        onClick={() => downloadCsv(rows)}
-                        sx={{
-                          height: 36,
-                          backgroundColor: 'var(--hl-gold)',
-                          color: '#1b2231',
-                          '&:hover': { backgroundColor: '#e5a300' },
-                        }}
-                      >
-                        Export CSV
-                      </Button>
-                    </span>
-                  </Tooltip>
-                </Box>
-              </Box>
-            </Box>
             <Box className="stats-ribbon">
               <span className="stats-pill"><span className="dot" /><span className="label">PA</span><span className="value">{stats.pa}</span></span>
               <span className="stats-pill"><span className="dot" /><span className="label">Contact%</span><span className="value">{stats.contactPct}</span></span>
