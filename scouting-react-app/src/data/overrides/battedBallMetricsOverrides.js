@@ -190,6 +190,17 @@ const BATTED_BALL_METRICS_OVERRIDES = {
     avgLa: 11.1,
     hardHit: 13.8,
   },
+  "Paulo Noris": {
+    bip: 5,
+    gb: 80.0,
+    ld: 0.0,
+    fb: 20.0,
+    pu: 0.0,
+    avgEv: 84.1,
+    maxEv: 82.9,
+    avgLa: 6.3,
+    hardHit: 0.0,
+  },
   // Add more hitters here as needed
 };
 
