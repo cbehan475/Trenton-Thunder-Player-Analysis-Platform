@@ -135,6 +135,17 @@ const BATTED_BALL_METRICS_OVERRIDES = {
     avgLa: 11.6,
     hardHit: 6.7,
   },
+  "John Schroeder": {
+    bip: 51,
+    gb: 47.1,
+    ld: 18.6,
+    fb: 17.6,
+    pu: 16.7,
+    avgEv: 80.3,
+    maxEv: 104.3,
+    avgLa: 8.6,
+    hardHit: 27.5,
+  },
   // Add more hitters here as needed
 };
 
