@@ -102,6 +102,17 @@ const BATTED_BALL_METRICS_OVERRIDES = {
     avgLa: 19.9,
     hardHit: 6.9,
   },
+  "Jakob Poturnak": {
+    bip: 52,
+    gb: 46.2,
+    ld: 15.4,
+    fb: 32.7,
+    pu: 5.8,
+    avgEv: 85.4,
+    maxEv: 104.6,
+    avgLa: 8.9,
+    hardHit: 37.5,
+  },
   // Add more hitters here as needed
 };
 
