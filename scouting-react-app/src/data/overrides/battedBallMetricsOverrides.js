@@ -25,6 +25,17 @@ const BATTED_BALL_METRICS_OVERRIDES = {
     avgLa: 3.6,
     hardHit: 13.7,
   },
+  "Brayden Fraasman": {
+    bip: 34,
+    gb: 47.1,
+    ld: 17.7,
+    fb: 26.5,
+    pu: 8.8,
+    avgEv: 81.7,
+    maxEv: 96.3,
+    avgLa: 6.2,
+    hardHit: 23.5,
+  },
   // Add more hitters here as needed
 };
 
