@@ -146,6 +146,17 @@ const BATTED_BALL_METRICS_OVERRIDES = {
     avgLa: 8.6,
     hardHit: 27.5,
   },
+  "JuJu Stevens": {
+    bip: 63,
+    gb: 38.1,
+    ld: 28.6,
+    fb: 31.7,
+    pu: 1.6,
+    avgEv: 84.5,
+    maxEv: 106.9,
+    avgLa: 13.4,
+    hardHit: 45.2,
+  },
   // Add more hitters here as needed
 };
 
