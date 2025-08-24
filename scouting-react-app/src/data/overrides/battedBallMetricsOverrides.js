@@ -58,6 +58,17 @@ const BATTED_BALL_METRICS_OVERRIDES = {
     avgLa: -27.5,
     hardHit: 50.0,
   },
+  "Danny Corona": {
+    bip: 19,
+    gb: 31.6,
+    ld: 39.5,
+    fb: 13.2,
+    pu: 15.8,
+    avgEv: 85.2,
+    maxEv: 105.4,
+    avgLa: 18.4,
+    hardHit: 26.3,
+  },
   // Add more hitters here as needed
 };
 
