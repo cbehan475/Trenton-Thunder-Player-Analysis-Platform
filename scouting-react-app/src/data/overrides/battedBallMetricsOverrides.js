@@ -14,6 +14,17 @@ const BATTED_BALL_METRICS_OVERRIDES = {
     avgLa: 14.1,
     hardHit: 37.3,
   },
+  "Aaron Whitley": {
+    bip: 95,
+    gb: 54.8,
+    ld: 22.1,
+    fb: 18.9,
+    pu: 4.2,
+    avgEv: 78.4,
+    maxEv: 99.3,
+    avgLa: 3.6,
+    hardHit: 13.7,
+  },
   // Add more hitters here as needed
 };
 
