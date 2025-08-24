@@ -10,81 +10,6 @@ import './BattedBallProfilePage.css';
 // Helpers
 const asDate = (s) => s;
 
-// Defensive helper: pick display name for a hitter's row array
-function pickHitterName(rows = [], fallbackKey) {
-  try {
-    if (!Array.isArray(rows)) rows = [];
-    const counts = new Map();
-    for (const r of rows) {
-      const cand = String(
-        (r && (r.hitter ?? r.Hitter ?? r.name ?? r.player)) ?? ''
-      ).trim();
-      if (!cand) continue;
-      counts.set(cand, (counts.get(cand) || 0) + 1);
-    }
-    if (counts.size) {
-      return [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
-    }
-    return String(fallbackKey ?? '');
-  } catch {
-    return String(fallbackKey ?? '');
-  }
-}
-
-function buildHitterNameMap(perKey) {
-  const map = {};
-  for (const key of Object.keys(perKey || {})) {
-    map[key] = pickHitterName(perKey[key], key);
-  }
-  return map;
-}
-
-// Normalize a hitter's day into a flat array of row objects
-function normalizeHittersDay(mod, fallbackKey) {
-  const fallback = String(fallbackKey ?? '');
-  const detected =
-    (mod && (mod.hitter ?? mod.Hitter ?? mod.name ?? mod.player)) || '';
-
-  const addName = (rows) =>
-    (rows || []).map(r => ({
-      ...r,
-      hitter: (r?.hitter ?? (detected || fallback)),
-    }));
-
-  if (!mod) return [];
-  if (Array.isArray(mod)) return addName(mod);
-  if (Array.isArray(mod.rows)) return addName(mod.rows);
-  if (Array.isArray(mod.atBats)) return addName(mod.atBats);
-  if (typeof mod === 'object') {
-    const out = [];
-    for (const k of Object.keys(mod)) {
-      const v = mod[k];
-      if (Array.isArray(v)) out.push(...addName(v));
-    }
-    return out;
-  }
-  return [];
-}
-
-function inRange(dateStr, start, end) {
-  return dateStr >= start && dateStr <= end;
-}
-
-function collectRowsByKeyInRange(MAP, start, end) {
-  const perHitter = {};
-  for (const date of Object.keys(MAP || {})) {
-    if (date < start || date > end) continue;
-    const day = MAP[date] || {};
-    for (const hitterName of Object.keys(day)) {
-      let rows = normalizeHittersDay(day[hitterName], hitterName);
-      if (!Array.isArray(rows)) rows = [];
-      if (!perHitter[hitterName]) perHitter[hitterName] = [];
-      perHitter[hitterName].push(...rows);
-    }
-  }
-  return perHitter;
-}
-
 // Display helpers
 const showPct = (v) => (v == null ? '—' : `${v.toFixed(1)}%`);
 const showNum1 = (v) => (v == null ? '—' : v.toFixed(1));
@@ -116,6 +41,13 @@ export default function BattedBallProfilePage() {
       setSelectedHitter(null);
     }
   }, [hitterList, selectedHitter]);
+
+  // Ensure menu is closed when switching to All Hitters tab or disabling the control
+  useEffect(() => {
+    if (isAllHitters && hitterMenuOpen) {
+      setHitterMenuOpen(false);
+    }
+  }, [isAllHitters, hitterMenuOpen]);
 
   // Aggregation
   const perMapAll = useMemo(() => computeBattedBallMetrics(filteredEvents, { dateRange: [startDate, endDate] }), [filteredEvents, startDate, endDate]);

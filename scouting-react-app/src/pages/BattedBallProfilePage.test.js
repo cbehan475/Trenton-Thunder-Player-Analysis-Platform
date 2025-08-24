@@ -67,10 +67,10 @@ describe('BattedBallProfilePage - names and overrides', () => {
     // Switch to All Hitters tab
     fireEvent.click(screen.getByText(/All Hitters/i));
 
-    // Table first column should render hitter names
+    // Table first column should render hitter names (rowheaders)
     const table = await screen.findByRole('table', { name: /All Hitters Metrics/i });
     const rows = within(table).getAllByRole('row').slice(1); // skip header
-    const firstColTexts = rows.map(r => within(r).getAllByRole('cell')[0].textContent);
+    const firstColTexts = rows.map(r => within(r).getByRole('rowheader').textContent);
     expect(firstColTexts).toEqual(expect.arrayContaining(['Aaron Graeber', 'John Doe']));
   });
 
@@ -88,10 +88,11 @@ describe('BattedBallProfilePage - names and overrides', () => {
     // Find row for Aaron Graeber and check a couple override values
     const row = nameCell.closest('tr');
     const cells = within(row).getAllByRole('cell');
-    // cells: [name, BIP, GB%, LD%, FB%, PU%, Avg EV, Max EV, Avg LA, Hard-Hit %]
-    expect(cells[1].textContent).toBe('50'); // BIP
-    expect(cells[6].textContent).toBe('88.2'); // Avg EV (one decimal)
-    expect(cells[9].textContent).toBe('37.3%'); // Hard-Hit % with % sign
+    // Note: first column is a rowheader (<th>), not included in getAllByRole('cell').
+    // cells indices map to: [BIP, GB%, LD%, FB%, PU%, Avg EV, Max EV, Avg LA, Hard-Hit %]
+    expect(cells[0].textContent).toBe('50'); // BIP
+    expect(cells[5].textContent).toBe('88.2'); // Avg EV (one decimal)
+    expect(cells[8].textContent).toBe('37.3%'); // Hard-Hit % with % sign
 
     // Per Hitter view should also reflect override. Switch and explicitly select Aaron.
     fireEvent.click(screen.getByText(/Per Hitter/i));
