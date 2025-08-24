@@ -201,6 +201,17 @@ const BATTED_BALL_METRICS_OVERRIDES = {
     avgLa: 6.3,
     hardHit: 0.0,
   },
+  "Rowan Masse": {
+    bip: 50,
+    gb: 64.0,
+    ld: 26.0,
+    fb: 6.0,
+    pu: 4.0,
+    avgEv: 73.8,
+    maxEv: 96.1,
+    avgLa: -3.3,
+    hardHit: 8.0,
+  },
   // Add more hitters here as needed
 };
 
