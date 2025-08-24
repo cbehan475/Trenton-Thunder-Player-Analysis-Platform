@@ -80,6 +80,17 @@ const BATTED_BALL_METRICS_OVERRIDES = {
     avgLa: 3.7,
     hardHit: 24.9,
   },
+  "Harry Genth": {
+    bip: 32,
+    gb: 43.8,
+    ld: 23.4,
+    fb: 18.8,
+    pu: 14.1,
+    avgEv: 83.5,
+    maxEv: 103.3,
+    avgLa: 7.7,
+    hardHit: 26.6,
+  },
   // Add more hitters here as needed
 };
 
