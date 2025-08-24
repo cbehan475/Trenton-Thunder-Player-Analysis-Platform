@@ -47,6 +47,17 @@ const BATTED_BALL_METRICS_OVERRIDES = {
     avgLa: -0.8,
     hardHit: 34.4,
   },
+  "Cole Leach": {
+    bip: 2,
+    gb: 50.0,
+    ld: 0.0,
+    fb: 0.0,
+    pu: 50.0,
+    avgEv: 69.9,
+    maxEv: 106.1,
+    avgLa: -27.5,
+    hardHit: 50.0,
+  },
   // Add more hitters here as needed
 };
 
