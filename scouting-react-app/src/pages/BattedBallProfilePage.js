@@ -107,10 +107,14 @@ export default function BattedBallProfilePage() {
   const hitterList = useMemo(() => Array.from(new Set(filteredEvents.map(e => e.hitter))).sort((a,b) => a.localeCompare(b)), [filteredEvents]);
 
   const [tab, setTab] = useState('per'); // 'per' | 'all'
-  const [selectedHitter, setSelectedHitter] = useState(hitterList[0] || '');
+  const isAllHitters = tab === 'all';
+  const [hitterMenuOpen, setHitterMenuOpen] = useState(false);
+  const [selectedHitter, setSelectedHitter] = useState(null); // null means 'All'
   useEffect(() => {
-    if (!selectedHitter && hitterList.length) setSelectedHitter(hitterList[0]);
-    if (selectedHitter && !hitterList.includes(selectedHitter) && hitterList.length) setSelectedHitter(hitterList[0]);
+    // If selected hitter is no longer in range, clear to All (null)
+    if (selectedHitter && !hitterList.includes(selectedHitter)) {
+      setSelectedHitter(null);
+    }
   }, [hitterList, selectedHitter]);
 
   // Aggregation
@@ -151,7 +155,7 @@ export default function BattedBallProfilePage() {
   const clearFilters = () => {
     setStartDate(defaultEnd);
     setEndDate(defaultEnd);
-    setSelectedHitter(hitterList[0] || '');
+    setSelectedHitter(null);
   };
 
   const exportCsv = () => {
@@ -193,11 +197,23 @@ export default function BattedBallProfilePage() {
           <label className="gold" htmlFor="bb-end">End Date</label>
           <input id="bb-end" type="date" value={asDate(endDate)} min={startDate} onChange={(e) => setEndDate(e.target.value)} />
         </div>
-        <div className="field" aria-disabled={tab === 'all'}>
+        <div className="field" aria-disabled={isAllHitters}>
           <label className="gold" htmlFor="bb-hitter">Hitter</label>
-          <FormControl size="small" sx={{ minWidth: 220 }} disabled={tab === 'all'}>
+          <FormControl size="small" sx={{ minWidth: 220 }} disabled={isAllHitters}>
             <InputLabel id="bb-hitter-label">Hitter</InputLabel>
-            <Select labelId="bb-hitter-label" id="bb-hitter" value={selectedHitter} label="Hitter" onChange={(e) => setSelectedHitter(e.target.value)} MenuProps={{ slotProps: { paper: { sx: { zIndex: 1600 } } } }}>
+            <Select
+              labelId="bb-hitter-label"
+              id="bb-hitter"
+              value={selectedHitter ?? ''}
+              label="Hitter"
+              open={hitterMenuOpen}
+              onOpen={() => setHitterMenuOpen(true)}
+              onClose={() => setHitterMenuOpen(false)}
+              onChange={(e) => { setSelectedHitter(e.target.value || null); setHitterMenuOpen(false); }}
+              displayEmpty
+              renderValue={(v) => v || 'All'}
+              MenuProps={{ disableScrollLock: true, slotProps: { paper: { sx: { zIndex: 1600 } } } }}
+           >
               {hitterList.map((name) => (
                 <MenuItem key={name} value={name}>{name}</MenuItem>
               ))}
@@ -216,8 +232,8 @@ export default function BattedBallProfilePage() {
 
       {/* Tabs */}
       <div className="bb-tabs" role="tablist" aria-label="View Mode">
-        <button className={`bb-tab ${tab === 'per' ? 'active' : ''}`} role="tab" aria-selected={tab === 'per'} onClick={() => setTab('per')}>Per Hitter</button>
-        <button className={`bb-tab ${tab === 'all' ? 'active' : ''}`} role="tab" aria-selected={tab === 'all'} onClick={() => setTab('all')}>All Hitters</button>
+        <button className={`bb-tab ${!isAllHitters ? 'active' : ''}`} role="tab" aria-selected={!isAllHitters} onClick={() => setTab('per')}>Per Hitter</button>
+        <button className={`bb-tab ${isAllHitters ? 'active' : ''}`} role="tab" aria-selected={isAllHitters} onClick={() => setTab('all')}>All Hitters</button>
       </div>
 
       {/* Summary for Per Hitter */}
@@ -233,7 +249,7 @@ export default function BattedBallProfilePage() {
 
       {/* Tables */}
       <div className="bb-tableShell" role="region" aria-label="Batted Ball Tables">
-        {tab === 'all' ? (
+        {isAllHitters ? (
           <TableContainer>
             <Table size="small" aria-label="All Hitters Metrics">
               <TableHead>
@@ -253,7 +269,7 @@ export default function BattedBallProfilePage() {
               <TableBody>
                 {allRows.map((r) => (
                   <TableRow key={r.name} hover>
-                    <TableCell>{r.name}</TableCell>
+                    <TableCell component="th" scope="row">{r.name}</TableCell>
                     <TableCell className="num">{showInt(r.BIP)}</TableCell>
                     <TableCell className="num">{showPct(r.GBpct)}</TableCell>
                     <TableCell className="num">{showPct(r.LDpct)}</TableCell>
