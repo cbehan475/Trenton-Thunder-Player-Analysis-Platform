@@ -66,7 +66,7 @@ const BARREL_ROW = { key: 'BARREL_PCT', label: 'Barrel % (proxy)', unit: '%' };
 export default function HittingMLBBenchmarksPage() {
   // Level options and mapping for display
   const rawLevels = Object.keys(HITTING_BENCHMARKS_BY_LEVEL || {});
-  const levelOptions = ['MLB','AAA','AA','APLUS'].filter(l => rawLevels.includes(l));
+  const levelOptions = ['MLB','AAA','AA','APLUS','A'].filter(l => rawLevels.includes(l));
   const [selectedLevel, setSelectedLevel] = useState(levelOptions.includes('MLB') ? 'MLB' : (levelOptions[0] || 'MLB'));
 
   // Build union of hitters from events + overrides
