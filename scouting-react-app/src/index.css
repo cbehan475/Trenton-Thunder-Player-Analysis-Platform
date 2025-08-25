@@ -358,3 +358,70 @@ select, option,
   --muted: var(--color-gold);
 }
 
+/* --- Home page: no vertical scroll, fits exactly one viewport --- */
+.home-page {
+  min-height: 100vh;          /* allow content to size naturally */
+  display: grid;
+  grid-template-rows: auto 1fr;  /* hero, then cards fill */
+  overflow: hidden;           /* no scrollbar on typical laptop heights */
+}
+
+/* Hero block */
+.home-hero {
+  padding: 24px 32px 8px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Cards row: stable 3-column grid with good spacing */
+.home-cards {
+  max-width: 1200px;
+  width: 100%;
+  margin: 8px auto 24px;
+  padding: 0 32px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(280px, 1fr));
+  gap: 24px;
+  align-content: start;       /* don’t stretch tall */
+}
+
+.home-cards .card,
+.home-cards > * {
+  box-sizing: border-box;
+  margin: 0;                  /* prevent extra height */
+}
+
+/* If the viewport is short, allow a gentle scroll so cards don't squish */
+@media (max-height: 760px) {
+  .home-page { overflow-y: auto; }
+}
+
+/* If the viewport is narrow, drop to 2 then 1 column cleanly */
+@media (max-width: 1100px) {
+  .home-cards { grid-template-columns: repeat(2, minmax(280px, 1fr)); }
+}
+@media (max-width: 720px) {
+  .home-cards { grid-template-columns: 1fr; }
+}
+
+/* --- Header/Nav: sticky and high z-index; rock-solid hover --- */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 2000; /* above hero/cards */
+}
+.navbar { position: relative; }
+
+/* Top items: slight horizontal padding; hover bridge that doesn't trap clicks */
+.navbar .top-item { position: relative; padding: 0 10px; }
+.navbar .top-item::after {
+  content: "";
+  position: absolute;
+  left: -10px; right: -10px;
+  top: 100%;
+  height: 14px;            /* spans the gap to the menu */
+  pointer-events: none;     /* preserve hover, don’t block clicks */
+}
+
+/* Ensure menus sit above page content */
+.navbar .MuiMenu-paper { z-index: 2100; }

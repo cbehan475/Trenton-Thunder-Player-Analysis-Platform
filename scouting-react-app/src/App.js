@@ -33,16 +33,18 @@ function Home() {
   const navy = '#0B1220';
   const gold = '#FFD600';
   return (
-    <>
+    <div className="home-page">
       <NavBar className="navbar" />
       <Box sx={{
         background: 'radial-gradient(1400px 900px at 50% -250px, #1a2b4a 0%, #0e1b34 55%, #0a1327 100%)',
         color: '#E9EEFF',
-        minHeight: 'calc(100vh - 56px)'
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column'
       }}>
         <Container maxWidth="lg" className="container">
           {/* HERO */}
-          <Box sx={{ pt: 1, pb: 1 }}>
+          <Box component="section" className="home-hero" sx={{ pt: 1, pb: 1 }}>
             <Typography
               variant="h2"
               component="h1"
@@ -97,96 +99,87 @@ function Home() {
               </Box>
             </Box>
           </Box>
-          <Box sx={{ mt: 0.5, pt: 0.5, pb: 1 }}>
-            <Grid container spacing={{ xs: 1.5, md: 2 }} alignItems="stretch" justifyContent="center">
-              {/* Pitching Analytics Card */}
-              <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
-                <Card sx={{
-                  height: '100%',
-                  minHeight: 168,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  p: 1.5,
-                  borderRadius: 2,
-                  boxShadow: 3,
-                  bgcolor: '#fff'
-                }}>
-                  <CardContent sx={{ flexGrow: 1, p: 0 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <EmojiObjectsIcon sx={{ color: gold, mr: 1, fontSize: 28 }} />
-                      <Typography variant="h6" sx={{ color: '#23272F', fontWeight: 800, fontFamily: 'Montserrat, Roboto, sans-serif' }}>
-                        Pitching Analytics
-                      </Typography>
-                    </Box>
-                    <Box component="ul" sx={{ flexGrow: 1, pl: 3, color: '#23272F', fontSize: 17, fontWeight: 500, fontFamily: 'Montserrat, Roboto, sans-serif', mb: 0 }}>
-                      <li>Pitching game logs</li>
-                      <li>Pitch movement & control</li>
-                      <li>Pitch type analysis</li>
-                      <li>Player comparisons to pro averages</li>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-              {/* Hitting Analytics Card */}
-              <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
-                <Card sx={{
-                  height: '100%',
-                  minHeight: 168,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  p: 1.5,
-                  borderRadius: 2,
-                  boxShadow: 3,
-                  bgcolor: '#fff'
-                }}>
-                  <CardContent sx={{ flexGrow: 1, p: 0 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <EmojiObjectsIcon sx={{ color: gold, mr: 1, fontSize: 28 }} />
-                      <Typography variant="h6" sx={{ color: '#23272F', fontWeight: 800, fontFamily: 'Montserrat, Roboto, sans-serif' }}>
-                        Hitting Analytics
-                      </Typography>
-                    </Box>
-                    <Box component="ul" sx={{ flexGrow: 1, pl: 3, color: '#23272F', fontSize: 17, fontWeight: 500, fontFamily: 'Montserrat, Roboto, sans-serif', mb: 0 }}>
-                      <li>Hitting game logs</li>
-                      <li>Batting performance metrics</li>
-                      <li>Batted ball profiles</li>
-                      <li>Player comparisons to pro averages</li>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-              {/* Player Development Card */}
-              <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
-                <Card sx={{
-                  height: '100%',
-                  minHeight: 168,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  p: 1.5,
-                  borderRadius: 2,
-                  boxShadow: 3,
-                  bgcolor: '#fff'
-                }}>
-                  <CardContent sx={{ flexGrow: 1, p: 0 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <EmojiObjectsIcon sx={{ color: gold, mr: 1, fontSize: 28 }} />
-                      <Typography variant="h6" sx={{ color: '#23272F', fontWeight: 800, fontFamily: 'Montserrat, Roboto, sans-serif' }}>
-                        Player Development
-                      </Typography>
-                    </Box>
-                    <Box component="ul" sx={{ flexGrow: 1, pl: 3, color: '#23272F', fontSize: 17, fontWeight: 500, fontFamily: 'Montserrat, Roboto, sans-serif', mb: 0 }}>
-                      <li>Individual player dashboards</li>
-                      <li>Custom hitter development plans</li>
-                      <li>Custom pitcher development plans</li>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
+          <Box component="section" className="home-cards" sx={{ mt: 0.5, pt: 0.5, pb: 1 }}>
+            {/* Pitching Analytics Card */}
+            <Card className="card home-card" sx={{
+              minHeight: 168,
+              display: 'flex',
+              flexDirection: 'column',
+              p: 1.5,
+              borderRadius: 2,
+              boxShadow: 3,
+              bgcolor: '#fff'
+            }}>
+              <CardContent sx={{ flexGrow: 1, p: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <EmojiObjectsIcon sx={{ color: gold, mr: 1, fontSize: 28 }} />
+                  <Typography variant="h6" sx={{ color: '#23272F', fontWeight: 800, fontFamily: 'Montserrat, Roboto, sans-serif' }}>
+                    Pitching Analytics
+                  </Typography>
+                </Box>
+                <Box component="ul" sx={{ flexGrow: 1, pl: 3, color: '#23272F', fontSize: 17, fontWeight: 500, fontFamily: 'Montserrat, Roboto, sans-serif', mb: 0 }}>
+                  <li>Pitching game logs</li>
+                  <li>Pitch movement & control</li>
+                  <li>Pitch type analysis</li>
+                  <li>Player comparisons to pro averages</li>
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Hitting Analytics Card */}
+            <Card className="card home-card" sx={{
+              minHeight: 168,
+              display: 'flex',
+              flexDirection: 'column',
+              p: 1.5,
+              borderRadius: 2,
+              boxShadow: 3,
+              bgcolor: '#fff'
+            }}>
+              <CardContent sx={{ flexGrow: 1, p: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <EmojiObjectsIcon sx={{ color: gold, mr: 1, fontSize: 28 }} />
+                  <Typography variant="h6" sx={{ color: '#23272F', fontWeight: 800, fontFamily: 'Montserrat, Roboto, sans-serif' }}>
+                    Hitting Analytics
+                  </Typography>
+                </Box>
+                <Box component="ul" sx={{ flexGrow: 1, pl: 3, color: '#23272F', fontSize: 17, fontWeight: 500, fontFamily: 'Montserrat, Roboto, sans-serif', mb: 0 }}>
+                  <li>Hitting game logs</li>
+                  <li>Batting performance metrics</li>
+                  <li>Batted ball profiles</li>
+                  <li>Player comparisons to pro averages</li>
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Player Development Card */}
+            <Card className="card home-card" sx={{
+              minHeight: 168,
+              display: 'flex',
+              flexDirection: 'column',
+              p: 1.5,
+              borderRadius: 2,
+              boxShadow: 3,
+              bgcolor: '#fff'
+            }}>
+              <CardContent sx={{ flexGrow: 1, p: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <EmojiObjectsIcon sx={{ color: gold, mr: 1, fontSize: 28 }} />
+                  <Typography variant="h6" sx={{ color: '#23272F', fontWeight: 800, fontFamily: 'Montserrat, Roboto, sans-serif' }}>
+                    Player Development
+                  </Typography>
+                </Box>
+                <Box component="ul" sx={{ flexGrow: 1, pl: 3, color: '#23272F', fontSize: 17, fontWeight: 500, fontFamily: 'Montserrat, Roboto, sans-serif', mb: 0 }}>
+                  <li>Individual player dashboards</li>
+                  <li>Custom hitter development plans</li>
+                  <li>Custom pitcher development plans</li>
+                </Box>
+              </CardContent>
+            </Card>
           </Box>
         </Container>
       </Box>
-    </>
+    </div>
   );
 }
 

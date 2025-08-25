@@ -1,5 +1,5 @@
 // src/components/NavBar.js
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   AppBar, Toolbar, IconButton, Drawer, List, ListItem, ListItemButton, ListItemText,
   Box, Menu, MenuItem
@@ -18,20 +18,47 @@ export default function NavBar() {
   // mobile drawer
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // desktop hover menus (no flicker)
-  const [openId, setOpenId] = useState(null); // 'pitch' | 'hit' | 'dev' | null
+  // single active state + delayed close
+  const [activeMenu, setActiveMenu] = useState(null); // 'pitching' | 'hitting' | 'pd' | null
   const closeTimer = useRef(null);
-  const handleEnter = (id) => { if (closeTimer.current) clearTimeout(closeTimer.current); setOpenId(id); };
-  const handleLeave = () => {
+  const openMenu = (id) => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
-    closeTimer.current = setTimeout(() => setOpenId(null), 180);
+    setActiveMenu(id);
   };
+  const scheduleClose = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setActiveMenu(null), 160);
+  };
+  useEffect(() => () => clearTimeout(closeTimer.current), []);
+
+  // close on route change
+  useEffect(() => { setActiveMenu(null); }, [location.pathname]);
 
   // anchors
   const pitchRef = useRef(null);
   const hitRef   = useRef(null);
   const devRef   = useRef(null);
-  const refs = { pitch: pitchRef, hit: hitRef, dev: devRef };
+  const refs = { pitching: pitchRef, hitting: hitRef, pd: devRef };
+  const navContainerRef = useRef(null);
+  const headerRef = useRef(null);
+
+  // reliable touch detection (do not block desktop clicks)
+  const isTouchDevice =
+    typeof window !== 'undefined' && (
+      (navigator.maxTouchPoints > 0) ||
+      (window.matchMedia?.('(hover: none)')?.matches)
+    );
+
+  // global outside-click close (prevents sticky menus)
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (headerRef.current && !headerRef.current.contains(e.target)) {
+        setActiveMenu(null);
+      }
+    };
+    document.addEventListener('click', onDocClick);
+    return () => document.removeEventListener('click', onDocClick);
+  }, []);
 
   // --- NAV Styling constants ---
   const NAV_TEXT = '#FFFFFF';
@@ -40,24 +67,24 @@ export default function NavBar() {
 
   // tabs + menu items
   const tabs = [
-    { id: 'pitch', label: 'Pitching Analysis', hub: '/pitching' },
-    { id: 'hit',   label: 'Hitting Analysis',  hub: '/hitting' },
-    { id: 'dev',   label: 'Player Development', hub: '/player-development' },
+    { id: 'pitching', label: 'Pitching Analysis', hub: '/pitching' },
+    { id: 'hitting',   label: 'Hitting Analysis',  hub: '/hitting' },
+    { id: 'pd',   label: 'Player Development', hub: '/player-development' },
   ];
   const menuItems = {
-    pitch: [
+    pitching: [
       { label: 'Pitching Game Logs', to: '/pitching/logs' },
       { label: 'Pitch Type Analysis', to: '/pitching/types' },
       { label: 'MLB Benchmarks', to: '/pitching/mlb-benchmarks' },
       { label: 'Pitcher Reports', to: '/pitching/reports' },
     ],
-    hit: [
+    hitting: [
       { label: 'Hitting Game Logs', to: '/hitting/logs' },
       { label: 'Batted Ball Metrics', to: '/hitting/batted-ball' },
       { label: 'MLB Benchmarks', to: '/hitting/mlb-benchmarks' },
       { label: 'Hitter Reports', to: '/hitting/reports' },
     ],
-    dev: [
+    pd: [
       { label: 'Pitcher Development Plans', to: '/player-development/pitchers' },
       { label: 'Hitter Development Plans', to: '/player-development/hitters' },
       { label: 'Player Comparison Table', to: '/player-development/comparisons' },
@@ -68,6 +95,9 @@ export default function NavBar() {
 
   return (
     <AppBar
+  component="header"
+  className="site-header"
+  ref={headerRef}
   position="sticky"
   sx={{
     zIndex: (t) => t.zIndex.drawer + 1,
@@ -75,6 +105,15 @@ export default function NavBar() {
     borderBottom: '1px solid rgba(255,255,255,0.08)',
     boxShadow: '0 4px 18px rgba(0,0,0,0.25)'
   }}
+  onPointerMove={(e) => {
+    if (!isDesktop) return; // desktop hover only
+    // Centralized hover controller: track pointer across the entire header
+    const item = e.target.closest('.top-item');
+    const id = item?.dataset?.menu; // 'pitching' | 'hitting' | 'pd'
+    if (id && id !== activeMenu) openMenu(id);
+  }}
+  onMouseLeave={scheduleClose}
+  onKeyDown={(e) => { if (e.key === 'Escape') setActiveMenu(null); }}
 >
       <Toolbar sx={{ maxWidth: 1120, mx: 'auto', width: '100%' }}>
         {/* Mobile hamburger */}
@@ -85,19 +124,43 @@ export default function NavBar() {
         )}
 
         {/* Centered nav on desktop */}
-        <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', gap: 4 }}>
+        <Box
+          className="navbar"
+          sx={{ flex: 1, display: 'flex', justifyContent: 'center', gap: 4, position: 'relative' }}
+          onMouseEnter={isDesktop ? () => { if (closeTimer.current) clearTimeout(closeTimer.current); } : undefined}
+          ref={navContainerRef}
+        >
           {tabs.map((t) => (
             <Box
               key={t.id}
-              onMouseEnter={isDesktop ? () => handleEnter(t.id) : undefined}
-              onMouseLeave={isDesktop ? handleLeave : undefined}
-              sx={{ position: 'relative', display: 'inline-block' }}
+              className="top-item"
+              data-menu={t.id}
+              onMouseEnter={isDesktop ? () => openMenu(t.id) : undefined}
+              sx={{
+                position: 'relative',
+                display: 'inline-block',
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  left: '-10px',
+                  right: '-10px',
+                  top: '100%',
+                  height: '14px',
+                  pointerEvents: 'none'
+                }
+              }}
             >
               <Box
                 ref={refs[t.id]}
-                onClick={() => {
-                  // Do not navigate on top-level; open/keep open the dropdown
-                  setOpenId(t.id);
+                tabIndex={0}
+                onFocus={() => openMenu(t.id)}
+                onKeyDown={(e) => { if (e.key === 'Escape') setActiveMenu(null); }}
+                onClick={(e) => {
+                  // Only intercept the first tap on true touch devices
+                  if (isTouchDevice && activeMenu !== t.id) {
+                    e.preventDefault();
+                    openMenu(t.id);
+                  }
                 }}
                 sx={{
                   cursor: 'pointer',
@@ -110,6 +173,8 @@ export default function NavBar() {
                   '&:hover': { color: NAV_HOVER }
                 }}
                 aria-haspopup="true"
+                aria-expanded={activeMenu === t.id}
+                aria-controls={`menu-${t.id}`}
               >
                 {t.label}
               </Box>
@@ -117,20 +182,23 @@ export default function NavBar() {
               <Menu
                 id={`menu-${t.id}`}
                 anchorEl={refs[t.id].current}
-                open={isDesktop && openId === t.id}
-                onClose={handleLeave}
+                open={isDesktop && activeMenu === t.id}
+                onClose={scheduleClose}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
                 transformOrigin={{ vertical: 'top', horizontal: 'left' }}
                 keepMounted
                 disableScrollLock
+                container={typeof document !== 'undefined' ? document.body : undefined}
                 MenuListProps={{
-                  onMouseEnter: () => { if (closeTimer.current) clearTimeout(closeTimer.current); },
-                  onMouseLeave: handleLeave,
-                  dense: true
+                  onMouseEnter: () => openMenu(t.id),
+                  onMouseLeave: scheduleClose,
+                  dense: true,
+                  onKeyDown: (e) => { if (e.key === 'Escape') setActiveMenu(null); }
                 }}
                 PaperProps={{
                   onMouseEnter: () => { if (closeTimer.current) clearTimeout(closeTimer.current); },
-                  onMouseLeave: handleLeave,
+                  onMouseLeave: scheduleClose,
+                  elevation: 8,
                   sx: {
                     mt: 1,
                     borderRadius: 1.5,
@@ -138,14 +206,15 @@ export default function NavBar() {
                     bgcolor: 'rgba(12,20,36,0.92)',
                     color: '#fff',
                     backdropFilter: 'blur(6px)',
-                    minWidth: 260
+                    minWidth: 260,
+                    zIndex: 2100
                   }
                 }}
               >
                 {menuItems[t.id].map((item) => (
                   <MenuItem
                     key={item.to}
-                    onClick={() => { navigate(item.to); setOpenId(null); }}
+                    onClick={() => { navigate(item.to); setActiveMenu(null); }}
                     sx={{
                       fontWeight: 600,
                       py: 1,
