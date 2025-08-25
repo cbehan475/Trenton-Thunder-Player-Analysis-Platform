@@ -29,6 +29,7 @@ export function isBIP(result = '') {
   if (/hbp|hit by pitch|catcher\s*interference/.test(r)) return false;
   // Positive/neutral batted-ball outcomes
   return (
+    /\b(1b|2b|3b|hr)\b/.test(r) ||
     /(single|double|triple|home\s*run)/.test(r) ||
     /(ground|fly|line|pop)/.test(r) ||
     /(sac\s*fly|forceout|field\s*error|double\s*play|fc|sac\s*bunt|reached\s*on\s*error)/.test(r)

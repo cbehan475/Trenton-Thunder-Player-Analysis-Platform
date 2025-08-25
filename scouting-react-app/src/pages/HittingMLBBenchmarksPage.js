@@ -4,7 +4,8 @@ import HITTERS_BY_DATE from '../data/logs/hittersByDate';
 import HITTING_BENCHMARKS_BY_LEVEL, { HITTING_BENCHMARKS_VERSION, HITTING_BENCHMARKS_SOURCE } from '../data/hitting/benchmarksByLevel';
 import OVERRIDES from '../data/overrides/battedBallMetricsOverrides';
 import { flattenEventsFromByDateMap } from '../lib/battedBallMetrics';
-import { computeHitterCoreP50 } from '../lib/hittingBenchmarks';
+import { computeHitterCoreP50, computeHitterDecisionP50 } from '../lib/hittingBenchmarks';
+import { percentileWithinRange } from '../lib/percentiles';
 
 const gold = '#FFB800';
 
@@ -29,6 +30,7 @@ const styles = {
   pctBadge: { display: 'inline-block', padding: '2px 6px', borderRadius: 999, background: 'rgba(148,163,184,0.15)', color: 'var(--muted)', fontWeight: 800, fontSize: 11 },
   cardBodyRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', color: 'var(--text)', marginTop: 6 },
   small: { color: 'var(--muted)', fontSize: 12 },
+  btn: { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.18)', color: 'var(--text)', borderRadius: 8, padding: '6px 10px', fontWeight: 800, fontSize: 12, cursor: 'pointer' },
   tableWrap: { marginTop: 16, overflowX: 'auto', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)' },
   table: { width: '100%', borderCollapse: 'separate', borderSpacing: 0, minWidth: 680 },
   th: { position: 'sticky', top: 0, background: 'rgba(10,18,30,0.65)', color: 'var(--text)', textAlign: 'left', fontWeight: 900, padding: '10px 12px', backdropFilter: 'blur(3px)' },
@@ -45,6 +47,12 @@ const METRICS = [
   { key: 'EV_MAX', label: 'Max EV', unit: 'mph' },
   { key: 'HARD_HIT_PCT', label: 'Hard-Hit %', unit: '%' },
   { key: 'LA_AVG', label: 'Launch Angle (Avg)', unit: '°' },
+];
+const DECISION_METRICS = [
+  { key: 'CONTACT_PCT', label: 'Contact %', unit: '%', inverse: false },
+  { key: 'ZCONTACT_PCT', label: 'Z-Contact %', unit: '%', inverse: false },
+  { key: 'WHIFF_PCT', label: 'Whiff %', unit: '%', inverse: true },
+  { key: 'CHASE_PCT', label: 'Chase %', unit: '%', inverse: true },
 ];
 
 export default function HittingMLBBenchmarksPage() {
@@ -93,6 +101,10 @@ export default function HittingMLBBenchmarksPage() {
     if (!selectedHitter) return null;
     return computeHitterCoreP50(HITTERS_BY_DATE, selectedHitter, dateRange);
   }, [selectedHitter, dateRange]);
+  const playerDecision = useMemo(() => {
+    if (!selectedHitter) return null;
+    return computeHitterDecisionP50(HITTERS_BY_DATE, selectedHitter, dateRange);
+  }, [selectedHitter, dateRange]);
 
   const fmtBand = (band, unit) => {
     if (!Array.isArray(band) || band.length !== 2) return '—';
@@ -105,7 +117,12 @@ export default function HittingMLBBenchmarksPage() {
         : `${a.toFixed(1)}–${b.toFixed(1)} mph`;
   };
   const fmtVal = (v, unit) => v==null? '—' : (unit==='%'? `${v.toFixed(1)}%` : unit==='°'? `${v.toFixed(1)} °` : `${v.toFixed(1)}`);
-  const sign = (v) => (v>0?`+${v}`:`${v}`);
+  const sign = (v) => {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return '—';
+    const s = n.toFixed(1);
+    return n > 0 ? `+${s}` : s;
+  };
 
   return (
     <div className={`mlb-benchmarks-page preset-pro-dark`}
@@ -155,10 +172,97 @@ export default function HittingMLBBenchmarksPage() {
                 <option key={name} value={name}>{name}</option>
               ))}
             </select>
+            <button
+              type="button"
+              style={{ ...styles.btn, marginLeft: 8 }}
+              onClick={() => {
+                const lvl = selectedLevel;
+                const metrics = [...METRICS, ...DECISION_METRICS];
+                const cards = metrics.map(m => {
+                  const row = (HITTING_BENCHMARKS_BY_LEVEL[lvl] || {})[m.key] || {};
+                  const unit = m.unit;
+                  let playerVal = null;
+                  if (selectedHitter) {
+                    if (m.key === 'EV_AVG') playerVal = player?.evAvg ?? null;
+                    else if (m.key === 'EV_MAX') playerVal = player?.evMax ?? null;
+                    else if (m.key === 'HARD_HIT_PCT') playerVal = player?.hardHitPct ?? null;
+                    else if (m.key === 'LA_AVG') playerVal = player?.laAvg ?? null;
+                    else if (m.key === 'CONTACT_PCT') playerVal = playerDecision?.contactPct ?? null;
+                    else if (m.key === 'ZCONTACT_PCT') playerVal = playerDecision?.zContactPct ?? null;
+                    else if (m.key === 'WHIFF_PCT') playerVal = playerDecision?.whiffPct ?? null;
+                    else if (m.key === 'CHASE_PCT') playerVal = playerDecision?.chasePct ?? null;
+                  }
+                  const delta = (playerVal!=null && row.p50!=null) ? +(playerVal - row.p50).toFixed(1) : null;
+                  const pct = (playerVal!=null && Array.isArray(row.range)) ? percentileWithinRange(playerVal, row.range, { inverse: !!m.inverse }) : null;
+                  return { key: m.key, label: m.label, unit, range: row.range, p50: row.p50, player: playerVal, delta, percentile: pct };
+                });
+                const payload = {
+                  version: HITTING_BENCHMARKS_VERSION,
+                  source: HITTING_BENCHMARKS_SOURCE,
+                  level: selectedLevel,
+                  hitter: selectedHitter || null,
+                  cards,
+                };
+                const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `hitting-benchmarks_${selectedLevel}_${(selectedHitter||'All').replace(/\s+/g,'-')}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              }}
+            >Export JSON</button>
+            <button
+              type="button"
+              style={{ ...styles.btn, marginLeft: 8 }}
+              onClick={() => {
+                const lvl = selectedLevel;
+                const metrics = [...METRICS, ...DECISION_METRICS];
+                const rowsOut = [];
+                rowsOut.push(['Metric','Level Range','Level p50','Player p50','Delta','Percentile']);
+                metrics.forEach(m => {
+                  const row = (HITTING_BENCHMARKS_BY_LEVEL[lvl] || {})[m.key] || {};
+                  let playerVal = null;
+                  if (selectedHitter) {
+                    if (m.key === 'EV_AVG') playerVal = player?.evAvg ?? null;
+                    else if (m.key === 'EV_MAX') playerVal = player?.evMax ?? null;
+                    else if (m.key === 'HARD_HIT_PCT') playerVal = player?.hardHitPct ?? null;
+                    else if (m.key === 'LA_AVG') playerVal = player?.laAvg ?? null;
+                    else if (m.key === 'CONTACT_PCT') playerVal = playerDecision?.contactPct ?? null;
+                    else if (m.key === 'ZCONTACT_PCT') playerVal = playerDecision?.zContactPct ?? null;
+                    else if (m.key === 'WHIFF_PCT') playerVal = playerDecision?.whiffPct ?? null;
+                    else if (m.key === 'CHASE_PCT') playerVal = playerDecision?.chasePct ?? null;
+                  }
+                  const delta = (playerVal!=null && row.p50!=null) ? +(playerVal - row.p50).toFixed(1) : null;
+                  const pct = (playerVal!=null && Array.isArray(row.range)) ? percentileWithinRange(playerVal, row.range, { inverse: !!m.inverse }) : null;
+                  const band = Array.isArray(row.range) && row.range.length===2 && row.range[0]!=null && row.range[1]!=null ? `${row.range[0].toFixed(1)}–${row.range[1].toFixed(1)}` : '';
+                  rowsOut.push([
+                    m.label,
+                    band,
+                    row.p50!=null ? row.p50.toFixed(1) : '',
+                    playerVal!=null ? playerVal.toFixed(1) : '',
+                    delta!=null ? delta.toFixed(1) : '',
+                    pct!=null ? String(pct) : '',
+                  ]);
+                });
+                const csv = rowsOut.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `hitting-benchmarks_${selectedLevel}_${(selectedHitter||'All').replace(/\s+/g,'-')}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              }}
+            >Export CSV</button>
           </div>
         </div>
 
-        {/* Cards */}
+        {/* Cards row 1: impact */}
         <div style={styles.cardsGrid}>
           {METRICS.map(m => {
             const row = level[m.key] || {};
@@ -170,6 +274,7 @@ export default function HittingMLBBenchmarksPage() {
               player.laAvg
             ) : null;
             const delta = (playerVal!=null && row.p50!=null) ? +(playerVal - row.p50).toFixed(1) : null;
+            const pct = (playerVal!=null && Array.isArray(row.range)) ? percentileWithinRange(playerVal, row.range) : null;
             return (
               <div key={m.key} style={styles.card()}
                    onMouseEnter={(e)=>{ e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 12px 24px rgba(0,0,0,0.45)'; }}
@@ -180,11 +285,49 @@ export default function HittingMLBBenchmarksPage() {
                 </div>
                 <div style={styles.cardBodyRow}><span className="lbl" style={styles.small}>Level Range</span><span>{fmtBand(row.range, u)}</span></div>
                 <div style={styles.cardBodyRow}><span className="lbl" style={styles.small}>Level p50</span><span>{fmtVal(row.p50, u)}</span></div>
-                {player && (
+                {player && playerVal!=null && (
                   <>
                     <div style={styles.cardBodyRow}><span className="lbl" style={styles.small}>Player (p50)</span><span>{fmtVal(playerVal, u)}</span></div>
                     <div style={{ marginTop:6 }}>
-                      <span style={styles.pctBadge}>{delta!=null ? `Δ vs Level ${sign(delta)}` : '—'}</span>
+                      {delta!=null && (<span style={styles.pctBadge}>{`Δ vs Level ${sign(delta)}`}</span>)}
+                      {pct!=null && (<span style={{...styles.pctBadge, marginLeft:6}}>{`${pct}th`}</span>)}
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Cards row 2: decision/contact */}
+        <div style={{ ...styles.cardsGrid, marginTop: 8 }}>
+          {DECISION_METRICS.map(m => {
+            const row = level[m.key] || {};
+            const u = m.unit;
+            const playerVal = playerDecision ? (
+              m.key === 'CONTACT_PCT' ? playerDecision.contactPct :
+              m.key === 'ZCONTACT_PCT' ? playerDecision.zContactPct :
+              m.key === 'WHIFF_PCT' ? playerDecision.whiffPct :
+              playerDecision.chasePct
+            ) : null;
+            const delta = (playerVal!=null && row.p50!=null) ? +(playerVal - row.p50).toFixed(1) : null;
+            const pct = (playerVal!=null && Array.isArray(row.range)) ? percentileWithinRange(playerVal, row.range, { inverse: !!m.inverse }) : null;
+            return (
+              <div key={m.key} style={styles.card()}
+                   onMouseEnter={(e)=>{ e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 12px 24px rgba(0,0,0,0.45)'; }}
+                   onMouseLeave={(e)=>{ e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.boxShadow='0 8px 18px rgba(0,0,0,0.35)'; }}>
+                <div style={styles.cardHeader}>
+                  <div style={styles.cardName}>{m.label}</div>
+                  <span style={styles.badge}>{selectedLevel === 'APLUS' ? 'A+' : selectedLevel}</span>
+                </div>
+                <div style={styles.cardBodyRow}><span className="lbl" style={styles.small}>Level Range</span><span>{fmtBand(row.range, u)}</span></div>
+                <div style={styles.cardBodyRow}><span className="lbl" style={styles.small}>Level p50</span><span>{fmtVal(row.p50, u)}</span></div>
+                {selectedHitter && playerVal!=null && (
+                  <>
+                    <div style={styles.cardBodyRow}><span className="lbl" style={styles.small}>Player (p50)</span><span>{fmtVal(playerVal, u)}</span></div>
+                    <div style={{ marginTop:6 }}>
+                      {delta!=null && (<span style={styles.pctBadge}>{`Δ vs Level ${sign(delta)}`}</span>)}
+                      {pct!=null && (<span style={{...styles.pctBadge, marginLeft:6}}>{`${pct}th`}</span>)}
                     </div>
                   </>
                 )}
@@ -203,26 +346,33 @@ export default function HittingMLBBenchmarksPage() {
                 <th style={styles.th}>Level p50</th>
                 {selectedHitter && <th style={styles.th}>Player (p50)</th>}
                 {selectedHitter && <th style={styles.th}>Δ vs {selectedLevel==='APLUS'?'A+':selectedLevel} p50</th>}
+                <th style={styles.th}>Percentile</th>
               </tr>
             </thead>
             <tbody>
-              {METRICS.map(m => {
+              {[...METRICS, ...DECISION_METRICS].map(m => {
                 const r = level[m.key] || {};
                 const u = m.unit;
-                const playerVal = player ? (
-                  m.key === 'EV_AVG' ? player.evAvg :
-                  m.key === 'EV_MAX' ? player.evMax :
-                  m.key === 'HARD_HIT_PCT' ? player.hardHitPct :
-                  player.laAvg
+                const playerVal = selectedHitter ? (
+                  m.key === 'EV_AVG' ? player?.evAvg ?? null :
+                  m.key === 'EV_MAX' ? player?.evMax ?? null :
+                  m.key === 'HARD_HIT_PCT' ? player?.hardHitPct ?? null :
+                  m.key === 'LA_AVG' ? player?.laAvg ?? null :
+                  m.key === 'CONTACT_PCT' ? playerDecision?.contactPct ?? null :
+                  m.key === 'ZCONTACT_PCT' ? playerDecision?.zContactPct ?? null :
+                  m.key === 'WHIFF_PCT' ? playerDecision?.whiffPct ?? null :
+                  /* CHASE */ playerDecision?.chasePct ?? null
                 ) : null;
                 const delta = (playerVal!=null && r.p50!=null) ? +(playerVal - r.p50).toFixed(1) : null;
+                const pct = (playerVal!=null && Array.isArray(r.range)) ? percentileWithinRange(playerVal, r.range, { inverse: !!m.inverse }) : null;
                 return (
                   <tr key={`row-${m.key}`}>
                     <th style={styles.td} scope="row">{m.label}</th>
                     <td style={styles.td}>{fmtBand(r.range, u)}</td>
                     <td style={styles.td}>{fmtVal(r.p50, u)}</td>
-                    {selectedHitter && <td style={styles.td}>{fmtVal(playerVal, u)}</td>}
+                    {selectedHitter && <td style={styles.td}>{playerVal!=null ? fmtVal(playerVal, u) : '—'}</td>}
                     {selectedHitter && <td style={styles.td}>{delta!=null ? sign(delta) : '—'}</td>}
+                    <td style={styles.td}>{pct!=null ? `${pct}` : '—'}</td>
                   </tr>
                 );
               })}
