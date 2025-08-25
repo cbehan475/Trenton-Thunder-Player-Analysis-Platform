@@ -1,5 +1,6 @@
 // src/pages/PitcherReportsPage.js
 import React, { useEffect, useMemo, useState, useRef } from 'react';
+import AppSelect from '../components/ui/AppSelect.jsx';
 import { produce } from 'immer';
 import TextareaAutosize from '../components/TextareaAutosize.jsx';
 import ScoutingGradeInput from '../components/ScoutingGradeInput.jsx';
@@ -886,11 +887,13 @@ export default function PitcherReportsPage() {
           </div>
           <div className="no-print" style={{ display:'flex', flexDirection:'column', alignItems:'flex-end' }}>
             <div style={styles.controls}>
-              <select value={selected} onChange={(e)=>setSelected(e.target.value)} style={styles.select} aria-label="Select Pitcher">
-                {pitcherOptions.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
+              <AppSelect
+                value={selected}
+                onChange={(e)=>setSelected(e.target.value)}
+                options={pitcherOptions.map(p => ({ label: p.name, value: p.id }))}
+                label=""
+                formSx={{ minWidth: 220 }}
+              />
               <button type="button" style={styles.btn} onClick={save}>Save</button>
               <button type="button" style={styles.btn} onClick={exportJSON}>Download JSON</button>
               <label className="no-print" style={{ ...styles.btn, display:'inline-flex', alignItems:'center', cursor:'pointer' }}>

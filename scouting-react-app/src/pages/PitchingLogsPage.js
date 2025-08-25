@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { seedLogsByDate, getPitchersForDate, getInningsFor, getLogs } from '../data/logs/pitchingIndex.js';
 import './PitchingLogsPage.css';
+import AppSelect from '../components/ui/AppSelect.jsx';
 import { getBench, delta, BENCH_LEVEL, FEATURE_BENCHMARK_BADGES } from '../lib/benchmarks.js';
 import pitching2025_06_04 from '../data/logs/pitching-2025-06-04.js';
 import pitching2025_06_05 from '../data/logs/pitching-2025-06-05.js';
@@ -319,27 +320,25 @@ export default function PitchingLogsPage() {
 
         <div className="field">
           <label className="gold">Select Pitcher</label>
-          <select
+          <AppSelect
             value={pitcher}
             onChange={(e) => setPitcher(e.target.value)}
-          >
-            {pitcherOptions.map((name) => (
-              <option key={name} value={name}>{name}</option>
-            ))}
-          </select>
+            options={pitcherOptions}
+            label=""
+            formSx={{ minWidth: 220 }}
+          />
         </div>
 
         <div className="field">
           <label className="gold inningLabel">Inning</label>
-          <select
+          <AppSelect
             value={inning}
             onChange={(e) => setInning(e.target.value)}
+            options={ inningOptions.map(v => (typeof v === 'number' ? String(v) : v)) }
             disabled={!pitcher && inningOptions.length <= 1}
-          >
-            {inningOptions.map((v) => (
-              <option key={v} value={v}>{v}</option>
-            ))}
-          </select>
+            label=""
+            formSx={{ minWidth: 140 }}
+          />
         </div>
       </div>
 

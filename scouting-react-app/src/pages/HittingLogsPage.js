@@ -1,9 +1,10 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Box, Typography, Grid, useMediaQuery, TextField, Button, FormControl, InputLabel, Select, MenuItem, Tooltip, Drawer, IconButton, Divider } from '@mui/material';
+import { Box, Typography, Grid, useMediaQuery, TextField, Button, Tooltip, Drawer, IconButton, Divider } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import HittersTable from '../components/HittersTable';
 import { filterRows, quickStats, resultClass } from '../lib/hitLogUtils';
 import './HittingLogsPage.css';
+import AppSelect from '../components/ui/AppSelect.jsx';
 
 const GAME_DATES = [
   '2025-06-04',
@@ -148,54 +149,30 @@ export default function HittingLogsPage() {
         <div className="controls">
           <div className="field">
             <label className="gold">Date</label>
-            <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)}>
-              {GAME_DATES.map((d) => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
+            <AppSelect
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              options={GAME_DATES}
+              label=""
+              formSx={{ minWidth: 170 }}
+            />
           </div>
 
-          <FormControl className="hitter-select" size="small" sx={{ minWidth: 200 }}>
-            <InputLabel id="hitter-label">Hitter</InputLabel>
-            <Select
-              labelId="hitter-label"
-              value={selectedHitter}
-              label="Hitter"
-              onChange={(e) => setSelectedHitter(e.target.value)}
-              MenuProps={{
-                container: typeof document !== 'undefined' ? document.body : undefined,
-                disablePortal: false,
-                anchorOrigin: { vertical: 'bottom', horizontal: 'left' },
-                transformOrigin: { vertical: 'top', horizontal: 'left' },
-                slotProps: { paper: { className: 'filter-menu', sx: { mt: 1, zIndex: 1600 } } },
-              }}
-            >
-              {hitterOptions.map((name) => (
-                <MenuItem key={name} value={name}>{name}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <AppSelect
+            value={selectedHitter}
+            onChange={(e) => setSelectedHitter(e.target.value)}
+            options={hitterOptions.map(name => ({ label: name, value: name }))}
+            label="Hitter"
+            formSx={{ minWidth: 200 }}
+          />
 
-          <FormControl className="inning-select" size="small" sx={{ minWidth: 130 }}>
-            <InputLabel id="inning-label">Inning</InputLabel>
-            <Select
-              labelId="inning-label"
-              value={selectedInning}
-              label="Inning"
-              onChange={(e) => setSelectedInning(e.target.value)}
-              MenuProps={{
-                container: typeof document !== 'undefined' ? document.body : undefined,
-                disablePortal: false,
-                anchorOrigin: { vertical: 'bottom', horizontal: 'left' },
-                transformOrigin: { vertical: 'top', horizontal: 'left' },
-                slotProps: { paper: { className: 'filter-menu', sx: { mt: 1, zIndex: 1600 } } },
-              }}
-            >
-              {inningOptions.map((inn) => (
-                <MenuItem key={String(inn)} value={inn}>{inn}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <AppSelect
+            value={selectedInning}
+            onChange={(e) => setSelectedInning(e.target.value)}
+            options={inningOptions.map(inn => ({ label: String(inn), value: inn }))}
+            label="Inning"
+            formSx={{ minWidth: 130 }}
+          />
 
           <TextField
             size="small"

@@ -1,5 +1,6 @@
 // src/pages/HitterReportsPage.js
 import React, { useEffect, useMemo, useState } from 'react';
+import AppSelect from '../components/ui/AppSelect.jsx';
 import { getAllHitterNames, getHittingMetricsFor, getHittingLogStats, getHitterEntries } from '../data/logs/hittingIndex';
 
 export default function HitterReportsPage() {
@@ -87,23 +88,14 @@ export default function HitterReportsPage() {
         {/* dropdown */}
         <div style={{ margin: '12px 0 20px' }}>
           <label htmlFor="hitterSelect" style={{ color: '#E9EEFF', fontWeight: 700, marginRight: 10 }}>Select Hitter:</label>
-          <select
+          <AppSelect
             id="hitterSelect"
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
-            style={{
-              padding: '8px 10px',
-              borderRadius: 8,
-              border: '1px solid rgba(255,255,255,0.24)',
-              background: 'rgba(12,20,36,0.75)',
-              color: '#E9EEFF',
-              minWidth: 260
-            }}
-          >
-            {names.map((n) => (
-              <option key={n} value={n}>{n}</option>
-            ))}
-          </select>
+            options={names}
+            label=""
+            formSx={{ minWidth: 260 }}
+          />
         </div>
 
         {/* metrics */}

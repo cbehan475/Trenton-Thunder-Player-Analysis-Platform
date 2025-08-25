@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import AppSelect from '../components/ui/AppSelect.jsx';
 import { getAllPitcherNames, getPitchingMetricsFor, getPitchingLogStats } from '../data/logs/pitchingIndex';
 
 // ---- SAMPLE DATA (fallback only if logs have no match) ----
@@ -82,21 +83,14 @@ export default function PitcherReports() {
         {/* Picker */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '8px 0 16px' }}>
           <label htmlFor="reportPitcher" style={{ color: 'white', fontWeight: 600 }}>Select Pitcher:</label>
-          <select
+          <AppSelect
             id="reportPitcher"
             value={selectedName}
             onChange={(e) => setSelectedName(e.target.value)}
-            style={{
-              background: '#152e57', color: 'white', border: '1px solid rgba(255,255,255,0.15)',
-              borderRadius: 8, padding: '10px 12px', minWidth: 220
-            }}
-          >
-            {pickerNames.length ? (
-              pickerNames.map((n) => <option key={n} value={n}>{n}</option>)
-            ) : (
-              <option value="" disabled>(no pitcher names found)</option>
-            )}
-          </select>
+            options={pickerNames}
+            label=""
+            formSx={{ minWidth: 220 }}
+          />
 
           <span
             title={usingLogs ? `${stats.files} files • ${stats.entries} entries` : 'Using local sample rows'}

@@ -1,5 +1,6 @@
 // src/pages/PitchingMLBBenchmarks.js
 import React, { useEffect, useMemo, useState } from 'react';
+import AppSelect from '../components/ui/AppSelect.jsx';
 import { PITCHING_BENCHMARKS_VERSION } from './pitchingBenchmarksByLevel.js';
 import { pitchingBenchmarksByLevel } from '../lib/pitchingBenchmarksByLevel.js';
 import { validateBenchmarks } from '../lib/validateBenchmarks.js';
@@ -233,18 +234,21 @@ export default function PitchingMLBBenchmarks() {
           {/* Level select (local state only) */}
           <div style={styles.controls} aria-label="Level Selector">
             <span style={{ fontSize: 12, color: 'var(--muted)' }}>Level:</span>
-            <select value={selectedLevel} onChange={(e)=>setSelectedLevel(e.target.value)} style={styles.select}>
-              {levelOptions.map((lvl) => (
-                <option key={lvl} value={lvl}>{lvl}</option>
-              ))}
-            </select>
+            <AppSelect
+              value={selectedLevel}
+              onChange={(e)=>setSelectedLevel(e.target.value)}
+              options={levelOptions.map(lvl => ({ label: lvl, value: lvl }))}
+              label=""
+              formSx={{ minWidth: 120 }}
+            />
             <span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 10 }}>Compare Pitcher:</span>
-            <select value={selectedPitcherId} onChange={(e)=>setSelectedPitcherId(e.target.value)} style={styles.select}>
-              <option value="">None</option>
-              {pitcherOptions.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
+            <AppSelect
+              value={selectedPitcherId}
+              onChange={(e)=>setSelectedPitcherId(e.target.value)}
+              options={[{ label: 'None', value: '' }, ...pitcherOptions]}
+              label=""
+              formSx={{ minWidth: 200 }}
+            />
             {DEV_TOOLS && (
               <button
                 type="button"

@@ -1,5 +1,6 @@
 // src/pages/HittingMLBBenchmarksPage.js
 import React, { useMemo, useState } from 'react';
+import AppSelect from '../components/ui/AppSelect.jsx';
 import HITTERS_BY_DATE from '../data/logs/hittersByDate';
 import HITTING_BENCHMARKS_BY_LEVEL, { HITTING_BENCHMARKS_VERSION, HITTING_BENCHMARKS_SOURCE } from '../data/hitting/benchmarksByLevel';
 import OVERRIDES from '../data/overrides/battedBallMetricsOverrides';
@@ -171,18 +172,21 @@ export default function HittingMLBBenchmarksPage() {
           {/* Controls */}
           <div style={styles.controls} aria-label="Level Selector">
             <span style={{ fontSize: 12, color: 'var(--muted)' }}>Level:</span>
-            <select value={selectedLevel} onChange={(e)=>setSelectedLevel(e.target.value)} style={styles.select} aria-label="Level">
-              {levelOptions.map((lvl) => (
-                <option key={lvl} value={lvl}>{lvl === 'APLUS' ? 'A+' : lvl}</option>
-              ))}
-            </select>
+            <AppSelect
+              value={selectedLevel}
+              onChange={(e)=>setSelectedLevel(e.target.value)}
+              options={levelOptions.map(lvl => ({ label: lvl === 'APLUS' ? 'A+' : lvl, value: lvl }))}
+              label=""
+              formSx={{ minWidth: 120 }}
+            />
             <span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 10 }}>Compare Hitter:</span>
-            <select value={selectedHitter} onChange={(e)=>setSelectedHitter(e.target.value)} style={styles.select} aria-label="Compare Hitter">
-              <option value="">None</option>
-              {hitterOptions.map(name => (
-                <option key={name} value={name}>{name}</option>
-              ))}
-            </select>
+            <AppSelect
+              value={selectedHitter}
+              onChange={(e)=>setSelectedHitter(e.target.value)}
+              options={[{ label: 'None', value: '' }, ...hitterOptions.map(name => ({ label: name, value: name }))]}
+              label=""
+              formSx={{ minWidth: 180 }}
+            />
             <button
               type="button"
               style={{ ...styles.btn, marginLeft: 8 }}

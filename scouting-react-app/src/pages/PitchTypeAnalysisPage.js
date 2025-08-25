@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import AppSelect from '../components/ui/AppSelect.jsx';
 import './PitchingLogsPage.css';
 import { getBench, delta, BENCH_LEVEL, FEATURE_BENCHMARK_BADGES } from '../lib/benchmarks.js';
 import { seedLogsByDate, getPitchersForDate, getInningsFor, getLogs } from '../data/logs/pitchingIndex.js';
@@ -342,9 +343,13 @@ export default function PitchTypeAnalysisPage() {
       <div className="controls">
         <div className="field">
           <label className="gold">Select Pitcher</label>
-          <select value={pitcher} onChange={(e)=>setPitcher(e.target.value)}>
-            {pitcherOptions.map((name)=>(<option key={name} value={name}>{name}</option>))}
-          </select>
+          <AppSelect
+            value={pitcher}
+            onChange={(e)=>setPitcher(e.target.value)}
+            options={pitcherOptions}
+            label=""
+            formSx={{ minWidth: 220 }}
+          />
         </div>
       </div>
 
