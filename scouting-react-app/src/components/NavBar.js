@@ -54,7 +54,7 @@ export default function NavBar() {
     hit: [
       { label: 'Hitting Game Logs', to: '/hitting/logs' },
       { label: 'Batted Ball Metrics', to: '/hitting/batted-ball' },
-      { label: 'MLB Benchmarks', to: '/hitting/player-comparisons' },
+      { label: 'MLB Benchmarks', to: '/hitting/mlb-benchmarks' },
       { label: 'Hitter Reports', to: '/hitting/reports' },
     ],
     dev: [

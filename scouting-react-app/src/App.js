@@ -23,6 +23,7 @@ import PitcherReportsPage from './pages/PitcherReportsPage';
 import HittingPerformancePage from './pages/HittingPerformancePage';
 import HitterReportsPage from './pages/HitterReportsPage';
 import BattedBallProfilePage from './pages/BattedBallProfilePage';
+import HittingMLBBenchmarksPage from './pages/HittingMLBBenchmarksPage';
 import { Navigate } from 'react-router-dom';
 import DevelopmentPage from './pages/DevelopmentPage';
 import DevelopmentPagePitchers from './pages/DevelopmentPagePitchers';
@@ -218,6 +219,7 @@ export default function App() {
 {/* redirect any old link like /hitting/battedball -> /hitting/batted-ball */}
 <Route path="/hitting/battedball" element={<Navigate to="/hitting/batted-ball" replace />} />
         <Route path="/hitting/player-comparisons" element={<ComparisonPage />} />
+        <Route path="/hitting/mlb-benchmarks" element={<HittingMLBBenchmarksPage />} />
 
         {/* Player Dev */}
         <Route path="/player-development/pitchers" element={<PlayerDevPitchersPage />} />
