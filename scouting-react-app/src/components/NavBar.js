@@ -95,7 +95,10 @@ export default function NavBar() {
             >
               <Box
                 ref={refs[t.id]}
-                onClick={() => navigate(t.hub)}
+                onClick={() => {
+                  // Do not navigate on top-level; open/keep open the dropdown
+                  setOpenId(t.id);
+                }}
                 sx={{
                   cursor: 'pointer',
                   px: 1, py: 0.5,
@@ -164,7 +167,7 @@ export default function NavBar() {
               {tabs.map((t) => (
                 <React.Fragment key={t.id}>
                   <ListItem disablePadding>
-                    <ListItemButton component={RouterLink} to={t.hub}>
+                    <ListItemButton disabled>
                       <ListItemText primary={t.label} />
                     </ListItemButton>
                   </ListItem>

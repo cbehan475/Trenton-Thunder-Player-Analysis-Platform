@@ -14,9 +14,7 @@ import ComparisonPage from './pages/ComparisonPage';
 import PlayerDevPitchersPage from './pages/PlayerDevPitchersPage';
 import PlayerDevHittersPage from './pages/PlayerDevHittersPage';
 import PlayerComparisonTablePage from './pages/PlayerComparisonTablePage';
-import PitchingHub from './pages/PitchingHub';
-import HittingHub from './pages/HittingHub';
-import PlayerDevHub from './pages/PlayerDevHub';
+// Hub pages removed: routes now redirect directly to primary child pages
 import PitchTypeAnalysisPage from './pages/PitchTypeAnalysisPage';
 import PitchingMLBBenchmarks from './pages/PitchingMLBBenchmarks';
 import PitcherReportsPage from './pages/PitcherReportsPage';
@@ -198,10 +196,10 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
 
-        {/* Hubs */}
-        <Route path="/pitching" element={<PitchingHub />} />
-        <Route path="/hitting" element={<HittingHub />} />
-        <Route path="/player-development" element={<PlayerDevHub />} />
+        {/* Parent paths redirect to primary child pages (clean history) */}
+        <Route path="/pitching" element={<Navigate to="/pitching/logs" replace />} />
+        <Route path="/hitting" element={<Navigate to="/hitting/logs" replace />} />
+        <Route path="/player-development" element={<Navigate to="/player-development/hitters" replace />} />
 
         {/* Pitching */}
         <Route path="/pitching/logs" element={<PitchingLogsPage />} />
