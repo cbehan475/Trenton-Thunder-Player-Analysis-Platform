@@ -90,3 +90,52 @@ export function computeHitterDecisionP50(byDateMap, hitterName, dateRange) {
 
   return { contactPct, zContactPct, whiffPct, chasePct };
 }
+
+// Same LA bands app-wide
+const isGB = (la) => Number.isFinite(Number(la)) && Number(la) < 10;
+const isLD = (la) => Number.isFinite(Number(la)) && Number(la) >= 10 && Number(la) < 25;
+const isFB = (la) => Number.isFinite(Number(la)) && Number(la) >= 25 && Number(la) < 50;
+const isPU = (la) => Number.isFinite(Number(la)) && Number(la) >= 50;
+
+// Barrel proxy window
+const isBarrelLike = (ev, la) => (typeof ev === 'number' && ev >= 95) && (typeof la === 'number' && la >= 8 && la <= 32);
+
+// Returns { gbPct, ldPct, fbPct, puPct, barrelPct } rounded to 1 dec or nulls if denom=0.
+export function computeHitterBattedBallP50(byDateMap, hitterName, dateRange) {
+  const events = flattenEventsFromByDateMap(byDateMap);
+  const [start, end] = Array.isArray(dateRange) ? dateRange : [null, null];
+  const fromEvents = events.filter(e => (
+    (!start || e.date >= start) && (!end || e.date <= end) && e.hitter === hitterName
+  ));
+
+  // BIP filter: reuse the same inclusion as batted-ball page
+  const bipEvents = fromEvents.filter(e => isBIP(e.result));
+
+  const denom = bipEvents.length;
+  let gbPct = null, ldPct = null, fbPct = null, puPct = null, barrelPct = null;
+
+  if (denom > 0) {
+    const gb = bipEvents.filter(e => isGB(e.la)).length;
+    const ld = bipEvents.filter(e => isLD(e.la)).length;
+    const fb = bipEvents.filter(e => isFB(e.la)).length;
+    const pu = bipEvents.filter(e => isPU(e.la)).length;
+    gbPct = +((gb / denom) * 100).toFixed(1);
+    ldPct = +((ld / denom) * 100).toFixed(1);
+    fbPct = +((fb / denom) * 100).toFixed(1);
+    puPct = +((pu / denom) * 100).toFixed(1);
+
+    const barrels = bipEvents.filter(e => isBarrelLike(e.ev, e.la)).length;
+    barrelPct = +((barrels / denom) * 100).toFixed(1);
+  }
+
+  // Fallback to overrides for GB/LD/FB/PU if present (barrelPct has no override)
+  const ov = OVERRIDES?.[hitterName];
+  if (ov) {
+    if (gbPct == null && typeof ov.gb === 'number') gbPct = +ov.gb.toFixed(1);
+    if (ldPct == null && typeof ov.ld === 'number') ldPct = +ov.ld.toFixed(1);
+    if (fbPct == null && typeof ov.fb === 'number') fbPct = +ov.fb.toFixed(1);
+    if (puPct == null && typeof ov.pu === 'number') puPct = +ov.pu.toFixed(1);
+  }
+
+  return { gbPct, ldPct, fbPct, puPct, barrelPct };
+}
