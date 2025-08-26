@@ -33,7 +33,7 @@ function Home() {
   const navy = '#0B1220';
   const gold = '#FFD600';
   return (
-    <div className="home-page">
+    <div className="home">
       <NavBar className="navbar" />
       <Box sx={{
         background: 'radial-gradient(1400px 900px at 50% -250px, #1a2b4a 0%, #0e1b34 55%, #0a1327 100%)',
@@ -63,6 +63,7 @@ function Home() {
 
             <Typography
               variant="body1"
+              className="subtitle"
               sx={{
                 maxWidth: 820,
                 mx: 'auto',
@@ -80,7 +81,7 @@ function Home() {
             {/* 2025 SEASON pill */}
             <Box sx={{ mt: 0.25, mb: 0.75, display: 'flex', justifyContent: 'center' }}>
               <Box
-                className="season-pill"
+                className="cta season-pill"
                 sx={{
                   bgcolor: gold,
                   color: '#23272F',
@@ -113,8 +114,8 @@ function Home() {
               <CardContent sx={{ flexGrow: 1, p: 0 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                   <EmojiObjectsIcon sx={{ color: gold, mr: 1, fontSize: 28 }} />
-                  <Typography variant="h6" sx={{ color: '#23272F', fontWeight: 800, fontFamily: 'Montserrat, Roboto, sans-serif' }}>
-                    Pitching Analytics
+                  <Typography component="h3" sx={{ color: '#23272F', fontSize: 18, fontWeight: 800, fontFamily: 'Montserrat, Roboto, sans-serif', display: 'flex', alignItems: 'center', gap: '8px', m: 0 }}>
+                    <span className="icon">🔧</span> Pitching Analytics
                   </Typography>
                 </Box>
                 <Box component="ul" sx={{ flexGrow: 1, pl: 3, color: '#23272F', fontSize: 17, fontWeight: 500, fontFamily: 'Montserrat, Roboto, sans-serif', mb: 0 }}>
@@ -139,8 +140,8 @@ function Home() {
               <CardContent sx={{ flexGrow: 1, p: 0 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                   <EmojiObjectsIcon sx={{ color: gold, mr: 1, fontSize: 28 }} />
-                  <Typography variant="h6" sx={{ color: '#23272F', fontWeight: 800, fontFamily: 'Montserrat, Roboto, sans-serif' }}>
-                    Hitting Analytics
+                  <Typography component="h3" sx={{ color: '#23272F', fontSize: 18, fontWeight: 800, fontFamily: 'Montserrat, Roboto, sans-serif', display: 'flex', alignItems: 'center', gap: '8px', m: 0 }}>
+                    <span className="icon">🔧</span> Hitting Analytics
                   </Typography>
                 </Box>
                 <Box component="ul" sx={{ flexGrow: 1, pl: 3, color: '#23272F', fontSize: 17, fontWeight: 500, fontFamily: 'Montserrat, Roboto, sans-serif', mb: 0 }}>
@@ -165,8 +166,8 @@ function Home() {
               <CardContent sx={{ flexGrow: 1, p: 0 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                   <EmojiObjectsIcon sx={{ color: gold, mr: 1, fontSize: 28 }} />
-                  <Typography variant="h6" sx={{ color: '#23272F', fontWeight: 800, fontFamily: 'Montserrat, Roboto, sans-serif' }}>
-                    Player Development
+                  <Typography component="h3" sx={{ color: '#23272F', fontSize: 18, fontWeight: 800, fontFamily: 'Montserrat, Roboto, sans-serif', display: 'flex', alignItems: 'center', gap: '8px', m: 0 }}>
+                    <span className="icon">🔧</span> Player Development
                   </Typography>
                 </Box>
                 <Box component="ul" sx={{ flexGrow: 1, pl: 3, color: '#23272F', fontSize: 17, fontWeight: 500, fontFamily: 'Montserrat, Roboto, sans-serif', mb: 0 }}>
