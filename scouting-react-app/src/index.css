@@ -24,13 +24,17 @@ code {
 .navbar .nav-links { gap: 28px; }
 
 .navbar a {
-  font-size: 1.4rem; /* slightly larger text */
-  font-weight: 700;  /* bold */
-  letter-spacing: 0.5px; /* small spacing for clarity */
+  color: #FFFFFF;
+  font-size: 1.4rem; /* keep size */
+  font-weight: 600;  /* slightly lighter for polish */
+  letter-spacing: 0.4px;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
 }
 
 .navbar a:hover {
-  text-decoration: underline; /* optional hover effect */
+  color: #F1C83B; /* gold */
+  text-shadow: 0 0 6px rgba(241,200,59,0.65);
+  text-decoration: none; /* remove underline */
 }
 
 /* --- App-wide dropdown styles --- */
@@ -445,9 +449,12 @@ select, option,
   font-size: 44px;
   line-height: 1.1;
   margin: 8px 0 12px;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.5px; /* subtle spacing */
   display: flex;
   justify-content: center;
+  color: #FFFFFF;         /* pure white */
+  font-weight: 800;       /* extra bold */
+  text-shadow: 0 0 12px rgba(0,0,0,0.35); /* soft glow for clarity */
 }
 .home-hero .subtitle {
   color: rgba(255,255,255,.82);
