@@ -126,118 +126,121 @@ export default function NavBar() {
         {/* Centered nav on desktop */}
         <Box
           className="navbar"
-          sx={{ flex: 1, display: 'flex', justifyContent: 'center', gap: 4, position: 'relative' }}
+          sx={{ flex: 1, position: 'relative' }}
           onMouseEnter={isDesktop ? () => { if (closeTimer.current) clearTimeout(closeTimer.current); } : undefined}
           ref={navContainerRef}
         >
-          {tabs.map((t) => (
-            <Box
-              key={t.id}
-              className="top-item"
-              data-menu={t.id}
-              onMouseEnter={isDesktop ? () => openMenu(t.id) : undefined}
-              sx={{
-                position: 'relative',
-                display: 'inline-block',
-                '&::after': {
-                  content: '""',
-                  position: 'absolute',
-                  left: '-10px',
-                  right: '-10px',
-                  top: '100%',
-                  height: '14px',
-                  pointerEvents: 'none'
-                }
-              }}
-            >
+          <Box className="nav-inner" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', maxWidth: 1200, mx: 'auto' }}>
+            {tabs.map((t) => (
               <Box
-                ref={refs[t.id]}
-                tabIndex={0}
-                onFocus={() => openMenu(t.id)}
-                onKeyDown={(e) => { if (e.key === 'Escape') setActiveMenu(null); }}
-                onClick={(e) => {
-                  // Only intercept the first tap on true touch devices
-                  if (isTouchDevice && activeMenu !== t.id) {
-                    e.preventDefault();
-                    openMenu(t.id);
+                key={t.id}
+                className="top-item"
+                data-menu={t.id}
+                onMouseEnter={isDesktop ? () => openMenu(t.id) : undefined}
+                sx={{
+                  position: 'relative',
+                  display: 'inline-block',
+                  '&::after': {
+                    content: '""',
+                    position: 'absolute',
+                    left: '-10px',
+                    right: '-10px',
+                    top: '100%',
+                    height: '14px',
+                    pointerEvents: 'none'
                   }
                 }}
-                sx={{
-                  cursor: 'pointer',
-                  px: 1, py: 0.5,
-                  userSelect: 'none'
-                }}
-                aria-haspopup="true"
-                aria-expanded={activeMenu === t.id}
-                aria-controls={`menu-${t.id}`}
               >
-                <NavLink
-                  to={t.hub}
-                  className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                <Box
+                  ref={refs[t.id]}
+                  tabIndex={0}
+                  onFocus={() => openMenu(t.id)}
+                  onKeyDown={(e) => { if (e.key === 'Escape') setActiveMenu(null); }}
                   onClick={(e) => {
-                    // Preserve the dropdown first-tap behavior for touch
+                    // Only intercept the first tap on true touch devices
                     if (isTouchDevice && activeMenu !== t.id) {
                       e.preventDefault();
                       openMenu(t.id);
                     }
                   }}
+                  sx={{
+                    cursor: 'pointer',
+                    px: 1, py: 0.5,
+                    userSelect: 'none'
+                  }}
+                  aria-haspopup="true"
+                  aria-expanded={activeMenu === t.id}
+                  aria-controls={`menu-${t.id}`}
                 >
-                  {t.label}
-                </NavLink>
-              </Box>
-
-              <Menu
-                id={`menu-${t.id}`}
-                anchorEl={refs[t.id].current}
-                open={isDesktop && activeMenu === t.id}
-                onClose={scheduleClose}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-                keepMounted
-                disableScrollLock
-                container={typeof document !== 'undefined' ? document.body : undefined}
-                MenuListProps={{
-                  onMouseEnter: () => openMenu(t.id),
-                  onMouseLeave: scheduleClose,
-                  dense: true,
-                  onKeyDown: (e) => { if (e.key === 'Escape') setActiveMenu(null); }
-                }}
-                transitionDuration={160}
-                slotProps={{
-                  paper: {
-                    onMouseEnter: () => { if (closeTimer.current) clearTimeout(closeTimer.current); },
-                    onMouseLeave: scheduleClose,
-                    elevation: 10,
-                    sx: {
-                      mt: 1,
-                      borderRadius: '10px',
-                      border: '1px solid rgba(201,162,39,.18)',
-                      bgcolor: 'rgba(10, 22, 52, 0.96)',
-                      backdropFilter: 'blur(4px)',
-                      color: '#fff',
-                      minWidth: 260,
-                      zIndex: 2100
-                    }
-                  },
-                  root: {}
-                }}
-              >
-                {menuItems[t.id].map((item) => (
-                  <MenuItem
-                    key={item.to}
-                    onClick={() => { navigate(item.to); setActiveMenu(null); }}
-                    sx={{
-                      fontWeight: 600,
-                      py: 1,
-                      '&:hover': { bgcolor: 'rgba(255,179,0,0.18)', color: NAV_ACTIVE }
+                  <NavLink
+                    to={t.hub}
+                    className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                    onClick={(e) => {
+                      // Preserve the dropdown first-tap behavior for touch
+                      if (isTouchDevice && activeMenu !== t.id) {
+                        e.preventDefault();
+                        openMenu(t.id);
+                      }
                     }}
                   >
-                    {item.label}
-                  </MenuItem>
-                ))}
-              </Menu>
-            </Box>
-          ))}
+                    {t.label}
+                  </NavLink>
+                </Box>
+
+                <Menu
+                  id={`menu-${t.id}`}
+                  anchorEl={refs[t.id].current}
+                  open={isDesktop && activeMenu === t.id}
+                  onClose={scheduleClose}
+                  anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                  transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                  marginThreshold={0}
+                  keepMounted
+                  disableScrollLock
+                  container={typeof document !== 'undefined' ? document.body : undefined}
+                  MenuListProps={{
+                    onMouseEnter: () => openMenu(t.id),
+                    onMouseLeave: scheduleClose,
+                    dense: true,
+                    onKeyDown: (e) => { if (e.key === 'Escape') setActiveMenu(null); }
+                  }}
+                  transitionDuration={150}
+                  slotProps={{
+                    paper: {
+                      onMouseEnter: () => { if (closeTimer.current) clearTimeout(closeTimer.current); },
+                      onMouseLeave: scheduleClose,
+                      elevation: 10,
+                      sx: {
+                        mt: 0.5,
+                        borderRadius: '10px',
+                        border: '1px solid rgba(201,162,39,.18)',
+                        bgcolor: 'rgba(10, 22, 52, .96)',
+                        backdropFilter: 'blur(4px)',
+                        color: '#fff',
+                        minWidth: 240,
+                        zIndex: 2100
+                      }
+                    },
+                    root: {}
+                  }}
+                >
+                  {menuItems[t.id].map((item) => (
+                    <MenuItem
+                      key={item.to}
+                      onClick={() => { navigate(item.to); setActiveMenu(null); }}
+                      sx={{
+                        fontWeight: 600,
+                        py: 1,
+                        '&:hover': { bgcolor: 'rgba(255,179,0,0.18)', color: NAV_ACTIVE }
+                      }}
+                    >
+                      {item.label}
+                    </MenuItem>
+                  ))}
+                </Menu>
+              </Box>
+            ))}
+          </Box>
         </Box>
 
         {/* Mobile drawer with same links */}

@@ -32,14 +32,22 @@ code {
   -webkit-backdrop-filter: blur(8px);
 
   /* slimmer height */
-  padding: 10px 24px;
+  padding: 8px 20px;
 
   /* thin gold baseline */
-  border-bottom: 1px solid rgba(201, 162, 39, 0.28);
+  border-bottom: 1px solid rgba(241, 200, 59, 0.26);
 
   /* lighter, longer shadow */
-  box-shadow: 0 8px 20px rgba(0,0,0,0.20);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.20);
   margin-bottom: 0;
+}
+.navbar .nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
 }
 .navbar .nav-links { gap: 28px; }
 
@@ -60,12 +68,13 @@ code {
 /* Enhanced link styling for top-level tabs using NavLink */
 .navbar a.nav-link {
   color: #FFFFFF;
+  font-size: 16px;
   font-weight: 750;
-  letter-spacing: 0.55px;
-  margin: 0 20px;
+  letter-spacing: 0.5px;
+  margin: 0 18px;
   position: relative;
   text-decoration: none;
-  transition: color .2s ease, text-shadow .2s ease;
+  transition: color .18s ease, text-shadow .18s ease;
 }
 .navbar a.nav-link:hover,
 .navbar a.nav-link.active { color: #F1C83B; text-shadow: 0 0 6px rgba(241,200,59,.55); }
@@ -73,11 +82,11 @@ code {
   content: '';
   position: absolute;
   left: 0;
-  bottom: -6px;            /* closer to text */
+  bottom: -5px;            /* closer to text */
   width: 0;
-  height: 2px;
+  height: 1.5px;           /* slightly thinner */
   background: #F1C83B;
-  transition: width .22s ease;
+  transition: width .18s ease;
 }
 .navbar a.nav-link:hover::after,
 .navbar a.nav-link.active::after { width: 100%; }
@@ -613,3 +622,59 @@ select, option,
 /* Keep header and menus above */
 .site-header { position: sticky; top: 0; z-index: 2000; }
 .MuiMenu-paper { z-index: 2100; }
+
+/* ===== Nav + Menu hard overrides to ensure visual polish takes effect ===== */
+.navbar .nav-link {
+  font-size: 16px !important;
+  font-weight: 750 !important;
+  color: #fff !important;
+  margin: 0 18px !important;
+  position: relative !important;
+  letter-spacing: .5px !important;
+  transition: color .18s ease, text-shadow .18s ease !important;
+}
+
+.navbar .nav-link::after {
+  content: "" !important;
+  position: absolute !important;
+  bottom: -5px !important;
+  height: 1.5px !important;
+  width: 0 !important;
+  background: #F1C83B !important; /* crisp gold */
+  transition: width .18s ease !important;
+}
+
+.navbar .nav-link:hover::after,
+.navbar .nav-link:active::after {
+  width: 100% !important;
+}
+
+/* Optional: ensure gold hover glow is applied */
+.navbar .nav-link:hover,
+.navbar .nav-link.active {
+  color: #F1C83B !important;
+  text-shadow: 0 0 5px rgba(241,200,59,.5) !important;
+}
+
+.MuiMenu-paper {
+  background: linear-gradient(180deg, rgba(10,22,52,.95), rgba(10,22,52,.85)) !important;
+  border: 1px solid rgba(241,200,59,.25) !important;
+  border-radius: 10px !important;
+  backdrop-filter: blur(6px) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.35) !important;
+  padding: 8px 12px !important;
+  transform-origin: top center !important;
+  animation: menuIn .16s ease !important;
+}
+
+.MuiMenu-paper .MuiMenuItem-root {
+  color: #fff !important;
+  font-weight: 700 !important;
+  letter-spacing: .3px !important;
+  padding: 10px 16px !important;
+}
+.MuiMenu-paper .MuiMenuItem-root:hover,
+.MuiMenu-paper .MuiMenuItem-root.Mui-selected {
+  background: rgba(241,200,59,.16) !important;
+  color: #F1C83B !important;
+}
