@@ -1130,37 +1130,6 @@ export default function PitcherReportsPage() {
               <div style={{ whiteSpace:'pre-wrap', lineHeight:1.4 }}>{draft?.summary || '—'}</div>
             </div>
 
-            <div style={{ ...styles.panel, marginTop:10 }} className="section pb-before">
-              <div style={styles.h2}>Rendered Report</div>
-              <div style={{ color:'var(--text)', lineHeight: 1.5 }}>
-                {(() => {
-                  const name = pitcherOptions.find(p=>p.id===selected)?.name || selected;
-                  const cmd = draft?.tools?.command || {};
-                  const role = draft?.roleProjection || '—';
-                  const risk = draft?.risk || 'Medium';
-                  const fv = draft?.overallFV ?? '—';
-                  const pCmd = cmd.present ?? '—';
-                  const fCmd = cmd.future ?? '—';
-                  // Simple mix guess from entered pitches with usage
-                  const mix = defaultPitchOrder
-                    .filter(k => (draft?.pitches?.[k]?.usage ?? 0) > 0)
-                    .sort((a,b)=> (draft?.pitches?.[b]?.usage||0) - (draft?.pitches?.[a]?.usage||0))
-                    .slice(0,3)
-                    .map(k => (displayNameFor(k) || k).split('-')[0])
-                    .join('/');
-                  const mixText = mix ? `${mix} mix; ` : '';
-                  return (
-                    <p>
-                      <strong>{name}</strong> — {mixText}present command {pCmd}, future {fCmd}. Role: {role}. FV {fv} (Risk {risk}).
-                    </p>
-                  );
-                })()}
-              </div>
-              {draft?.summary && (
-                <div style={{ marginTop:6, whiteSpace:'pre-wrap', lineHeight:1.5 }}>{draft.summary}</div>
-              )}
-              {/* Dev Plan removed */}
-            </div>
 
           </div>
         </div>
