@@ -202,20 +202,24 @@ export default function NavBar() {
                   dense: true,
                   onKeyDown: (e) => { if (e.key === 'Escape') setActiveMenu(null); }
                 }}
-                PaperProps={{
-                  onMouseEnter: () => { if (closeTimer.current) clearTimeout(closeTimer.current); },
-                  onMouseLeave: scheduleClose,
-                  elevation: 8,
-                  sx: {
-                    mt: 1,
-                    borderRadius: 1.5,
-                    boxShadow: 6,
-                    bgcolor: 'rgba(12,20,36,0.92)',
-                    color: '#fff',
-                    backdropFilter: 'blur(6px)',
-                    minWidth: 260,
-                    zIndex: 2100
-                  }
+                transitionDuration={160}
+                slotProps={{
+                  paper: {
+                    onMouseEnter: () => { if (closeTimer.current) clearTimeout(closeTimer.current); },
+                    onMouseLeave: scheduleClose,
+                    elevation: 10,
+                    sx: {
+                      mt: 1,
+                      borderRadius: '10px',
+                      border: '1px solid rgba(201,162,39,.20)',
+                      bgcolor: 'rgba(8,12,22,.96)',
+                      backdropFilter: 'blur(4px)',
+                      color: '#fff',
+                      minWidth: 260,
+                      zIndex: 2100
+                    }
+                  },
+                  root: {}
                 }}
               >
                 {menuItems[t.id].map((item) => (

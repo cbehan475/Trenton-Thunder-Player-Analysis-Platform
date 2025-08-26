@@ -19,8 +19,17 @@ code {
   padding: 0 24px;
 }
 
-/* Navbar spacing: eliminate extra space pushing the hero down */
-.navbar { margin-bottom: 0; padding-top: 14px; padding-bottom: 6px; }
+/* Navbar container: glass bar with gold bottom accent */
+.site-header { position: sticky; top: 0; z-index: 2000; }
+.navbar {
+  background: linear-gradient(180deg, rgba(9,14,26,.85), rgba(9,14,26,.75));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(201,162,39,.18);
+  padding: 14px 28px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.28);
+  margin-bottom: 0;
+}
 .navbar .nav-links { gap: 28px; }
 
 .navbar a {
@@ -39,29 +48,49 @@ code {
 
 /* Enhanced link styling for top-level tabs using NavLink */
 .navbar a.nav-link {
-  color: #FFFFFF;
-  font-weight: 700;        /* stronger than base */
-  letter-spacing: 0.5px;   /* subtle polish */
-  margin: 0 18px;
+  color: #FFF;
+  font-weight: 750;
+  letter-spacing: .6px;
+  margin: 0 22px;
   position: relative;
   text-decoration: none;
-  transition: color 0.3s ease;
+  transition: color .2s ease, text-shadow .2s ease;
 }
-.navbar a.nav-link:hover { color: #F1C83B; }
+.navbar a.nav-link:hover,
+.navbar a.nav-link.active { color: #F1C83B; text-shadow: 0 0 6px rgba(241,200,59,.55); }
 .navbar a.nav-link::after {
   content: '';
   position: absolute;
-  bottom: -6px;
   left: 0;
+  bottom: -8px;
   width: 0;
   height: 2px;
-  background-color: #F1C83B;
-  transition: width 0.3s ease;
+  background: #F1C83B;
+  transition: width .25s ease;
 }
-.navbar a.nav-link:hover::after { width: 100%; }
-/* Persistent active state for current route */
-.navbar a.nav-link.active { color: #F1C83B; }
+.navbar a.nav-link:hover::after,
 .navbar a.nav-link.active::after { width: 100%; }
+
+/* Dropdown panel polish (MUI Menu) */
+.MuiMenu-paper {
+  box-shadow: 0 20px 40px rgba(0,0,0,.45);
+  transform-origin: top center;
+  animation: menuIn .16s ease;
+  z-index: 2100; /* above hero */
+}
+@keyframes menuIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.MuiMenuItem-root {
+  padding: 10px 16px;
+  color: #FFF; font-weight: 700; letter-spacing: .3px;
+}
+.MuiMenuItem-root:hover,
+.MuiMenuItem-root.Mui-selected {
+  background: rgba(201,162,39,.16) !important;
+}
+.MuiDivider-root { background: rgba(255,255,255,.08); }
 
 /* --- App-wide dropdown styles --- */
 /* Native <select> fallback */
