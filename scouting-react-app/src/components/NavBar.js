@@ -211,8 +211,8 @@ export default function NavBar() {
                     sx: {
                       mt: 1,
                       borderRadius: '10px',
-                      border: '1px solid rgba(201,162,39,.20)',
-                      bgcolor: 'rgba(8,12,22,.96)',
+                      border: '1px solid rgba(201,162,39,.18)',
+                      bgcolor: 'rgba(10, 22, 52, 0.96)',
                       backdropFilter: 'blur(4px)',
                       color: '#fff',
                       minWidth: 260,
