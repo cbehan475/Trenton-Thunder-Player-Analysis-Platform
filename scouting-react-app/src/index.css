@@ -437,21 +437,24 @@ select, option,
 /* Hero */
 .home-hero {
   max-width: 1200px;
-  padding: 48px 32px 16px;
   margin: 0 auto;
+  padding: 48px 32px;
+  text-align: center;
 }
 .home-hero h1 {
   font-size: 44px;
   line-height: 1.1;
   margin: 8px 0 12px;
   letter-spacing: 0.2px;
+  display: flex;
+  justify-content: center;
 }
 .home-hero .subtitle {
   color: rgba(255,255,255,.82);
   font-size: 16px;
   line-height: 1.6;
-  max-width: 920px;
-  margin-bottom: 20px;
+  max-width: 860px;
+  margin: 0 auto 20px;
 }
 .home-hero .cta {
   display: inline-block;
@@ -463,6 +466,7 @@ select, option,
   letter-spacing: .3px;
   box-shadow: 0 6px 20px rgba(241,200,59,.18);
   transition: transform .12s ease, box-shadow .12s ease;
+  margin: 0 auto;
 }
 .home-hero .cta:hover {
   transform: translateY(-1px);
@@ -482,7 +486,7 @@ select, option,
 .home-cards .card {
   background: rgba(255,255,255,.06);
   border: 1px solid rgba(255,255,255,.10);
-  border-radius: 14px;
+  border-radius: 10px; /* sharper corners */
   padding: 18px 18px 16px;
   box-shadow: 0 8px 24px rgba(0,0,0,.25);
   transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
@@ -499,13 +503,25 @@ select, option,
   gap: 8px;
   font-size: 18px;
   margin: 0 0 8px;
+  color: #F1C83B;
+  font-weight: 700;
+  transition: transform .15s ease, text-shadow .15s ease;
+}
+.home-cards .card h3:hover {
+  transform: translateY(-2px);
+  text-shadow: 0 0 8px rgba(241,200,59,.55);
 }
 .home-cards .card ul {
   margin: 6px 0 0;
   padding-left: 18px;
-  color: rgba(255,255,255,.85);
 }
-.home-cards .card li { margin: 4px 0; }
+.home-cards .card,
+.home-cards .card p,
+.home-cards .card li {
+  color: #FFFFFF;    /* white text on dark background */
+  font-weight: 500;  /* slightly stronger */
+}
+.home-cards .card li { margin: 6px 0; line-height: 1.5; }
 
 /* Icons tint */
 .card .icon { color: #C9A227; font-size: 18px; }
