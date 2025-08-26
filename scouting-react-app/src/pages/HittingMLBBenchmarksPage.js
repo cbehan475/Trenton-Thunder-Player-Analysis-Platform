@@ -176,16 +176,23 @@ export default function HittingMLBBenchmarksPage() {
               value={selectedLevel}
               onChange={(e)=>setSelectedLevel(e.target.value)}
               options={levelOptions.map(lvl => ({ label: lvl === 'APLUS' ? 'A+' : lvl, value: lvl }))}
-              label=""
+              label="Level"
+              id="level-select"
+              labelId="level-select-label"
               formSx={{ minWidth: 120 }}
             />
-            <span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 10 }}>Compare Hitter:</span>
             <AppSelect
               value={selectedHitter}
               onChange={(e)=>setSelectedHitter(e.target.value)}
-              options={[{ label: 'None', value: '' }, ...hitterOptions.map(name => ({ label: name, value: name }))]}
-              label=""
-              formSx={{ minWidth: 180 }}
+              options={hitterOptions.map(name => ({ label: name, value: name }))}
+              label="Select Hitter"
+              displayEmpty
+              renderValue={(val) => (val ? val : 'Select Hitter')}
+              clearable
+              onClear={() => setSelectedHitter('')}
+              id="select-hitter"
+              labelId="select-hitter-label"
+              formSx={{ minWidth: 240 }}
             />
             <button
               type="button"

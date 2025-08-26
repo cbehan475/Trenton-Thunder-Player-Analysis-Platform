@@ -2,6 +2,7 @@
 import React from 'react';
 import '@testing-library/jest-dom';
 import { render, screen, within, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import HittingMLBBenchmarksPage from './HittingMLBBenchmarksPage';
 
 // Mock data sources
@@ -23,6 +24,7 @@ jest.mock('../data/logs/hittersByDate', () => ({
 jest.mock('../data/overrides/battedBallMetricsOverrides', () => ({
   __esModule: true,
   default: {
+    'Aaron Graeber': { avgEv: 89.0, maxEv: 112.0, avgLa: 11.0, hardHit: 40.0, gb: 41.0, ld: 21.0, fb: 30.0, pu: 8.0 },
     'Override Only': { avgEv: 88.0, maxEv: 110.0, avgLa: 12.0, hardHit: 38.0, gb: 40.0, ld: 22.0, fb: 30.0, pu: 8.0 },
   },
 }));
@@ -101,8 +103,7 @@ describe('HittingMLBBenchmarksPage', () => {
     // Title
     expect(screen.getByText(/Hitters MLB Benchmarks/i)).toBeInTheDocument();
     // Level default MLB
-    const levelSelect = screen.getByRole('combobox', { name: /Level/i });
-    expect(levelSelect).toHaveValue('MLB');
+    expect(screen.getByLabelText('Level')).toHaveTextContent('MLB');
 
     // Cards show level ranges/p50s for core + decision
     expect(screen.getAllByText('Exit Velocity (Avg)').length).toBeGreaterThan(0);
@@ -133,17 +134,46 @@ describe('HittingMLBBenchmarksPage', () => {
     expect(rows.length).toBe(14);
   });
 
+  test('Select Hitter control shows renderValue placeholder, menu starts with Aaron Graeber, select and clear work', async () => {
+    render(<HittingMLBBenchmarksPage />);
+    const hitterSelect = screen.getAllByLabelText('Select Hitter')[0];
+    // Placeholder visible via renderValue
+    expect(hitterSelect).toHaveTextContent('Select Hitter');
+
+    // Open menu and select a hitter
+    await userEvent.click(hitterSelect);
+    const listbox = screen.getByRole('listbox');
+    // First visible item should be Aaron Graeber; placeholder should not be present in the menu list
+    expect(within(listbox).getByText('Aaron Graeber')).toBeInTheDocument();
+    expect(within(listbox).queryByText(/Select hitter/i)).not.toBeInTheDocument();
+    const testOption = within(listbox).getByText('Test Hitter');
+    await userEvent.click(testOption);
+
+    // Clear selection via clear button
+    const clearBtn = screen.getByRole('button', { name: /Clear selection/i });
+    await userEvent.click(clearBtn);
+
+    // After clearing, page should render with MLB-only baselines and no throw
+    // Table still present
+    expect(screen.getByRole('table', { name: /Hitters MLB Benchmarks/i })).toBeInTheDocument();
+    // Placeholder visible again
+    expect(hitterSelect).toHaveTextContent('Select Hitter');
+  });
+
   test('Compare Hitter populates player p50 and Δ for core metrics; BB% percentiles/clamps; barrel from events; overrides when no events', async () => {
     render(<HittingMLBBenchmarksPage />);
 
-    const hitterSelect = screen.getByRole('combobox', { name: /Compare Hitter/i });
-    // Ensure options contain no numeric-only labels
-    const options = within(hitterSelect).getAllByRole('option');
+    // Locate the Select Hitter control and open
+    const hitterSelect = screen.getByLabelText('Select Hitter');
+    await userEvent.click(hitterSelect);
+    const listbox = screen.getByRole('listbox');
+    const options = within(listbox).getAllByRole('option');
     const texts = options.map(o => o.textContent?.trim());
     expect(texts.some(t => /^\d+$/.test(t ?? ''))).toBe(false);
+    expect(texts.includes('None')).toBe(false);
 
     // Select our test hitter
-    fireEvent.change(hitterSelect, { target: { value: 'Test Hitter' } });
+    await userEvent.click(within(listbox).getByText('Test Hitter'));
 
     const table = screen.getByRole('table', { name: /Hitters MLB Benchmarks/i });
     const bodyRows = within(table).getAllByRole('row').slice(1);
@@ -174,7 +204,9 @@ describe('HittingMLBBenchmarksPage', () => {
     expect(bbGbCells[4].textContent).toMatch(/^\d{1,3}$/);
 
     // Now select hitter with overrides only (no events)
-    fireEvent.change(hitterSelect, { target: { value: 'Override Only' } });
+    await userEvent.click(screen.getAllByLabelText('Select Hitter')[0]);
+    const listbox2 = screen.getByRole('listbox');
+    await userEvent.click(within(listbox2).getByText('Override Only'));
     const bbGbRow2 = rowByLabel('GB %');
     const bbGbCells2 = within(bbGbRow2).getAllByRole('cell');
     expect(bbGbCells2[2].textContent).toMatch(/40\.0/);
