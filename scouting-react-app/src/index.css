@@ -37,6 +37,32 @@ code {
   text-decoration: none; /* remove underline */
 }
 
+/* Enhanced link styling for top-level tabs using NavLink */
+.navbar a.nav-link {
+  color: #FFFFFF;
+  font-weight: 700;        /* stronger than base */
+  letter-spacing: 0.5px;   /* subtle polish */
+  margin: 0 18px;
+  position: relative;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+.navbar a.nav-link:hover { color: #F1C83B; }
+.navbar a.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: #F1C83B;
+  transition: width 0.3s ease;
+}
+.navbar a.nav-link:hover::after { width: 100%; }
+/* Persistent active state for current route */
+.navbar a.nav-link.active { color: #F1C83B; }
+.navbar a.nav-link.active::after { width: 100%; }
+
 /* --- App-wide dropdown styles --- */
 /* Native <select> fallback */
 .app-select {

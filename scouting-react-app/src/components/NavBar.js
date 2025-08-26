@@ -7,7 +7,7 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
+import { Link as RouterLink, NavLink, useNavigate, useLocation } from 'react-router-dom';
 
 export default function NavBar() {
   const theme = useTheme();
@@ -165,18 +165,25 @@ export default function NavBar() {
                 sx={{
                   cursor: 'pointer',
                   px: 1, py: 0.5,
-                  fontWeight: 800,
-                  letterSpacing: 0.15,
-                  color: isActive(t.hub) ? NAV_ACTIVE : NAV_TEXT,
-                  userSelect: 'none',
-                  transition: 'color .15s ease',
-                  '&:hover': { color: NAV_HOVER }
+                  userSelect: 'none'
                 }}
                 aria-haspopup="true"
                 aria-expanded={activeMenu === t.id}
                 aria-controls={`menu-${t.id}`}
               >
-                {t.label}
+                <NavLink
+                  to={t.hub}
+                  className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                  onClick={(e) => {
+                    // Preserve the dropdown first-tap behavior for touch
+                    if (isTouchDevice && activeMenu !== t.id) {
+                      e.preventDefault();
+                      openMenu(t.id);
+                    }
+                  }}
+                >
+                  {t.label}
+                </NavLink>
               </Box>
 
               <Menu
