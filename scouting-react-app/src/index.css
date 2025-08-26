@@ -22,12 +22,19 @@ code {
 /* Navbar container: glass bar with gold bottom accent */
 .site-header { position: sticky; top: 0; z-index: 2000; }
 .navbar {
-  background: linear-gradient(180deg, rgba(9,14,26,.85), rgba(9,14,26,.75));
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  border-bottom: 1px solid rgba(201,162,39,.18);
-  padding: 14px 28px;
-  box-shadow: 0 6px 18px rgba(0,0,0,.28);
+  /* transparent navy glass — lets page gradient show through */
+  background: linear-gradient(180deg, rgba(10,16,28,0.70), rgba(10,16,28,0.55));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  /* slim the height */
+  padding: 10px 24px;
+
+  /* crisp baseline using our gold */
+  border-bottom: 1px solid rgba(201,162,39,0.28);
+
+  /* lighter, longer shadow for depth but not heavy */
+  box-shadow: 0 8px 24px rgba(0,0,0,0.20);
   margin-bottom: 0;
 }
 .navbar .nav-links { gap: 28px; }
@@ -48,10 +55,10 @@ code {
 
 /* Enhanced link styling for top-level tabs using NavLink */
 .navbar a.nav-link {
-  color: #FFF;
+  color: #FFFFFF;
   font-weight: 750;
-  letter-spacing: .6px;
-  margin: 0 22px;
+  letter-spacing: 0.55px;
+  margin: 0 20px;
   position: relative;
   text-decoration: none;
   transition: color .2s ease, text-shadow .2s ease;
@@ -62,11 +69,11 @@ code {
   content: '';
   position: absolute;
   left: 0;
-  bottom: -8px;
+  bottom: -6px;            /* closer to text */
   width: 0;
   height: 2px;
   background: #F1C83B;
-  transition: width .25s ease;
+  transition: width .22s ease;
 }
 .navbar a.nav-link:hover::after,
 .navbar a.nav-link.active::after { width: 100%; }
