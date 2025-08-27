@@ -3,6 +3,9 @@ import { seedLogsByDate, getPitchersForDate, getInningsFor, getLogs } from '../d
 import './PitchingLogsPage.css';
 import AppSelect from '../components/ui/AppSelect.jsx';
 import { getBench, delta, BENCH_LEVEL, FEATURE_BENCHMARK_BADGES } from '../lib/benchmarks.js';
+import dataFirstHalf from '../data/arsenals/firstHalf.json';
+import { buildArsenalMap } from '../lib/arsenalMap.js';
+import { mapPitchLabel } from '../lib/pitchLabel.js';
 import pitching2025_06_04 from '../data/logs/pitching-2025-06-04.js';
 import pitching2025_06_05 from '../data/logs/pitching-2025-06-05.js';
 import pitching2025_06_06 from '../data/logs/pitching-2025-06-06.js';
@@ -41,9 +44,10 @@ const pitchFamily = (t) => {
   if (s.includes('four') || s.includes('ff') || s.includes('fast')) return 'fastball';
   if (s.includes('sinker') || s === 'si') return 'fastball';
   if (s.includes('cutter') || s === 'ct') return 'fastball';
-  if (s.includes('slider') || s === 'sl' || s.includes('sweeper')) return 'breaking';
-  if (s.includes('curve') || s === 'cu') return 'breaking';
-  if (s.includes('change')) return 'offspeed';
+  if (s.includes('slider') || s === 'sl' || s.includes('sweeper') || s === 'sw') return 'breaking';
+  if (s.includes('curve') || s === 'cu' || s === 'cb') return 'breaking';
+  if (s.includes('change') || s === 'ch') return 'offspeed';
+  if (s.includes('split') || s === 'spl' || s === 'fs') return 'offspeed';
   return 'other';
 };
 const pitchShort = (t) => {
@@ -173,6 +177,7 @@ export default function PitchingLogsPage() {
   const [inningOptions, setInningOptions] = useState(['All']);
   const [compact, setCompact] = useState(false);
   const [showExt, setShowExt] = useState(false);
+  const [useVerified, setUseVerified] = useState(true);
 
   // Seed date → rows map on mount using existing modules
   useEffect(() => {
@@ -242,6 +247,19 @@ export default function PitchingLogsPage() {
   // Rows from single source of truth
   const rawRows = useMemo(() => getLogs(dateStr, pitcher, inning), [dateStr, pitcher, inning]);
   const rowsCount = rawRows.length;
+
+  // Build arsenal map and name->playerId lookup
+  const arsenalRows = dataFirstHalf;
+  const arsenalMap = useMemo(() => buildArsenalMap(arsenalRows), [arsenalRows]);
+  const nameToPid = useMemo(() => {
+    const m = new Map();
+    const arr = Array.isArray(arsenalRows) ? arsenalRows : [];
+    for (const r of arr) {
+      if (r?.name && r?.playerId) m.set(r.name, r.playerId);
+    }
+    return m;
+  }, [arsenalRows]);
+  const selectedPitcherId = useMemo(() => nameToPid.get(pitcher) || null, [nameToPid, pitcher]);
 
   // Group by consecutive batter within inning (At-Bat groups)
   const abGroups = useMemo(() => {
@@ -337,7 +355,9 @@ export default function PitchingLogsPage() {
 
     // per type aggregation
     for (const r of rawRows) {
-      const t = r.type ?? r.pitchType ?? r.pitch ?? '—';
+      const rawT = r.type ?? r.pitchType ?? r.pitch ?? '—';
+      const mapped = useVerified ? mapPitchLabel(rawT, selectedPitcherId, arsenalMap) : { code: rawT, inArsenal: true };
+      const t = mapped.code;
       counts.set(t, (counts.get(t) || 0) + 1);
       if (Number.isFinite(r.velo)) {
         if (!veloList.has(t)) veloList.set(t, []);
@@ -373,7 +393,7 @@ export default function PitchingLogsPage() {
     const fpsPct = firstPitches ? (firstPitchStrikes / firstPitches) : 0;
 
     return { entries, total, strikePct, whiffPct, fpsPct, hardHits: anyEV ? hardHits : null };
-  }, [rawRows, abGroups]);
+  }, [rawRows, abGroups, useVerified, selectedPitcherId, arsenalMap]);
 
   return (
     <div className="pagePitchingLogs">
@@ -419,6 +439,7 @@ export default function PitchingLogsPage() {
 
         <div className="field" style={{ marginLeft: 'auto', display:'flex', gap:12, alignItems:'center' }}>
           <label className="gold" style={{ margin:0 }}>View</label>
+          <label className="toggle"><input type="checkbox" checked={useVerified} onChange={(e)=>setUseVerified(e.target.checked)} /> Use verified arsenal labels</label>
           <label className="toggle"><input type="checkbox" checked={compact} onChange={(e)=>setCompact(e.target.checked)} /> Compact</label>
           <label className="toggle"><input type="checkbox" checked={showExt} onChange={(e)=>setShowExt(e.target.checked)} /> Show Ext</label>
         </div>
@@ -472,8 +493,10 @@ export default function PitchingLogsPage() {
                         <div className="col col-res">Result</div>
                       </div>
                       {g.rows.map((r, i) => {
-                        const fam = pitchFamily(r.type);
-                        const short = pitchShort(r.type);
+                        const rawType = r.type;
+                        const mapped = useVerified ? mapPitchLabel(rawType, selectedPitcherId, arsenalMap) : { code: pitchShort(rawType), inArsenal: true };
+                        const short = mapped.code;
+                        const fam = useVerified ? pitchFamily(short) : pitchFamily(rawType);
                         const agg = seasonAggByType.get(r.type);
                         const b = getBench(BENCH_LEVEL, r.type);
                         const dv = b?.p50Velo != null && Number.isFinite(agg?.veloAvg) ? delta(agg.veloAvg, b.p50Velo) : null;
@@ -498,9 +521,14 @@ export default function PitchingLogsPage() {
                             <div className="col col-idx">{r.pitchIndex}</div>
                             <div className="col col-type">
                               <Tooltip content={r.type}>
-                                <span className="chip" style={chipStyle(fam)}>
+                                <span className="chip" style={{ ...chipStyle(fam), position:'relative' }}>
                                   <span className="dot" style={{ width:8, height:8, borderRadius:999, background: chipStyle(fam).color, opacity:.9 }} />
                                   {short}
+                                  {useVerified && mapped.inArsenal === false && (
+                                    <Tooltip content="Not in verified arsenal">
+                                      <span style={{ position:'absolute', top:-3, right:-3, width:8, height:8, borderRadius:999, background:'#f59e0b', border:'1px solid rgba(0,0,0,.4)' }} />
+                                    </Tooltip>
+                                  )}
                                 </span>
                               </Tooltip>
                             </div>
@@ -541,7 +569,7 @@ export default function PitchingLogsPage() {
               const fam = pitchFamily(e.t);
               return (
                 <div key={e.t} className="gs-item">
-                  <span className="chip" style={chipStyle(fam)} title={e.t}>{pitchShort(e.t)}</span>
+                  <span className="chip" style={chipStyle(fam)} title={e.t}>{useVerified ? e.t : pitchShort(e.t)}</span>
                   <span className="gs-count">{e.c}</span>
                   <span className="gs-avg">{Number.isFinite(e.avg) ? `${e.avg.toFixed(1)} avg / ${Number.isFinite(e.max)?e.max.toFixed(1):'—'} max` : '—'}</span>
                 </div>
