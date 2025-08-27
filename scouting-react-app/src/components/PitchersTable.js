@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { FormControl, InputLabel, Select, MenuItem, Box, Card, CardContent, Tooltip, Button, Menu, Chip } from '@mui/material';
 
@@ -66,6 +66,11 @@ function normalizePitchLabel(input) {
   return { code: 'OTH', full: raw };
 }
 
+// Minimal empty state component (requested for no-data rendering)
+function EmptyState({ message }) {
+  return <div style={{ padding: 16, opacity: 0.8 }}>{message}</div>;
+}
+
 export function InningDropdown({ pitchersData, selectedPitcher, selectedInning, onInningChange }) {
   const innings = selectedPitcher && pitchersData[selectedPitcher]
     ? Object.keys(pitchersData[selectedPitcher]).sort((a, b) => Number(a) - Number(b))
@@ -105,10 +110,14 @@ export default function PitchersTable({
   const menuOpen = Boolean(anchorEl);
   const handleMenuOpen = (e) => setAnchorEl(e.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
+  // Stable wrapper for double-click handler (passes through to prop if provided)
+  const handleRowDouble = useCallback((params) => {
+    if (typeof onRowDoubleClick === 'function') onRowDoubleClick(params);
+  }, [onRowDoubleClick]);
 
-  // --- Arsenals (compact) mode ---
-  if (mode === 'arsenals') {
-    const rows = useMemo(() => {
+  // Centralized rows/columns based on mode (single top-level hooks)
+  const rows = useMemo(() => {
+    if (mode === 'arsenals') {
       const arr = Array.isArray(arsenals) ? arsenals : [];
       return arr.map((r, idx) => ({
         id: r.playerId || r.name || idx + 1,
@@ -119,95 +128,8 @@ export default function PitchersTable({
         status: r.status,
         statusNote: r.statusNote,
       }));
-    }, [arsenals]);
-
-    const columns = [
-      { field: 'name', headerName: 'Name', flex: 1.2, minWidth: 160, sortable: true },
-      { field: 'bt', headerName: 'B/T', width: 84, align: 'right', headerAlign: 'right', sortable: true },
-      {
-        field: 'pitches', headerName: 'Pitches', flex: 1, minWidth: 160, align: 'right', headerAlign: 'right', sortable: false,
-        renderCell: (params) => {
-          const list = Array.isArray(params.value) ? params.value : [];
-          // normalize to MLB short codes and merge duplicates (view-only)
-          const codes = [];
-          const seen = new Set();
-          for (const p of list) {
-            const { code, full } = normalizePitchLabel(p);
-            if (!seen.has(code)) {
-              seen.add(code);
-              codes.push({ code, full });
-            }
-          }
-          return (
-            <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end', width: '100%' }}>
-              {codes.map(({ code, full }) => (
-                <Tooltip key={code} title={full} arrow>
-                  <Chip label={code} size="small" sx={{ fontWeight: 700, height: 22 }} />
-                </Tooltip>
-              ))}
-            </Box>
-          );
-        }
-      },
-      {
-        field: 'tags', headerName: 'Tags', width: 160, align: 'right', headerAlign: 'right', sortable: false,
-        valueGetter: (params) => ({ status: params.row.status, note: params.row.statusNote }),
-        renderCell: (params) => {
-          const s = params.value?.status;
-          const note = params.value?.note;
-          if (!s) return <span style={{ color: '#9ca3af' }}>—</span>;
-          const map = {
-            VERIFIED: { bg: 'rgba(16,185,129,0.15)', color: '#059669', border: '1px solid rgba(5,150,105,0.35)' },
-            VERIFY: { bg: 'rgba(245,158,11,0.15)', color: '#B45309', border: '1px solid rgba(180,83,9,0.35)' },
-            'NEEDS REVIEW': { bg: 'rgba(239,68,68,0.15)', color: '#DC2626', border: '1px solid rgba(220,38,38,0.35)' },
-          };
-          const style = map[s] || { bg: '#f3f4f6', color: '#6b7280', border: '1px solid rgba(0,0,0,0.08)' };
-          const label = note && s !== 'VERIFIED' ? `${s} — ${note}` : s;
-          return (
-            <Chip label={label} size="small" sx={{
-              height: 22,
-              bgcolor: style.bg,
-              color: style.color,
-              border: style.border,
-              fontWeight: 700,
-            }} />
-          );
-        }
-      },
-    ];
-
-    return (
-      <Card elevation={3} sx={{ mb: 4, borderRadius: 3 }}>
-        <CardContent>
-          <DataGrid
-            autoHeight
-            rows={rows}
-            columns={columns}
-            pageSize={25}
-            rowsPerPageOptions={[25, 50, 100]}
-            disableSelectionOnClick
-            density="compact"
-            rowHeight={34}
-            columnHeaderHeight={38}
-            onRowDoubleClick={onRowDoubleClick}
-            sx={{
-              background: '#fff',
-              borderRadius: 2,
-              '& .MuiDataGrid-row:hover': { backgroundColor: 'rgba(25, 118, 210, 0.08)' },
-              '& .MuiDataGrid-row:nth-of-type(odd)': { backgroundColor: '#f9fafb' },
-              '& .MuiDataGrid-cell': { fontSize: 13, py: 0.25 },
-              '& .MuiDataGrid-columnHeadersInner': { fontSize: 12, fontWeight: 700 },
-              '& .MuiDataGrid-root': { overflowX: 'auto' },
-            }}
-          />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // --- Default: logs mode ---
-  const rows = useMemo(() => {
-    if (!selectedPitcher || !selectedInning || !pitchersData[selectedPitcher] || !pitchersData[selectedPitcher][selectedInning]) return [];
+    }
+    if (!selectedPitcher || !selectedInning || !pitchersData?.[selectedPitcher]?.[selectedInning]) return [];
     return pitchersData[selectedPitcher][selectedInning].map((pitch, idx) => ({
       id: idx + 1,
       pitch: idx + 1,
@@ -218,81 +140,134 @@ export default function PitchersTable({
       ivb: pitch.ivb,
       hb: pitch.hb,
       result: pitch.result,
-      batter: pitch.batter
+      batter: pitch.batter,
     }));
-  }, [pitchersData, selectedPitcher, selectedInning]);
+  }, [mode, arsenals, pitchersData, selectedPitcher, selectedInning]);
 
-  const columns = [
-    { field: 'pitch', headerName: '#', width: 64, sortable: true, align: 'right', headerAlign: 'right' },
-    {
-      field: 'type', headerName: 'Type', width: 90, sortable: true,
-      renderCell: (params) => {
-        const { code, full } = normalizePitchLabel(params.value);
-        return (
-          <Tooltip title={full} arrow>
-            <span style={{ fontWeight: 700 }}>{code}</span>
-          </Tooltip>
-        );
-      }
-    },
-    { field: 'velo', headerName: 'Velo', width: 84, sortable: true, align: 'right', headerAlign: 'right' },
-    { field: 'spin', headerName: 'Spin', width: 84, sortable: true, align: 'right', headerAlign: 'right' },
-    { field: 'ext',  headerName: 'Ext',  width: 84, sortable: true, align: 'right', headerAlign: 'right' },
-    { field: 'ivb',  headerName: 'IVB',  width: 84, sortable: true, align: 'right', headerAlign: 'right' },
-    { field: 'hb',   headerName: 'HB',   width: 84, sortable: true, align: 'right', headerAlign: 'right' },
-    { field: 'result', headerName: 'Result', width: 120, sortable: true },
-    { field: 'batter', headerName: 'Batter', width: 150, sortable: true },
-  ];
+  const columns = useMemo(() => {
+    if (mode === 'arsenals') {
+      return [
+        { field: 'name', headerName: 'Name', flex: 1.2, minWidth: 160, sortable: true },
+        { field: 'bt', headerName: 'B/T', width: 84, align: 'right', headerAlign: 'right', sortable: true },
+        {
+          field: 'pitches', headerName: 'Pitches', flex: 1, minWidth: 160, align: 'right', headerAlign: 'right', sortable: false,
+          renderCell: (params) => {
+            const list = Array.isArray(params.value) ? params.value : [];
+            const codes = [];
+            const seen = new Set();
+            for (const p of list) {
+              const { code, full } = normalizePitchLabel(p);
+              if (!seen.has(code)) { seen.add(code); codes.push({ code, full }); }
+            }
+            return (
+              <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end', width: '100%' }}>
+                {codes.map(({ code, full }) => (
+                  <Tooltip key={code} title={full} arrow>
+                    <Chip label={code} size="small" sx={{ fontWeight: 700, height: 22 }} />
+                  </Tooltip>
+                ))}
+              </Box>
+            );
+          }
+        },
+        {
+          field: 'tags', headerName: 'Tags', width: 160, align: 'right', headerAlign: 'right', sortable: false,
+          valueGetter: (params) => ({ status: params.row.status, note: params.row.statusNote }),
+          renderCell: (params) => {
+            const s = params.value?.status;
+            const note = params.value?.note;
+            if (!s) return <span style={{ color: '#9ca3af' }}>—</span>;
+            const map = {
+              VERIFIED: { bg: 'rgba(16,185,129,0.15)', color: '#059669', border: '1px solid rgba(5,150,105,0.35)' },
+              VERIFY: { bg: 'rgba(245,158,11,0.15)', color: '#B45309', border: '1px solid rgba(180,83,9,0.35)' },
+              'NEEDS REVIEW': { bg: 'rgba(239,68,68,0.15)', color: '#DC2626', border: '1px solid rgba(220,38,38,0.35)' },
+            };
+            const style = map[s] || { bg: '#f3f4f6', color: '#6b7280', border: '1px solid rgba(0,0,0,0.08)' };
+            const label = note && s !== 'VERIFIED' ? `${s} — ${note}` : s;
+            return (
+              <Chip label={label} size="small" sx={{ height: 22, bgcolor: style.bg, color: style.color, border: style.border, fontWeight: 700 }} />
+            );
+          }
+        },
+      ];
+    }
+    return [
+      { field: 'pitch', headerName: '#', width: 64, sortable: true, align: 'right', headerAlign: 'right' },
+      {
+        field: 'type', headerName: 'Type', width: 90, sortable: true,
+        renderCell: (params) => {
+          const { code, full } = normalizePitchLabel(params.value);
+          return (
+            <Tooltip title={full} arrow>
+              <span style={{ fontWeight: 700 }}>{code}</span>
+            </Tooltip>
+          );
+        }
+      },
+      { field: 'velo', headerName: 'Velo', width: 84, sortable: true, align: 'right', headerAlign: 'right' },
+      { field: 'spin', headerName: 'Spin', width: 84, sortable: true, align: 'right', headerAlign: 'right' },
+      { field: 'ext',  headerName: 'Ext',  width: 84, sortable: true, align: 'right', headerAlign: 'right' },
+      { field: 'ivb',  headerName: 'IVB',  width: 84, sortable: true, align: 'right', headerAlign: 'right' },
+      { field: 'hb',   headerName: 'HB',   width: 84, sortable: true, align: 'right', headerAlign: 'right' },
+      { field: 'result', headerName: 'Result', width: 120, sortable: true },
+      { field: 'batter', headerName: 'Batter', width: 150, sortable: true },
+    ];
+  }, [mode, arsenals, pitchersData, selectedPitcher, selectedInning]);
 
   return (
     <Card elevation={3} sx={{ mb: 4, borderRadius: 3 }}>
       <CardContent>
-        <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <PitcherDropdown pitchersData={pitchersData} selectedPitcher={selectedPitcher} onPitcherChange={onPitcherChange} />
-            <InningDropdown pitchersData={pitchersData} selectedPitcher={selectedPitcher} selectedInning={selectedInning} onInningChange={onInningChange} />
+        {mode === 'logs' && (
+          <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <PitcherDropdown pitchersData={pitchersData} selectedPitcher={selectedPitcher} onPitcherChange={onPitcherChange} />
+              <InningDropdown pitchersData={pitchersData} selectedPitcher={selectedPitcher} selectedInning={selectedInning} onInningChange={onInningChange} />
+            </Box>
+            <Box>
+              <Button variant="outlined" size="small" onClick={handleMenuOpen} sx={{ textTransform: 'none' }}>
+                Batch Fix
+              </Button>
+              <Menu anchorEl={anchorEl} open={menuOpen} onClose={handleMenuClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}>
+                <MenuItem onClick={handleMenuClose}>Remap 2-Seam → SI</MenuItem>
+                <MenuItem onClick={handleMenuClose}>Merge SL/SW → SW</MenuItem>
+                <MenuItem onClick={handleMenuClose}>Normalize FF/FT → FF</MenuItem>
+                <MenuItem onClick={handleMenuClose}>Collapse misc. → OTH</MenuItem>
+              </Menu>
+            </Box>
           </Box>
-          <Box>
-            <Button variant="outlined" size="small" onClick={handleMenuOpen} sx={{ textTransform: 'none' }}>
-              Batch Fix
-            </Button>
-            <Menu anchorEl={anchorEl} open={menuOpen} onClose={handleMenuClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}>
-              <MenuItem onClick={handleMenuClose}>Remap 2-Seam → SI</MenuItem>
-              <MenuItem onClick={handleMenuClose}>Merge SL/SW → SW</MenuItem>
-              <MenuItem onClick={handleMenuClose}>Normalize FF/FT → FF</MenuItem>
-              <MenuItem onClick={handleMenuClose}>Collapse misc. → OTH</MenuItem>
-            </Menu>
-          </Box>
-        </Box>
-        <DataGrid
-          autoHeight
-          rows={rows}
-          columns={columns}
-          pageSize={10}
-          rowsPerPageOptions={[10, 25, 50]}
-          disableSelectionOnClick
-          density="compact"
-          rowHeight={34}
-          columnHeaderHeight={38}
-          onRowDoubleClick={onRowDoubleClick}
-          sx={{
-            background: '#fff',
-            borderRadius: 2,
-            '& .MuiDataGrid-columnHeaders': {
-              position: 'sticky',
-              top: 0,
-              backgroundColor: 'background.paper',
-              zIndex: 1,
-            },
-            '& .MuiDataGrid-row:hover': { backgroundColor: 'rgba(25, 118, 210, 0.08)' },
-            '& .MuiDataGrid-row:nth-of-type(odd)': { backgroundColor: '#f9fafb' },
-            '& .MuiDataGrid-cell': { fontSize: 13, py: 0.25 },
-            '& .MuiDataGrid-columnHeadersInner': { fontSize: 12, fontWeight: 700 },
-            '& .MuiDataGrid-root': {
-              overflowX: 'auto',
-            },
-          }}
-        />
+        )}
+
+        {mode === 'arsenals' && rows.length === 0 ? (
+          <EmptyState message="No arsenals loaded yet." />
+        ) : (
+          <DataGrid
+            autoHeight
+            rows={rows}
+            columns={columns}
+            pageSize={mode === 'arsenals' ? 25 : 10}
+            rowsPerPageOptions={mode === 'arsenals' ? [25, 50, 100] : [10, 25, 50]}
+            disableSelectionOnClick
+            density="compact"
+            rowHeight={34}
+            columnHeaderHeight={38}
+            onRowDoubleClick={handleRowDouble}
+            sx={{
+              background: '#fff',
+              borderRadius: 2,
+              '& .MuiDataGrid-columnHeaders': {
+                position: 'sticky',
+                top: 0,
+                backgroundColor: 'background.paper',
+                zIndex: 1,
+              },
+              '& .MuiDataGrid-row:hover': { backgroundColor: 'rgba(25, 118, 210, 0.08)' },
+              '& .MuiDataGrid-row:nth-of-type(odd)': { backgroundColor: '#f9fafb' },
+              '& .MuiDataGrid-cell': { fontSize: 13, py: 0.25 },
+              '& .MuiDataGrid-columnHeadersInner': { fontSize: 12, fontWeight: 700 },
+              '& .MuiDataGrid-root': { overflowX: 'auto' },
+            }}
+          />
+        )}
       </CardContent>
     </Card>
   );
