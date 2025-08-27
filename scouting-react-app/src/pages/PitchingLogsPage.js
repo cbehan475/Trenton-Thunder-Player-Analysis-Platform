@@ -171,6 +171,8 @@ export default function PitchingLogsPage() {
   const [inning, setInning] = useState('All');
   const [pitcherOptions, setPitcherOptions] = useState([]);
   const [inningOptions, setInningOptions] = useState(['All']);
+  const [compact, setCompact] = useState(false);
+  const [showExt, setShowExt] = useState(false);
 
   // Seed date → rows map on mount using existing modules
   useEffect(() => {
@@ -271,12 +273,11 @@ export default function PitchingLogsPage() {
     return groups;
   }, [rawRows]);
 
-  // Expanded state per group
+  // Expanded state per group (collapsed by default)
   const [openIds, setOpenIds] = useState(() => new Set());
   useEffect(() => {
-    // Expand all by default when filters change
-    const all = new Set(abGroups.map(g => g.id));
-    setOpenIds(all);
+    // Collapse all on filter change (default collapsed)
+    setOpenIds(new Set());
   }, [dateStr, pitcher, inning]);
   const toggleGroup = (id) => setOpenIds(prev => {
     const n = new Set(prev);
@@ -317,28 +318,62 @@ export default function PitchingLogsPage() {
   // Sidebar summary (filtered rows only)
   const sidebar = useMemo(() => {
     const counts = new Map();
-    const velos = new Map();
+    const veloList = new Map();
+    let strikes = 0; // all strikes
+    let swings = 0; let whiffs = 0;
+    let firstPitches = 0; let firstPitchStrikes = 0;
+    let hardHits = 0; let anyEV = false;
+
+    // helper to classify result strings
+    const isStrike = (res) => {
+      const s = String(res || '').toLowerCase();
+      return s.includes('strike') || s.includes('foul');
+    };
+    const isSwing = (res) => String(res || '').toLowerCase().includes('swing');
+    const isWhiff = (res) => {
+      const s = String(res || '').toLowerCase();
+      return s.includes('swinging strike') || s.includes('whiff');
+    };
+
+    // per type aggregation
     for (const r of rawRows) {
       const t = r.type ?? r.pitchType ?? r.pitch ?? '—';
       counts.set(t, (counts.get(t) || 0) + 1);
       if (Number.isFinite(r.velo)) {
-        if (!velos.has(t)) velos.set(t, []);
-        velos.get(t).push(r.velo);
+        if (!veloList.has(t)) veloList.set(t, []);
+        veloList.get(t).push(r.velo);
       }
+      if (isStrike(r.result)) strikes++;
+      if (isSwing(r.result)) swings++;
+      if (isWhiff(r.result)) whiffs++;
+      if (Number.isFinite(r.ev)) { anyEV = true; if (r.ev >= 95) hardHits++; }
     }
+
+    // first-pitch strike from AB groups
+    for (const g of abGroups) {
+      if (!g.rows.length) continue;
+      firstPitches++;
+      if (isStrike(g.rows[0].result)) firstPitchStrikes++;
+    }
+
     const entries = Array.from(counts.entries()).sort((a,b)=>{
       const af = pitchFamily(a[0]) === 'fastball' ? 0 : 1;
       const bf = pitchFamily(b[0]) === 'fastball' ? 0 : 1;
       if (af !== bf) return af - bf;
       return b[1] - a[1];
     }).map(([t, c]) => {
-      const v = velos.get(t) || [];
+      const v = veloList.get(t) || [];
       const avg = v.length ? (v.reduce((s,n)=>s+n,0)/v.length) : null;
-      return { t, c, avg };
+      const max = v.length ? Math.max(...v) : null;
+      return { t, c, avg, max };
     });
     const total = rawRows.length;
-    return { entries, total };
-  }, [rawRows]);
+    const strikePct = total ? (strikes / total) : 0;
+    const whiffPct = swings ? (whiffs / swings) : 0;
+    const fpsPct = firstPitches ? (firstPitchStrikes / firstPitches) : 0;
+
+    return { entries, total, strikePct, whiffPct, fpsPct, hardHits: anyEV ? hardHits : null };
+  }, [rawRows, abGroups]);
 
   return (
     <div className="pagePitchingLogs">
@@ -381,6 +416,12 @@ export default function PitchingLogsPage() {
             formSx={{ minWidth: 140 }}
           />
         </div>
+
+        <div className="field" style={{ marginLeft: 'auto', display:'flex', gap:12, alignItems:'center' }}>
+          <label className="gold" style={{ margin:0 }}>View</label>
+          <label className="toggle"><input type="checkbox" checked={compact} onChange={(e)=>setCompact(e.target.checked)} /> Compact</label>
+          <label className="toggle"><input type="checkbox" checked={showExt} onChange={(e)=>setShowExt(e.target.checked)} /> Show Ext</label>
+        </div>
       </div>
 
       <div className="plogs-context">
@@ -403,14 +444,14 @@ export default function PitchingLogsPage() {
             const last = g.rows[g.rows.length - 1];
             const outcome = last?.result || '—';
             const pitches = g.rows.length;
-            const header = `Inning ${g.inning} • ${g.batter}`;
+            const header = `Inning ${g.inning} – `;
             const open = openIds.has(g.id);
             return (
-              <div key={g.id} className={`ab-group ${open ? 'open' : 'closed'}`}>
+              <div key={g.id} className={`ab-group ${open ? 'open' : 'closed'} ${compact ? 'compact' : ''}`}>
                 <div className="ab-header" onClick={()=>toggleGroup(g.id)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter' || e.key===' ') toggleGroup(g.id); }}>
                   <div className="ab-left">
                     <span className="caret">{open ? '▾' : '▸'}</span>
-                    <span className="ab-title">{header}</span>
+                    <span className="ab-title">{header}<span className="batter-dim">{g.batter}</span> <span className="result-bold">({outcome})</span></span>
                   </div>
                   <div className="ab-right">
                     <span className="ab-summary">{pitches} pitches • Result: {outcome}</span>
@@ -420,12 +461,12 @@ export default function PitchingLogsPage() {
                 {open && (
                   <div className="ab-body">
                     <div className="ab-table">
-                      <div className="ab-row ab-head">
+                      <div className={`ab-row ab-head ${showExt ? 'with-ext' : 'no-ext'}`}>
                         <div className="col col-idx">#</div>
                         <div className="col col-type">Type</div>
                         <div className="col col-num">Velo</div>
                         <div className="col col-num">Spin</div>
-                        <div className="col col-num">Ext</div>
+                        {showExt && <div className="col col-num">Ext</div>}
                         <div className="col col-num">IVB</div>
                         <div className="col col-num">HB</div>
                         <div className="col col-res">Result</div>
@@ -453,7 +494,7 @@ export default function PitchingLogsPage() {
                         }
                         const tipContent = parts.join('\n\n');
                         return (
-                          <div key={r.id || i} className={`ab-row ${i % 2 ? 'odd' : 'even'}`}>
+                          <div key={r.id || i} className={`ab-row ${i % 2 ? 'odd' : 'even'} ${showExt ? 'with-ext' : 'no-ext'}`}>
                             <div className="col col-idx">{r.pitchIndex}</div>
                             <div className="col col-type">
                               <Tooltip content={r.type}>
@@ -465,11 +506,11 @@ export default function PitchingLogsPage() {
                             </div>
                             <div className="col col-num">{Number.isFinite(r.velo) ? r.velo.toFixed(1) : '—'}</div>
                             <div className="col col-num">{Number.isFinite(r.spin) ? Math.round(r.spin) : '—'}</div>
-                            <div className="col col-num">{Number.isFinite(r.ext) ? r.ext.toFixed(1) : '—'}</div>
+                            {showExt && <div className="col col-num">{Number.isFinite(r.ext) ? r.ext.toFixed(1) : '—'}</div>}
                             <div className="col col-num">{Number.isFinite(r.ivb) ? r.ivb.toFixed(1) : '—'}</div>
                             <div className="col col-num">{Number.isFinite(r.hb) ? r.hb.toFixed(1) : '—'}</div>
                             <div className="col col-res">
-                              <span title={r.result || ''} className="truncate">{r.result || '—'}</span>
+                              <span title={r.result || ''} className="truncate result-bold">{r.result || '—'}</span>
                               {FEATURE_BENCHMARK_BADGES && tipContent && (
                                 <Tooltip content={tipContent}><span className="bench-note"> {benchText}</span></Tooltip>
                               )}
@@ -489,6 +530,12 @@ export default function PitchingLogsPage() {
           <div className="gs-title">Game Summary</div>
           <div className="gs-sub">Filters: {pitcher || '—'} • {dateStr || '—'} • {inning && inning !== 'All' ? `Inning ${inning}` : 'All'}</div>
           <div className="gs-total">Total Pitches: <strong>{sidebar.total}</strong></div>
+          <div className="gs-metrics">
+            <div className="gs-metric"><span>Strike %</span><strong>{(sidebar.strikePct*100).toFixed(1)}%</strong></div>
+            <div className="gs-metric"><span>Whiff %</span><strong>{(sidebar.whiffPct*100).toFixed(1)}%</strong></div>
+            <div className="gs-metric"><span>1st-Pitch Strike %</span><strong>{(sidebar.fpsPct*100).toFixed(1)}%</strong></div>
+            {sidebar.hardHits != null && (<div className="gs-metric"><span>Hard-hit (95+)</span><strong>{sidebar.hardHits}</strong></div>)}
+          </div>
           <div className="gs-list">
             {sidebar.entries.map((e) => {
               const fam = pitchFamily(e.t);
@@ -496,7 +543,7 @@ export default function PitchingLogsPage() {
                 <div key={e.t} className="gs-item">
                   <span className="chip" style={chipStyle(fam)} title={e.t}>{pitchShort(e.t)}</span>
                   <span className="gs-count">{e.c}</span>
-                  <span className="gs-avg">{Number.isFinite(e.avg) ? `${e.avg.toFixed(1)} mph` : '—'}</span>
+                  <span className="gs-avg">{Number.isFinite(e.avg) ? `${e.avg.toFixed(1)} avg / ${Number.isFinite(e.max)?e.max.toFixed(1):'—'} max` : '—'}</span>
                 </div>
               );
             })}

@@ -112,13 +112,20 @@
 .ab-body { padding:8px 10px 10px; }
 .ab-table { width:100%; border-collapse: collapse; }
 .ab-row { display:grid; grid-template-columns: 56px 120px repeat(5, 1fr) minmax(160px, 2fr); gap: 6px; align-items:center; padding:8px 6px; }
+.ab-row.with-ext { grid-template-columns: 56px 120px 1fr 1fr 1fr 1fr 1fr minmax(160px, 2fr); }
+.ab-row.no-ext { grid-template-columns: 56px 120px 1fr 1fr 1fr 1fr minmax(160px, 2fr); }
 .ab-row.odd { background: rgba(255,255,255,.03); }
 .ab-row.ab-head { font-weight:700; font-size:12px; color:#e5e7eb; opacity:.9; background: rgba(20,22,34,.6); border-radius:8px; }
 .ab-row .col-idx { text-align:center; color:#cbd5e1; font-weight:700; }
 .ab-row .col-type { display:flex; align-items:center; }
 .ab-row .col-num { text-align:right; font-variant-numeric: tabular-nums; }
+.ab-row .col-num + .col-num { border-left: 1px solid rgba(255,255,255,.08); padding-left: 10px; }
 .ab-row .col-res .bench-note { margin-left:8px; font-size:11px; opacity:.9; }
+.ab-row:not(.ab-head):hover { background: rgba(51, 122, 255, 0.10); }
 .truncate { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block; max-width:100%; }
+
+.result-bold { font-weight:800; color:#ffffff; }
+.batter-dim { color:#cbd5e1; font-weight:600; }
 
 .chip { display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:3px 8px; font-size:12px; font-weight:700; border:1px solid rgba(255,255,255,.15); }
 .chip .dot { display:inline-block; }
@@ -128,6 +135,10 @@
 .gameSummary .gs-title { font-weight:800; color:#F5B301; margin-bottom:4px; }
 .gameSummary .gs-sub { font-size:12px; color:#cbd5e1; margin-bottom:8px; }
 .gameSummary .gs-total { font-size:14px; color:#e5e7eb; margin-bottom:8px; }
+.gameSummary .gs-metrics { display:grid; grid-template-columns: 1fr 1fr; gap:8px 12px; margin-bottom:8px; }
+.gameSummary .gs-metric { display:flex; justify-content:space-between; align-items:center; background: rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:8px; padding:6px 8px; font-size:13px; color:#e5e7eb; }
+.gameSummary .gs-metric span { opacity:.85; }
+.gameSummary .gs-metric strong { font-weight:800; color:#fff; }
 .gameSummary .gs-list { display:flex; flex-direction:column; gap:8px; }
 .gameSummary .gs-item { display:grid; grid-template-columns: 1fr 40px 1fr; gap:8px; align-items:center; }
 .gameSummary .gs-count { text-align:right; font-weight:700; color:#e5e7eb; }
@@ -137,3 +148,11 @@
   .plogs-layout { grid-template-columns: 1fr; }
   .gameSummary { position: static; }
 }
+
+/* Compact view reduces spacing & font sizes */
+.ab-group.compact .ab-header { padding:8px 10px; }
+.ab-group.compact .ab-title { font-size:14px; }
+.ab-group.compact .ab-summary { font-size:11px; }
+.ab-group.compact .ab-row { padding:5px 6px; gap:4px; }
+.ab-group.compact .ab-row.ab-head { font-size:11px; }
+.ab-group.compact .chip { padding:2px 6px; font-size:11px; }
