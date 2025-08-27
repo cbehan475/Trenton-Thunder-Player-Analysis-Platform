@@ -1,0 +1,7 @@
+[
+  {"playerId":"808844","name":"Jude Abbadessa","bt":"R/R","pitches":["FF","SL","CH"],"status":"VERIFIED","statusNote":""},
+  {"playerId":"806426","name":"Jarrette Bonet","bt":"R/R","pitches":["FF","CT","SL","CH"],"status":"VERIFY","statusNote":"CT vs SL usage"},
+  {"playerId":"?","name":"Noah Edders","bt":"R/R","pitches":["FF","CH","SI","CB"],"status":"NEEDS REVIEW","statusNote":"CB or SL?"},
+  {"playerId":"701809","name":"Andrew Ronne","bt":"R/R","pitches":["FF","SL","CT"],"status":"VERIFY","statusNote":"CT present in logs"},
+  {"playerId":"828137","name":"Miguel Sime","bt":"R/R","pitches":["FF","SL"],"status":"VERIFIED","statusNote":""}
+]

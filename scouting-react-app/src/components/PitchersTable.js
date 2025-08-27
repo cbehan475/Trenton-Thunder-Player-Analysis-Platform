@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
-import { FormControl, InputLabel, Select, MenuItem, Box, Card, CardContent, Tooltip, Button, Menu } from '@mui/material';
+import { FormControl, InputLabel, Select, MenuItem, Box, Card, CardContent, Tooltip, Button, Menu, Chip } from '@mui/material';
 
 export function PitcherDropdown({ pitchersData, selectedPitcher, onPitcherChange }) {
   const pitcherNames = Object.keys(pitchersData || {});
@@ -89,12 +89,123 @@ export function InningDropdown({ pitchersData, selectedPitcher, selectedInning, 
   );
 }
 
-export default function PitchersTable({ pitchersData, selectedPitcher, selectedInning, onPitcherChange, onInningChange, onRowDoubleClick }) {
+export default function PitchersTable({
+  // logs mode props
+  pitchersData,
+  selectedPitcher,
+  selectedInning,
+  onPitcherChange,
+  onInningChange,
+  onRowDoubleClick,
+  // arsenals mode props
+  mode = 'logs',
+  arsenals,
+}) {
   const [anchorEl, setAnchorEl] = useState(null);
   const menuOpen = Boolean(anchorEl);
   const handleMenuOpen = (e) => setAnchorEl(e.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
 
+  // --- Arsenals (compact) mode ---
+  if (mode === 'arsenals') {
+    const rows = useMemo(() => {
+      const arr = Array.isArray(arsenals) ? arsenals : [];
+      return arr.map((r, idx) => ({
+        id: r.playerId || r.name || idx + 1,
+        playerId: r.playerId,
+        name: r.name,
+        bt: r.bt,
+        pitches: Array.isArray(r.pitches) ? r.pitches : [],
+        status: r.status,
+        statusNote: r.statusNote,
+      }));
+    }, [arsenals]);
+
+    const columns = [
+      { field: 'name', headerName: 'Name', flex: 1.2, minWidth: 160, sortable: true },
+      { field: 'bt', headerName: 'B/T', width: 84, align: 'right', headerAlign: 'right', sortable: true },
+      {
+        field: 'pitches', headerName: 'Pitches', flex: 1, minWidth: 160, align: 'right', headerAlign: 'right', sortable: false,
+        renderCell: (params) => {
+          const list = Array.isArray(params.value) ? params.value : [];
+          // normalize to MLB short codes and merge duplicates (view-only)
+          const codes = [];
+          const seen = new Set();
+          for (const p of list) {
+            const { code, full } = normalizePitchLabel(p);
+            if (!seen.has(code)) {
+              seen.add(code);
+              codes.push({ code, full });
+            }
+          }
+          return (
+            <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end', width: '100%' }}>
+              {codes.map(({ code, full }) => (
+                <Tooltip key={code} title={full} arrow>
+                  <Chip label={code} size="small" sx={{ fontWeight: 700, height: 22 }} />
+                </Tooltip>
+              ))}
+            </Box>
+          );
+        }
+      },
+      {
+        field: 'tags', headerName: 'Tags', width: 160, align: 'right', headerAlign: 'right', sortable: false,
+        valueGetter: (params) => ({ status: params.row.status, note: params.row.statusNote }),
+        renderCell: (params) => {
+          const s = params.value?.status;
+          const note = params.value?.note;
+          if (!s) return <span style={{ color: '#9ca3af' }}>—</span>;
+          const map = {
+            VERIFIED: { bg: 'rgba(16,185,129,0.15)', color: '#059669', border: '1px solid rgba(5,150,105,0.35)' },
+            VERIFY: { bg: 'rgba(245,158,11,0.15)', color: '#B45309', border: '1px solid rgba(180,83,9,0.35)' },
+            'NEEDS REVIEW': { bg: 'rgba(239,68,68,0.15)', color: '#DC2626', border: '1px solid rgba(220,38,38,0.35)' },
+          };
+          const style = map[s] || { bg: '#f3f4f6', color: '#6b7280', border: '1px solid rgba(0,0,0,0.08)' };
+          const label = note && s !== 'VERIFIED' ? `${s} — ${note}` : s;
+          return (
+            <Chip label={label} size="small" sx={{
+              height: 22,
+              bgcolor: style.bg,
+              color: style.color,
+              border: style.border,
+              fontWeight: 700,
+            }} />
+          );
+        }
+      },
+    ];
+
+    return (
+      <Card elevation={3} sx={{ mb: 4, borderRadius: 3 }}>
+        <CardContent>
+          <DataGrid
+            autoHeight
+            rows={rows}
+            columns={columns}
+            pageSize={25}
+            rowsPerPageOptions={[25, 50, 100]}
+            disableSelectionOnClick
+            density="compact"
+            rowHeight={34}
+            columnHeaderHeight={38}
+            onRowDoubleClick={onRowDoubleClick}
+            sx={{
+              background: '#fff',
+              borderRadius: 2,
+              '& .MuiDataGrid-row:hover': { backgroundColor: 'rgba(25, 118, 210, 0.08)' },
+              '& .MuiDataGrid-row:nth-of-type(odd)': { backgroundColor: '#f9fafb' },
+              '& .MuiDataGrid-cell': { fontSize: 13, py: 0.25 },
+              '& .MuiDataGrid-columnHeadersInner': { fontSize: 12, fontWeight: 700 },
+              '& .MuiDataGrid-root': { overflowX: 'auto' },
+            }}
+          />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // --- Default: logs mode ---
   const rows = useMemo(() => {
     if (!selectedPitcher || !selectedInning || !pitchersData[selectedPitcher] || !pitchersData[selectedPitcher][selectedInning]) return [];
     return pitchersData[selectedPitcher][selectedInning].map((pitch, idx) => ({
