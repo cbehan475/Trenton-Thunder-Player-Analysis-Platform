@@ -220,7 +220,7 @@ export default function PitchingMLBBenchmarks() {
         {/* Header */}
         <div style={styles.headerRow}>
           <div>
-            <h1 style={styles.title}>MLB Benchmarks</h1>
+            <h1 style={styles.title}>Pitcher MLB Benchmarks</h1>
             <div style={styles.sub}>Reference ranges for MLB pitch traits (velo, IVB, HB, command).</div>
             <div style={styles.meta}>
               Benchmarks: {selectedLevel} season ranges
@@ -238,16 +238,23 @@ export default function PitchingMLBBenchmarks() {
               value={selectedLevel}
               onChange={(e)=>setSelectedLevel(e.target.value)}
               options={levelOptions.map(lvl => ({ label: lvl, value: lvl }))}
-              label=""
+              label="Level"
+              id="pitching-level-select"
+              labelId="pitching-level-select-label"
               formSx={{ minWidth: 120 }}
             />
-            <span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 10 }}>Compare Pitcher:</span>
             <AppSelect
               value={selectedPitcherId}
               onChange={(e)=>setSelectedPitcherId(e.target.value)}
-              options={[{ label: 'None', value: '' }, ...pitcherOptions]}
-              label=""
-              formSx={{ minWidth: 200 }}
+              options={pitcherOptions}
+              label="Select Pitcher"
+              displayEmpty
+              renderValue={(val) => (val ? (pitcherOptions.find(p=>p.value===val)?.label || '') : 'Select Pitcher')}
+              clearable
+              onClear={() => setSelectedPitcherId('')}
+              id="select-pitcher"
+              labelId="select-pitcher-label"
+              formSx={{ minWidth: 240 }}
             />
             {DEV_TOOLS && (
               <button
