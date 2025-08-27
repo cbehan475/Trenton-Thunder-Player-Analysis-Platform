@@ -28,8 +28,8 @@ function normalizePitchLabel(input) {
   const lower = raw.toLowerCase();
   // Common aliases
   const map = [
-    { codes: ['ff', 'four-seam', 'four seam', 'fourseam', '4-seam', '4 seam', 'fastball', 'fb'], code: 'FF', full: 'Four-Seam' },
-    { codes: ['si', 'sinker', 'two-seam', 'two seam', '2-seam', '2 seam', 'two-seamer', '2seam', 'two seam fastball', 'ft'], code: 'SI', full: 'Sinker' },
+    { codes: ['ff', 'four-seam', 'four seam', 'fourseam', '4-seam', '4 seam', 'fastball', 'fb'], code: 'FF', full: 'Four-Seam Fastball' },
+    { codes: ['si', 'sinker', 'two-seam', 'two seam', '2-seam', '2 seam', 'two-seamer', '2seam', 'two seam fastball', 'ft'], code: 'SI', full: 'Sinker (Two-Seam)' },
     { codes: ['ct', 'cutter', 'cut'], code: 'CT', full: 'Cutter' },
     { codes: ['sl', 'slider'], code: 'SL', full: 'Slider' },
     { codes: ['sw', 'sweeper', 'sl-sweeper', 'sl sweeper', 'sweeping slider'], code: 'SW', full: 'Sweeper' },
@@ -65,6 +65,19 @@ function normalizePitchLabel(input) {
   if (key.startsWith('spl') || key.startsWith('fs')) return { code: 'SPL', full: 'Splitter' };
   return { code: 'OTH', full: raw };
 }
+
+// Expanded labels for tooltips
+const FULL_LABELS = {
+  FF: 'Four-Seam Fastball',
+  SI: 'Sinker (Two-Seam)',
+  CT: 'Cutter',
+  SL: 'Slider',
+  SW: 'Sweeper',
+  CB: 'Curveball',
+  CH: 'Changeup',
+  SPL: 'Splitter',
+  OTH: 'Other',
+};
 
 // Minimal empty state component (requested for no-data rendering)
 function EmptyState({ message }) {
@@ -147,12 +160,14 @@ export default function PitchersTable({
   const columns = useMemo(() => {
     if (mode === 'arsenals') {
       return [
-        { field: 'name', headerName: 'Name', flex: 1.2, minWidth: 160, sortable: true },
-        { field: 'bt', headerName: 'B/T', width: 84, align: 'right', headerAlign: 'right', sortable: true },
+        { field: 'name', headerName: 'Name', flex: 1.2, minWidth: 160, sortable: true,
+          valueGetter: (params) => params?.row?.name ?? '—' },
+        { field: 'bt', headerName: 'B/T', width: 84, align: 'right', headerAlign: 'right', sortable: true,
+          valueGetter: (params) => params?.row?.bt ?? '—' },
         {
           field: 'pitches', headerName: 'Pitches', flex: 1, minWidth: 160, align: 'right', headerAlign: 'right', sortable: false,
           renderCell: (params) => {
-            const list = Array.isArray(params.value) ? params.value : [];
+            const list = Array.isArray(params?.row?.pitches) ? params.row.pitches : [];
             const codes = [];
             const seen = new Set();
             for (const p of list) {
@@ -162,7 +177,7 @@ export default function PitchersTable({
             return (
               <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end', width: '100%' }}>
                 {codes.map(({ code, full }) => (
-                  <Tooltip key={code} title={full} arrow>
+                  <Tooltip key={code} title={FULL_LABELS[code] ?? full ?? code} arrow>
                     <Chip label={code} size="small" sx={{ fontWeight: 700, height: 22 }} />
                   </Tooltip>
                 ))}
@@ -171,11 +186,10 @@ export default function PitchersTable({
           }
         },
         {
-          field: 'tags', headerName: 'Tags', width: 160, align: 'right', headerAlign: 'right', sortable: false,
-          valueGetter: (params) => ({ status: params.row.status, note: params.row.statusNote }),
+          field: 'status', headerName: 'Tags', width: 160, align: 'right', headerAlign: 'right', sortable: false,
           renderCell: (params) => {
-            const s = params.value?.status;
-            const note = params.value?.note;
+            const s = params?.row?.status;
+            const note = params?.row?.statusNote;
             if (!s) return <span style={{ color: '#9ca3af' }}>—</span>;
             const map = {
               VERIFIED: { bg: 'rgba(16,185,129,0.15)', color: '#059669', border: '1px solid rgba(5,150,105,0.35)' },
@@ -196,9 +210,9 @@ export default function PitchersTable({
       {
         field: 'type', headerName: 'Type', width: 90, sortable: true,
         renderCell: (params) => {
-          const { code, full } = normalizePitchLabel(params.value);
+          const { code, full } = normalizePitchLabel(params?.value);
           return (
-            <Tooltip title={full} arrow>
+            <Tooltip title={FULL_LABELS[code] ?? full ?? code} arrow>
               <span style={{ fontWeight: 700 }}>{code}</span>
             </Tooltip>
           );
@@ -243,6 +257,7 @@ export default function PitchersTable({
           <DataGrid
             autoHeight
             rows={rows}
+            getRowId={(row) => row?.playerId ?? row?.id ?? `${row?.name ?? 'row'}-${row?.bt ?? 'bt'}`}
             columns={columns}
             pageSize={mode === 'arsenals' ? 25 : 10}
             rowsPerPageOptions={mode === 'arsenals' ? [25, 50, 100] : [10, 25, 50]}

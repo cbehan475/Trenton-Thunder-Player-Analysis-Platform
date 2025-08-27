@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { Box, Container, Button, Dialog, DialogTitle, DialogContent, DialogActions, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import PitchersTable from '../components/PitchersTable';
@@ -10,11 +10,12 @@ export default function ArsenalsPage() {
 
   const arsenals = useMemo(() => Array.isArray(dataFirstHalf) ? dataFirstHalf : [], []);
 
-  const handleRowDoubleClick = (paramsOrRow) => {
-    const row = paramsOrRow?.row || paramsOrRow; // support either signature
-    if (!row?.playerId) return;
-    navigate(`/pitching/reports?pid=${encodeURIComponent(row.playerId)}`);
-  };
+  const handleRowDoubleClick = useCallback((paramsOrRow) => {
+    const row = paramsOrRow?.row ?? paramsOrRow; // support either signature
+    const pid = row?.playerId;
+    if (!pid) return;
+    navigate(`/pitching/reports?pid=${encodeURIComponent(pid)}`);
+  }, [navigate]);
 
   const navy = '#0B1220';
   const gold = '#FFB300';
