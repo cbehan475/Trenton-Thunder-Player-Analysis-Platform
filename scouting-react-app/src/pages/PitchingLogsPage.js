@@ -375,7 +375,14 @@ export default function PitchingLogsPage() {
     for (const r of rawRows) {
       const rawT = r.type ?? r.pitchType ?? r.pitch ?? '—';
       const mapped = useVerified ? mapPitchLabel(rawT, selectedPitcherId, arsenalMap) : { code: rawT, inArsenal: true };
-      const t = mapped.code;
+      let t = mapped.code;
+      // If using verified labels, prefer constrained classifier suggestion for roll-up
+      if (useVerified && selectedPitcherId) {
+        const allowed = arsenalMap[selectedPitcherId]?.allowed || null;
+        const suggestedRaw = classifyPitch({ velo: r.velo, ivb: r.ivb, hb: r.hb, spin: r.spin, fbVeloAvg });
+        const suggested = allowed && suggestedRaw && allowed.has(suggestedRaw) ? suggestedRaw : null;
+        if (suggested) t = suggested;
+      }
       counts.set(t, (counts.get(t) || 0) + 1);
       if (Number.isFinite(r.velo)) {
         if (!veloList.has(t)) veloList.set(t, []);
@@ -561,6 +568,11 @@ export default function PitchingLogsPage() {
                         const suggestedRaw = classifyPitch({ velo: r.velo, ivb: r.ivb, hb: r.hb, spin: r.spin, fbVeloAvg });
                         const suggested = allowed && suggestedRaw && allowed.has(suggestedRaw) ? suggestedRaw : null;
                         const disagree = suggested != null && suggested !== short;
+                        // CH shape guard: when label is CH but shape gates fail, flag subtle dot (still in arsenal)
+                        const chShapeOff = useVerified && short === 'CH' && (
+                          !(Number.isFinite(fbVeloAvg) && Number.isFinite(r.velo) && (fbVeloAvg - r.velo >= 8) &&
+                            Number.isFinite(r.hb) && r.hb >= 12 && Number.isFinite(r.ivb) && r.ivb >= 4 && r.ivb <= 14)
+                        );
                         const agg = seasonAggByType.get(r.type);
                         const b = getBench(BENCH_LEVEL, r.type);
                         const dv = b?.p50Velo != null && Number.isFinite(agg?.veloAvg) ? delta(agg.veloAvg, b.p50Velo) : null;
@@ -588,8 +600,8 @@ export default function PitchingLogsPage() {
                                 <span className="chip" style={{ ...chipStyle(fam), position:'relative' }}>
                                   <span className="dot" style={{ width:8, height:8, borderRadius:999, background: chipStyle(fam).color, opacity:.9 }} />
                                   {short}
-                                  {useVerified && mapped.inArsenal === false && (
-                                    <Tooltip content="Not in verified arsenal">
+                                  {useVerified && (mapped.inArsenal === false || chShapeOff) && (
+                                    <Tooltip content={mapped.inArsenal === false ? 'Not in verified arsenal' : 'Not in verified shape'}>
                                       <span style={{ position:'absolute', top:-3, right:-3, width:8, height:8, borderRadius:999, background:'#f59e0b', border:'1px solid rgba(0,0,0,.4)' }} />
                                     </Tooltip>
                                   )}

@@ -32,7 +32,9 @@ export function classifyPitch({ velo, ivb, hb, spin, fbVeloAvg }) {
 
   // Offspeed (require fbVeloAvg)
   if (fv != null && v != null && fv - v >= 8) {
-    if (h != null && i != null && h >= 12 && i >= 8 && i <= 14) return 'CH';
+    // Changeup: stronger gates for verified shape
+    if (h != null && i != null && h >= 12 && i >= 4 && i <= 14) return 'CH';
+    // Splitter
     if (i != null && i < 8) return 'SPL';
   }
 
