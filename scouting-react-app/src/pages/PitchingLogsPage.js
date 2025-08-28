@@ -5,7 +5,9 @@ import AppSelect from '../components/ui/AppSelect.jsx';
 import { getBench, delta, BENCH_LEVEL, FEATURE_BENCHMARK_BADGES } from '../lib/benchmarks.js';
 import dataFirstHalf from '../data/arsenals/firstHalf.json';
 import { buildArsenalMap } from '../lib/arsenalMap.js';
-import { mapPitchLabel } from '../lib/pitchLabel.js';
+import { mapPitchLabel, normalizePitchLabel } from '../lib/pitchLabel.js';
+import { classifyPitch } from '../lib/pitchHeuristics.js';
+import { updateOuting } from '../lib/reviewCache.js';
 import pitching2025_06_04 from '../data/logs/pitching-2025-06-04.js';
 import pitching2025_06_05 from '../data/logs/pitching-2025-06-05.js';
 import pitching2025_06_06 from '../data/logs/pitching-2025-06-06.js';
@@ -261,6 +263,18 @@ export default function PitchingLogsPage() {
   }, [arsenalRows]);
   const selectedPitcherId = useMemo(() => nameToPid.get(pitcher) || null, [nameToPid, pitcher]);
 
+  // Compute FF velo avg independent of toggle using normalized raw labels
+  const fbVeloAvg = useMemo(() => {
+    const vels = [];
+    for (const r of rawRows) {
+      const rawT = r.type ?? r.pitchType ?? r.pitch ?? '—';
+      const code = normalizePitchLabel(rawT).code;
+      if (code === 'FF' && Number.isFinite(r.velo)) vels.push(r.velo);
+    }
+    if (!vels.length) return null;
+    return vels.reduce((a,b)=>a+b,0)/vels.length;
+  }, [rawRows]);
+
   // Group by consecutive batter within inning (At-Bat groups)
   const abGroups = useMemo(() => {
     const groups = [];
@@ -395,6 +409,45 @@ export default function PitchingLogsPage() {
     return { entries, total, strikePct, whiffPct, fpsPct, hardHits: anyEV ? hardHits : null };
   }, [rawRows, abGroups, useVerified, selectedPitcherId, arsenalMap]);
 
+  // Outing-level review telemetry (disagreement metrics)
+  const outingReview = useMemo(() => {
+    const total = rawRows.length;
+    if (!total || !selectedPitcherId) return null;
+    let disagreeCount = 0;
+    let swVsSl = 0;
+    let ctSuggest = 0;
+    const allowed = arsenalMap[selectedPitcherId]?.allowed || new Set();
+    for (const r of rawRows) {
+      const rawT = r.type ?? r.pitchType ?? r.pitch ?? '—';
+      const mappedCode = mapPitchLabel(rawT, selectedPitcherId, arsenalMap).code;
+      const suggested = classifyPitch({ velo: r.velo, ivb: r.ivb, hb: r.hb, spin: r.spin, fbVeloAvg });
+      if (suggested && suggested !== mappedCode) disagreeCount++;
+      if (mappedCode === 'SL' && suggested === 'SW') swVsSl++;
+      if (suggested === 'CT') ctSuggest++;
+    }
+    const pct = (n) => (total ? (n / total) * 100 : 0);
+    const disagreePct = pct(disagreeCount);
+    const swVsSlPct = pct(swVsSl);
+    const ctPct = pct(ctSuggest);
+
+    // Determine status suggestion and notes
+    let status = null;
+    const notes = [];
+    if (swVsSlPct >= 15) notes.push(`SW vs SL ${swVsSlPct.toFixed(0)}%`);
+    if (ctPct >= 10 && !allowed.has('CT')) notes.push(`CT present ~${ctPct.toFixed(0)}%`);
+    if (disagreePct >= 25 || (ctPct >= 10 && !allowed.has('CT'))) status = 'NEEDS REVIEW';
+    else if (disagreePct >= 10 || swVsSlPct >= 15) status = 'VERIFY';
+
+    return { total, disagreePct, swVsSlPct, ctPct, status, notes };
+  }, [rawRows, selectedPitcherId, arsenalMap, fbVeloAvg]);
+
+  // Persist to local review cache
+  useEffect(() => {
+    if (!selectedPitcherId || !dateStr || !outingReview) return;
+    const { disagreePct, notes } = outingReview;
+    updateOuting(selectedPitcherId, dateStr, Number(disagreePct.toFixed(1)), notes);
+  }, [selectedPitcherId, dateStr, outingReview]);
+
   return (
     <div className="pagePitchingLogs">
       <h1>Pitching Logs</h1>
@@ -497,6 +550,8 @@ export default function PitchingLogsPage() {
                         const mapped = useVerified ? mapPitchLabel(rawType, selectedPitcherId, arsenalMap) : { code: pitchShort(rawType), inArsenal: true };
                         const short = mapped.code;
                         const fam = useVerified ? pitchFamily(short) : pitchFamily(rawType);
+                        const suggested = classifyPitch({ velo: r.velo, ivb: r.ivb, hb: r.hb, spin: r.spin, fbVeloAvg });
+                        const disagree = suggested && suggested !== short;
                         const agg = seasonAggByType.get(r.type);
                         const b = getBench(BENCH_LEVEL, r.type);
                         const dv = b?.p50Velo != null && Number.isFinite(agg?.veloAvg) ? delta(agg.veloAvg, b.p50Velo) : null;
@@ -527,6 +582,11 @@ export default function PitchingLogsPage() {
                                   {useVerified && mapped.inArsenal === false && (
                                     <Tooltip content="Not in verified arsenal">
                                       <span style={{ position:'absolute', top:-3, right:-3, width:8, height:8, borderRadius:999, background:'#f59e0b', border:'1px solid rgba(0,0,0,.4)' }} />
+                                    </Tooltip>
+                                  )}
+                                  {disagree && (
+                                    <Tooltip content={`Metrics suggest ${suggested}`}>
+                                      <span style={{ position:'absolute', bottom:-3, right:-3, width:9, height:9, borderRadius:999, border:'2px solid #facc15', background:'transparent' }} />
                                     </Tooltip>
                                   )}
                                 </span>

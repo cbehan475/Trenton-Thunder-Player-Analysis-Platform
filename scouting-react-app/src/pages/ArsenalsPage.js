@@ -3,12 +3,43 @@ import { Box, Container, Button, Dialog, DialogTitle, DialogContent, DialogActio
 import { useNavigate } from 'react-router-dom';
 import PitchersTable from '../components/PitchersTable';
 import dataFirstHalf from '../data/arsenals/firstHalf.json';
+import { getCache, getLatestOuting } from '../lib/reviewCache.js';
 
 export default function ArsenalsPage() {
   const navigate = useNavigate();
   const [openBatchFix, setOpenBatchFix] = useState(false);
 
   const arsenals = useMemo(() => Array.isArray(dataFirstHalf) ? dataFirstHalf : [], []);
+
+  // Merge review cache telemetry into displayed status per precedence
+  const rowsForDisplay = useMemo(() => {
+    const cache = getCache();
+    const out = [];
+    for (const row of arsenals) {
+      const latest = getLatestOuting(row?.playerId);
+      let status = row?.status || null;
+      let note = row?.statusNote || '';
+      if (latest) {
+        const needs = (latest.disagreePct >= 25) || (latest.notes||[]).some(n => /^CT present/i.test(n));
+        const verify = (latest.disagreePct >= 10) || (latest.notes||[]).some(n => /SW vs SL/i.test(n));
+        if (row?.status === 'VERIFIED') {
+          if (needs) { status = 'NEEDS REVIEW'; }
+        } else if (needs) {
+          status = 'NEEDS REVIEW';
+        } else if (verify) {
+          status = 'VERIFY';
+        }
+        // Tooltip-style note: "M/D: <dominant note or 'disagree'> <pct>%"
+        const d = new Date(latest.date);
+        const md = isNaN(d) ? latest.date : `${d.getMonth()+1}/${d.getDate()}`;
+        const pct = (latest.disagreePct != null) ? `${latest.disagreePct}%` : '';
+        const hint = latest.notes && latest.notes.length ? latest.notes[0] : 'disagree';
+        note = `${md}: ${hint}${pct ? ` ${pct}` : ''}`;
+      }
+      out.push({ ...row, status, statusNote: note });
+    }
+    return out;
+  }, [arsenals]);
 
   const handleRowDoubleClick = useCallback((paramsOrRow) => {
     const row = paramsOrRow?.row ?? paramsOrRow; // support either signature
@@ -43,7 +74,7 @@ export default function ArsenalsPage() {
             No arsenals loaded yet.
           </Box>
         ) : (
-          <PitchersTable mode="arsenals" arsenals={arsenals} onRowDoubleClick={handleRowDoubleClick} />
+          <PitchersTable mode="arsenals" arsenals={rowsForDisplay} onRowDoubleClick={handleRowDoubleClick} />
         )}
       </Container>
 
