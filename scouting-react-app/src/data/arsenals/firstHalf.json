@@ -1,7 +1,408 @@
 [
-  {"playerId":"808844","name":"Jude Abbadessa","bt":"R/R","pitches":["FF","SL","CH"],"status":"VERIFIED","statusNote":""},
-  {"playerId":"806426","name":"Jarrette Bonet","bt":"R/R","pitches":["FF","CT","SL","CH"],"status":"VERIFY","statusNote":"CT vs SL usage"},
-  {"playerId":"?","name":"Noah Edders","bt":"R/R","pitches":["FF","CH","SI","CB"],"status":"NEEDS REVIEW","statusNote":"CB or SL?"},
-  {"playerId":"701809","name":"Andrew Ronne","bt":"R/R","pitches":["FF","SL","CT"],"status":"VERIFY","statusNote":"CT present in logs"},
-  {"playerId":"828137","name":"Miguel Sime","bt":"R/R","pitches":["FF","SL"],"status":"VERIFIED","statusNote":""}
+  {
+    "playerId": "808844",
+    "name": "Jude Abbadessa",
+    "bt": "?/J",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "SI",
+      "CT",
+      "CH",
+      "SW",
+      "FF"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "806426",
+    "name": "Jarrette Bonet",
+    "bt": "?/J",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "FF",
+      "SL",
+      "CH",
+      "CT",
+      "SI"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "noahedders",
+    "name": "Noah Edders",
+    "bt": "?/N",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "FF",
+      "CH",
+      "SI",
+      "CB",
+      "SL"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "seanfinn",
+    "name": "Sean Finn",
+    "bt": "?/S",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "FF",
+      "SL",
+      "CH",
+      "CB"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "821330",
+    "name": "Cullen Horowicz",
+    "bt": "?/C",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "FF",
+      "SI",
+      "SL"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "833407",
+    "name": "Clayton Johnson",
+    "bt": "?/C",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "SI",
+      "SL",
+      "CH"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "827291",
+    "name": "Gavin King",
+    "bt": "?/G",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "FF",
+      "SI",
+      "CH",
+      "SL",
+      "CB"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "822824",
+    "name": "Cooper McGrath",
+    "bt": "?/C",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "FF",
+      "SI",
+      "CT",
+      "SL"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "833400",
+    "name": "Paulo Noris",
+    "bt": "?/P",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "FF",
+      "CT",
+      "CH",
+      "SL"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "prestonprince",
+    "name": "Preston Prince",
+    "bt": "?/P",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "FF",
+      "CT",
+      "CH"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "701809",
+    "name": "Andrew Ronne",
+    "bt": "?/A",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "FF",
+      "SL",
+      "CB"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "codiscott",
+    "name": "Codi Scott",
+    "bt": "?/C",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "FF",
+      "CT",
+      "SL",
+      "CH"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "828137",
+    "name": "Miguel Sime",
+    "bt": "?/M",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "FF",
+      "SL",
+      "CH",
+      "CB"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "eddiesmink",
+    "name": "Eddie Smink",
+    "bt": "?/E",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "FF",
+      "SI",
+      "CH",
+      "CB",
+      "SL"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "cadenspivey",
+    "name": "Caden Spivey",
+    "bt": "?/C",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "FF",
+      "SI",
+      "SL",
+      "CB",
+      "CH"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "nan",
+    "name": "Joseph Ariola",
+    "bt": "?/J",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "FF",
+      "CT",
+      "CB"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "nan",
+    "name": "Chris Billingsley",
+    "bt": "?/C",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "FF",
+      "SI",
+      "CB",
+      "SL",
+      "SPL"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "nan",
+    "name": "Collin Boseley-Smith",
+    "bt": "?/C",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "FF",
+      "SL",
+      "CH"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "nan",
+    "name": "John Carver",
+    "bt": "?/J",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "FF",
+      "CH",
+      "SL",
+      "CB"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "834670",
+    "name": "Tommy Case",
+    "bt": "?/T",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "FF",
+      "CH",
+      "SL",
+      "CB"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "703657",
+    "name": "Bryson Dudley",
+    "bt": "?/B",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "FF",
+      "CB",
+      "SL",
+      "CH"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "833412",
+    "name": "Kai Fyke",
+    "bt": "?/K",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "FF",
+      "CB",
+      "CH",
+      "CT"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "702528",
+    "name": "Aidan Weaver",
+    "bt": "?/A",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "FF",
+      "CT",
+      "SL",
+      "CH"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "nan",
+    "name": "Ryan Calvert",
+    "bt": "?/R",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "FF",
+      "CB",
+      "CH",
+      "SI",
+      "CT"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "nan",
+    "name": "JJ Almeda",
+    "bt": "?/J",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "FF",
+      "CB",
+      "SL",
+      "CH"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "nan",
+    "name": "Luke Delongchamp",
+    "bt": "?/L",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "SI",
+      "CH",
+      "SL"
+    ],
+    "status": null,
+    "statusNote": null
+  },
+  {
+    "playerId": "nan",
+    "name": "Miles Garrett",
+    "bt": "?/M",
+    "team": "TRN",
+    "pos": "P",
+    "pitches": [
+      "FF",
+      "SI",
+      "SL",
+      "CH"
+    ],
+    "status": null,
+    "statusNote": null
+  }
 ]

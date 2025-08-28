@@ -351,8 +351,8 @@ export default function PitchingLogsPage() {
   const sidebar = useMemo(() => {
     const counts = new Map();
     const veloList = new Map();
-    let strikes = 0; // all strikes
-    let swings = 0; let whiffs = 0;
+    let strikes = 0; // called + fouls (treating fouls as strikes)
+    let swings = 0; let whiffs = 0; let fouls = 0; let inPlay = 0;
     let firstPitches = 0; let firstPitchStrikes = 0;
     let hardHits = 0; let anyEV = false;
 
@@ -361,10 +361,14 @@ export default function PitchingLogsPage() {
       const s = String(res || '').toLowerCase();
       return s.includes('strike') || s.includes('foul');
     };
-    const isSwing = (res) => String(res || '').toLowerCase().includes('swing');
-    const isWhiff = (res) => {
+    const isSwingingStrike = (res) => {
       const s = String(res || '').toLowerCase();
       return s.includes('swinging strike') || s.includes('whiff');
+    };
+    const isFoul = (res) => String(res || '').toLowerCase().includes('foul');
+    const isInPlay = (res) => {
+      const s = String(res || '').toLowerCase();
+      return s.includes('in play') || s.includes('put in play') || s.includes('ball in play') || s.includes('bip');
     };
 
     // per type aggregation
@@ -378,8 +382,9 @@ export default function PitchingLogsPage() {
         veloList.get(t).push(r.velo);
       }
       if (isStrike(r.result)) strikes++;
-      if (isSwing(r.result)) swings++;
-      if (isWhiff(r.result)) whiffs++;
+      if (isFoul(r.result)) { fouls++; swings++; }
+      if (isInPlay(r.result)) { inPlay++; swings++; }
+      if (isSwingingStrike(r.result)) { whiffs++; swings++; }
       if (Number.isFinite(r.ev)) { anyEV = true; if (r.ev >= 95) hardHits++; }
     }
 
@@ -402,11 +407,11 @@ export default function PitchingLogsPage() {
       return { t, c, avg, max };
     });
     const total = rawRows.length;
-    const strikePct = total ? (strikes / total) : 0;
-    const whiffPct = swings ? (whiffs / swings) : 0;
-    const fpsPct = firstPitches ? (firstPitchStrikes / firstPitches) : 0;
+    const strikePct = total ? (strikes / total) : null;
+    const whiffPct = swings ? (whiffs / swings) : null;
+    const fpsPct = firstPitches ? (firstPitchStrikes / firstPitches) : null;
 
-    return { entries, total, strikePct, whiffPct, fpsPct, hardHits: anyEV ? hardHits : null };
+    return { entries, total, strikePct, whiffPct, fpsPct, swings, firstPitches, hardHits: anyEV ? hardHits : null };
   }, [rawRows, abGroups, useVerified, selectedPitcherId, arsenalMap]);
 
   // Outing-level review telemetry (disagreement metrics)
@@ -420,10 +425,12 @@ export default function PitchingLogsPage() {
     for (const r of rawRows) {
       const rawT = r.type ?? r.pitchType ?? r.pitch ?? '—';
       const mappedCode = mapPitchLabel(rawT, selectedPitcherId, arsenalMap).code;
-      const suggested = classifyPitch({ velo: r.velo, ivb: r.ivb, hb: r.hb, spin: r.spin, fbVeloAvg });
+      const allowed = arsenalMap[selectedPitcherId]?.allowed || new Set();
+      const suggestedRaw = classifyPitch({ velo: r.velo, ivb: r.ivb, hb: r.hb, spin: r.spin, fbVeloAvg });
+      const suggested = suggestedRaw && allowed.has(suggestedRaw) ? suggestedRaw : null;
       if (suggested && suggested !== mappedCode) disagreeCount++;
       if (mappedCode === 'SL' && suggested === 'SW') swVsSl++;
-      if (suggested === 'CT') ctSuggest++;
+      if (suggestedRaw === 'CT' && !allowed.has('CT')) ctSuggest++;
     }
     const pct = (n) => (total ? (n / total) * 100 : 0);
     const disagreePct = pct(disagreeCount);
@@ -550,8 +557,10 @@ export default function PitchingLogsPage() {
                         const mapped = useVerified ? mapPitchLabel(rawType, selectedPitcherId, arsenalMap) : { code: pitchShort(rawType), inArsenal: true };
                         const short = mapped.code;
                         const fam = useVerified ? pitchFamily(short) : pitchFamily(rawType);
-                        const suggested = classifyPitch({ velo: r.velo, ivb: r.ivb, hb: r.hb, spin: r.spin, fbVeloAvg });
-                        const disagree = suggested && suggested !== short;
+                        const allowed = selectedPitcherId ? (arsenalMap[selectedPitcherId]?.allowed || null) : null;
+                        const suggestedRaw = classifyPitch({ velo: r.velo, ivb: r.ivb, hb: r.hb, spin: r.spin, fbVeloAvg });
+                        const suggested = allowed && suggestedRaw && allowed.has(suggestedRaw) ? suggestedRaw : null;
+                        const disagree = suggested != null && suggested !== short;
                         const agg = seasonAggByType.get(r.type);
                         const b = getBench(BENCH_LEVEL, r.type);
                         const dv = b?.p50Velo != null && Number.isFinite(agg?.veloAvg) ? delta(agg.veloAvg, b.p50Velo) : null;
@@ -619,9 +628,9 @@ export default function PitchingLogsPage() {
           <div className="gs-sub">Filters: {pitcher || '—'} • {dateStr || '—'} • {inning && inning !== 'All' ? `Inning ${inning}` : 'All'}</div>
           <div className="gs-total">Total Pitches: <strong>{sidebar.total}</strong></div>
           <div className="gs-metrics">
-            <div className="gs-metric"><span>Strike %</span><strong>{(sidebar.strikePct*100).toFixed(1)}%</strong></div>
-            <div className="gs-metric"><span>Whiff %</span><strong>{(sidebar.whiffPct*100).toFixed(1)}%</strong></div>
-            <div className="gs-metric"><span>1st-Pitch Strike %</span><strong>{(sidebar.fpsPct*100).toFixed(1)}%</strong></div>
+            <div className="gs-metric"><span>Strike %</span><strong>{Number.isFinite(sidebar.strikePct) ? `${(sidebar.strikePct*100).toFixed(1)}%` : '—'}</strong></div>
+            <div className="gs-metric"><span>Whiff %</span><strong>{Number.isFinite(sidebar.whiffPct) ? `${(sidebar.whiffPct*100).toFixed(1)}%` : '—'}</strong></div>
+            <div className="gs-metric"><span>1st-Pitch Strike %</span><strong>{Number.isFinite(sidebar.fpsPct) ? `${(sidebar.fpsPct*100).toFixed(1)}%` : '—'}</strong></div>
             {sidebar.hardHits != null && (<div className="gs-metric"><span>Hard-hit (95+)</span><strong>{sidebar.hardHits}</strong></div>)}
           </div>
           <div className="gs-list">
