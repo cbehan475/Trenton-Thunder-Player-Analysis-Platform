@@ -1,17 +1,36 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { Box, Container, Button, Dialog, DialogTitle, DialogContent, DialogActions, Typography, Tabs, Tab, Table, TableHead, TableRow, TableCell, TableBody, Chip, Stack, Alert } from '@mui/material';
+import { Box, Container, Button, Dialog, DialogTitle, DialogContent, DialogActions, Typography, Tabs, Tab, Table, TableHead, TableRow, TableCell, TableBody, Chip, Stack, Alert, Snackbar } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import PitchersTable from '../components/PitchersTable';
 import dataFirstHalf from '../data/arsenals/firstHalf.json';
-import proposalsData from '../data/arsenals/proposals.json';
-import overridesData from '../data/arsenals/overrides.json';
 import { getCache, getLatestOuting } from '../lib/reviewCache.js';
 
 export default function ArsenalsPage() {
   const navigate = useNavigate();
   const [openBatchFix, setOpenBatchFix] = useState(false);
+  const [arsenals, setArsenals] = useState(Array.isArray(dataFirstHalf) ? dataFirstHalf : []);
+  const [proposals, setProposals] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [snack, setSnack] = useState({ open: false, message: '', severity: 'info' });
 
-  const arsenals = useMemo(() => Array.isArray(dataFirstHalf) ? dataFirstHalf : [], []);
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [aRes, pRes] = await Promise.all([
+        fetch('/api/arsenals').then(r => r.ok ? r.json() : Promise.reject('arsenals')),
+        fetch('/api/proposals').then(r => r.ok ? r.json() : Promise.reject('proposals')),
+      ]);
+      if (Array.isArray(aRes)) setArsenals(aRes);
+      if (pRes && typeof pRes === 'object') setProposals(pRes);
+    } catch (e) {
+      // Fallback to static imports if server not running
+      setArsenals(Array.isArray(dataFirstHalf) ? dataFirstHalf : []);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => { fetchData(); }, [fetchData]);
 
   // Merge review cache telemetry into displayed status per precedence
   const rowsForDisplay = useMemo(() => {
@@ -55,34 +74,76 @@ export default function ArsenalsPage() {
 
   const [tab, setTab] = useState(0); // 0 = Arsenals, 1 = Proposals
 
-  const proposals = useMemo(() => proposalsData || {}, []);
   const proposalsRows = useMemo(() => {
-    return Object.entries(proposals).map(([playerId, p]) => ({ playerId, ...p }));
+    return Object.entries(proposals || {}).map(([playerId, p]) => ({ playerId, ...p }));
   }, [proposals]);
 
-  function downloadJson(obj, filename) {
-    const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    setTimeout(()=>URL.revokeObjectURL(url), 1000);
-  }
+  const toast = useCallback((message, severity = 'info') => setSnack({ open: true, message, severity }), []);
 
-  const handleApply = useCallback((row) => {
-    const ts = new Date();
-    const stamp = `${ts.getFullYear()}${String(ts.getMonth()+1).padStart(2,'0')}${String(ts.getDate()).padStart(2,'0')}-${String(ts.getHours()).padStart(2,'0')}${String(ts.getMinutes()).padStart(2,'0')}`;
-    const patch = { [row.playerId]: { suggested: row.suggested, notes: row.notes||[], support: row.support||{}, confidence: row.confidence } };
-    downloadJson(patch, `patch-${stamp}.json`);
-  }, []);
+  const handleApply = useCallback(async (row) => {
+    // Call API to apply
+    try {
+      const res = await fetch('/api/apply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ playerId: row.playerId, suggested: row.suggested, notes: row.notes||[], support: row.support||{}, confidence: row.confidence }) });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      // Update in-memory arsenals
+      setArsenals(prev => {
+        const map = new Map(prev.map(p => [p.playerId, p]));
+        map.set(data.row.playerId, data.row);
+        return Array.from(map.values());
+      });
+      // Remove from proposals
+      setProposals(prev => { const clone = { ...prev }; delete clone[row.playerId]; return clone; });
+      toast('Applied. firstHalf.json updated • patch saved.', 'success');
+    } catch (e) {
+      toast(`Error applying: ${String(e)}`, 'error');
+    }
+  }, [toast]);
 
-  const handleIgnore = useCallback((row) => {
-    const update = { [row.playerId]: { ...(overridesData?.[row.playerId]||{}), ignore: true } };
-    const ts = new Date();
-    const stamp = `${ts.getFullYear()}${String(ts.getMonth()+1).padStart(2,'0')}${String(ts.getDate()).padStart(2,'0')}-${String(ts.getHours()).padStart(2,'0')}${String(ts.getMinutes()).padStart(2,'0')}`;
-    downloadJson(update, `overrides-update-${stamp}.json`);
-  }, []);
+  const handleIgnore = useCallback(async (row) => {
+    try {
+      const res = await fetch('/api/ignore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ playerId: row.playerId }) });
+      if (!res.ok) throw new Error(await res.text());
+      setProposals(prev => { const clone = { ...prev }; delete clone[row.playerId]; return clone; });
+      toast('Ignored. Overrides updated.', 'success');
+    } catch (e) {
+      toast(`Error ignoring: ${String(e)}`, 'error');
+    }
+  }, [toast]);
+
+  const handleApplyAll = useCallback(async () => {
+    try {
+      const res = await fetch('/api/apply-bulk', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      await fetchData();
+      toast(`Applied ${data.applied}, Skipped ${data.skipped}.`, 'success');
+    } catch (e) {
+      toast(`Bulk apply failed: ${String(e)}`, 'error');
+    }
+  }, [fetchData, toast]);
+
+  const handleIgnoreAll = useCallback(async () => {
+    try {
+      const res = await fetch('/api/ignore-bulk', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+      if (!res.ok) throw new Error(await res.text());
+      await fetchData();
+      toast('Ignored all visible proposals. Overrides updated.', 'success');
+    } catch (e) {
+      toast(`Bulk ignore failed: ${String(e)}`, 'error');
+    }
+  }, [fetchData, toast]);
+
+  const handleRebatch = useCallback(async () => {
+    try {
+      const res = await fetch('/api/rebatch', { method: 'POST' });
+      if (!res.ok) throw new Error(await res.text());
+      await fetchData();
+      toast('Proposals regenerated.', 'success');
+    } catch (e) {
+      toast(`Re-run failed: ${String(e)}`, 'error');
+    }
+  }, [fetchData, toast]);
 
   return (
     <div>
@@ -121,11 +182,12 @@ export default function ArsenalsPage() {
 
         {tab === 1 && (
           <Box sx={{ p: 2, bgcolor: '#fff', borderRadius: 2 }}>
-            <Alert severity="info" sx={{ mb: 2 }}>
-              Display-only. Use the buttons to download a patch or overrides update. Then run:
-              <code> node scripts/applyArsenalPatch.js --patch src/data/arsenals/patches/PATCH_FILE.json</code> or
-              <code> node scripts/applyArsenalPatch.js --merge-overrides SRC_FILE.json</code>
-            </Alert>
+            <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+              <Button size="small" variant="contained" onClick={handleApplyAll} disabled={!proposalsRows.length}>Apply All</Button>
+              <Button size="small" variant="outlined" color="warning" onClick={handleIgnoreAll} disabled={!proposalsRows.length}>Ignore All</Button>
+              <Box sx={{ flex: 1 }} />
+              <Button size="small" variant="text" onClick={handleRebatch}>Re-run batch</Button>
+            </Stack>
             {!proposalsRows.length ? (
               <Typography sx={{ color:'#6b7280' }}>No proposals.</Typography>
             ) : (
@@ -162,6 +224,8 @@ export default function ArsenalsPage() {
           </Box>
         )}
       </Container>
+
+      <Snackbar open={snack.open} autoHideDuration={3000} onClose={()=>setSnack(s=>({ ...s, open:false }))} message={snack.message} />
 
       <Dialog open={openBatchFix} onClose={()=>setOpenBatchFix(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Batch Fix (Coming soon)</DialogTitle>

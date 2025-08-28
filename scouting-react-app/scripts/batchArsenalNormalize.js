@@ -62,7 +62,8 @@ const gates = {
   SL: ({ h, s, i }) => h != null && s != null && i != null && h <= -8 && h >= -16 && s >= 2300 && s <= 2600 && Math.abs(i) <= 3,
   CB: ({ i, v, s }) => i != null && v != null && s != null && i <= -8 && v < 82 && s >= 2600,
   CH: ({ fv, v, h, i }) => fv != null && v != null && fv - v >= 8 && h != null && h >= 12 && i != null && i >= 4 && i <= 14,
-  SPL: ({ fv, v, i }) => fv != null && v != null && fv - v >= 8 && i != null && i < 8,
+  // Tighten SPL: larger separation from FB and lower IVB to avoid SL/CH leakage
+  SPL: ({ fv, v, i }) => fv != null && v != null && fv - v >= 9 && i != null && i < 6,
 };
 const loose = {
   FF: ({ v, i }) => v != null && i != null && v >= 93 && i >= 15,
@@ -72,7 +73,8 @@ const loose = {
   SL: ({ h, s, i }) => h != null && s != null && i != null && h <= -7 && h >= -17 && s >= 2200 && s <= 2700 && Math.abs(i) <= 4,
   CB: ({ i, v, s }) => i != null && v != null && s != null && i <= -7 && v < 84 && s >= 2400,
   CH: ({ fv, v, h, i }) => fv != null && v != null && fv - v >= 7 && h != null && h >= 10 && i != null && i >= 3 && i <= 15,
-  SPL: ({ fv, v, i }) => fv != null && v != null && fv - v >= 7 && i != null && i < 10,
+  // Loose SPL still stricter than before
+  SPL: ({ fv, v, i }) => fv != null && v != null && fv - v >= 8 && i != null && i < 8,
 };
 function classifyPitch(r, fbVeloAvg) {
   const nums = toNums(r, fbVeloAvg);
@@ -122,8 +124,7 @@ function nowIsoDate() {
   return d.toISOString().slice(0,10);
 }
 
-function main() {
-  const { logs: logsDir, out: outPath } = parseArgs(process.argv);
+function runBatch({ logsDir = path.join('src','data','logs'), outPath = path.join('src','data','arsenals','proposals.json') } = {}) {
   const firstHalfPath = path.join('src', 'data', 'arsenals', 'firstHalf.json');
   const overridesPath = path.join('src', 'data', 'arsenals', 'overrides.json');
 
@@ -210,11 +211,12 @@ function main() {
       suggestSet.add('SL');
     }
 
-    // Missing families: if suggested usage ≥8% and appears in ≥2 games
+    // Missing families: general rule ≥8% across ≥2 games; SPL stricter ≥18% across ≥3 games
     for (const fam of ['SW','SI','CT','CB','CH','SPL']) {
       const c = suggestedCount.get(fam) || 0;
       const usage = c / total;
-      if (usage >= 0.08 && games >= 2 && !allowed.has(fam)) {
+      const meets = fam === 'SPL' ? (usage >= 0.18 && games >= 3) : (usage >= 0.08 && games >= 2);
+      if (meets && !allowed.has(fam)) {
         suggestSet.add(fam);
         notes.push(`${fam} shape present ${(100*usage).toFixed(0)}% across ${games} games`);
       }
@@ -259,9 +261,13 @@ function main() {
   // Only output pitchers with any proposal
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(outPath, JSON.stringify(proposals, null, 2));
-  console.log(`Wrote proposals to ${outPath}`);
+  return proposals;
 }
 
 if (require.main === module) {
-  main();
+  const { logs: logsDir, out: outPath } = parseArgs(process.argv);
+  const result = runBatch({ logsDir, outPath });
+  console.log(`Wrote proposals to ${outPath}`);
 }
+
+module.exports = { runBatch };

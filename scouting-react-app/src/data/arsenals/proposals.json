@@ -14,7 +14,7 @@
     ],
     "notes": [
       "CT shape present 15% across 13 games",
-      "SPL shape present 33% across 13 games",
+      "SPL shape present 31% across 13 games",
       "SL shape off typical in 19%",
       "FF shape off typical in 42%",
       "CB shape off typical in 11%"
@@ -24,7 +24,7 @@
       "sample": 331,
       "since": "2025-06-04"
     },
-    "confidence": 0.54
+    "confidence": 0.52
   },
   "702528": {
     "current": [
@@ -37,11 +37,9 @@
       "FF",
       "CT",
       "SL",
-      "CH",
-      "SPL"
+      "CH"
     ],
     "notes": [
-      "SPL shape present 19% across 10 games",
       "FF shape off typical in 52%",
       "SL shape off typical in 17%"
     ],
@@ -63,11 +61,9 @@
       "FF",
       "CB",
       "SL",
-      "CH",
-      "SPL"
+      "CH"
     ],
     "notes": [
-      "SPL shape present 19% across 2 games",
       "CT shape off typical in 19%",
       "SL shape off typical in 17%"
     ],
@@ -76,7 +72,7 @@
       "sample": 138,
       "since": "2025-06-04"
     },
-    "confidence": 0.65
+    "confidence": 0.5
   },
   "806426": {
     "current": [
@@ -122,7 +118,7 @@
       "SPL"
     ],
     "notes": [
-      "SPL shape present 39% across 6 games",
+      "SPL shape present 33% across 6 games",
       "SL shape off typical in 29%"
     ],
     "support": {
@@ -130,7 +126,7 @@
       "sample": 416,
       "since": "2025-06-04"
     },
-    "confidence": 0.69
+    "confidence": 0.63
   },
   "821330": {
     "current": [
@@ -141,11 +137,9 @@
     "suggested": [
       "FF",
       "SI",
-      "SL",
-      "SPL"
+      "SL"
     ],
     "notes": [
-      "SPL shape present 22% across 3 games",
       "SL shape off typical in 24%"
     ],
     "support": {
@@ -153,7 +147,7 @@
       "sample": 45,
       "since": "2025-06-04"
     },
-    "confidence": 0.84
+    "confidence": 0.62
   },
   "822824": {
     "current": [
@@ -166,11 +160,9 @@
       "FF",
       "SI",
       "CT",
-      "SL",
-      "SPL"
+      "SL"
     ],
     "notes": [
-      "SPL shape present 8% across 9 games",
       "SI shape off typical in 30%",
       "CT shape off typical in 21%",
       "FF shape off typical in 18%",
@@ -197,12 +189,10 @@
       "CH",
       "SL",
       "CB",
-      "CT",
-      "SPL"
+      "CT"
     ],
     "notes": [
       "CT shape present 11% across 6 games",
-      "SPL shape present 14% across 6 games",
       "FF shape off typical in 42%"
     ],
     "support": {
@@ -223,11 +213,9 @@
       "FF",
       "SL",
       "CH",
-      "CB",
-      "SPL"
+      "CB"
     ],
     "notes": [
-      "SPL shape present 27% across 2 games",
       "CB shape off typical in 14%"
     ],
     "support": {
@@ -235,7 +223,7 @@
       "sample": 161,
       "since": "2025-06-04"
     },
-    "confidence": 0.88
+    "confidence": 0.61
   },
   "833400": {
     "current": [
@@ -249,12 +237,10 @@
       "CT",
       "CH",
       "SL",
-      "SI",
-      "SPL"
+      "SI"
     ],
     "notes": [
       "SI shape present 18% across 7 games",
-      "SPL shape present 19% across 7 games",
       "CT shape off typical in 24%",
       "CB shape off typical in 26%",
       "FF shape off typical in 13%",
@@ -282,7 +268,7 @@
     ],
     "notes": [
       "CT shape present 18% across 7 games",
-      "SPL shape present 20% across 7 games",
+      "SPL shape present 18% across 7 games",
       "SI shape off typical in 16%",
       "FF shape off typical in 12%",
       "SL shape off typical in 12%"
@@ -309,7 +295,7 @@
       "SPL"
     ],
     "notes": [
-      "SPL shape present 24% across 6 games",
+      "SPL shape present 19% across 6 games",
       "FF shape off typical in 37%",
       "CB shape off typical in 11%",
       "CH shape off typical in 13%"
@@ -376,7 +362,7 @@
       "SPL"
     ],
     "notes": [
-      "SPL shape present 27% across 7 games",
+      "SPL shape present 26% across 7 games",
       "FF shape off typical in 24%",
       "SI shape off typical in 18%",
       "CB shape off typical in 22%"
@@ -397,11 +383,9 @@
     "suggested": [
       "FF",
       "CT",
-      "CH",
-      "SPL"
+      "CH"
     ],
     "notes": [
-      "SPL shape present 14% across 3 games",
       "FF shape off typical in 42%",
       "SL shape off typical in 36%",
       "CH shape off typical in 17%"
@@ -427,12 +411,10 @@
       "SI",
       "CB",
       "SL",
-      "CT",
-      "SPL"
+      "CT"
     ],
     "notes": [
       "CT shape present 29% across 3 games",
-      "SPL shape present 22% across 3 games",
       "FF shape off typical in 38%",
       "SL shape off typical in 32%"
     ],
@@ -441,7 +423,7 @@
       "sample": 78,
       "since": "2025-06-04"
     },
-    "confidence": 0.65
+    "confidence": 0.5
   },
   "seanfinn": {
     "current": [
@@ -454,11 +436,9 @@
       "FF",
       "SL",
       "CH",
-      "CB",
-      "SPL"
+      "CB"
     ],
     "notes": [
-      "SPL shape present 16% across 4 games",
       "SI shape off typical in 28%",
       "CH shape off typical in 10%",
       "CB shape off typical in 15%",
@@ -483,12 +463,10 @@
       "CT",
       "SL",
       "CH",
-      "SI",
-      "SPL"
+      "SI"
     ],
     "notes": [
       "SI shape present 8% across 4 games",
-      "SPL shape present 10% across 4 games",
       "FF shape off typical in 38%",
       "SL shape off typical in 54%"
     ],
@@ -532,7 +510,7 @@
     ],
     "notes": [
       "CT shape present 27% across 4 games",
-      "SPL shape present 21% across 4 games",
+      "SPL shape present 18% across 4 games",
       "SI shape off typical in 11%",
       "FF shape off typical in 47%",
       "SL shape off typical in 14%",
@@ -543,15 +521,12 @@
       "sample": 158,
       "since": "2025-06-04"
     },
-    "confidence": 0.54
+    "confidence": 0.52
   },
   "Collin Bosley-Smith": {
     "current": [],
-    "suggested": [
-      "SPL"
-    ],
+    "suggested": [],
     "notes": [
-      "SPL shape present 16% across 7 games",
       "CB shape off typical in 13%",
       "FF shape off typical in 46%"
     ],
@@ -577,7 +552,7 @@
       "SPL"
     ],
     "notes": [
-      "SPL shape present 52% across 4 games",
+      "SPL shape present 35% across 4 games",
       "SL shape off typical in 23%",
       "FF shape off typical in 32%",
       "CB shape off typical in 36%"
@@ -587,17 +562,15 @@
       "sample": 91,
       "since": "2025-06-04"
     },
-    "confidence": 0.56
+    "confidence": 0.5
   },
   "Joe Ariola": {
     "current": [],
     "suggested": [
-      "CB",
-      "SPL"
+      "CB"
     ],
     "notes": [
       "CB shape present 16% across 3 games",
-      "SPL shape present 13% across 3 games",
       "FF shape off typical in 50%",
       "SL shape off typical in 18%"
     ],
@@ -610,11 +583,8 @@
   },
   "Zach Silfies": {
     "current": [],
-    "suggested": [
-      "SPL"
-    ],
+    "suggested": [],
     "notes": [
-      "SPL shape present 63% across 2 games",
       "FF shape off typical in 25%",
       "CB shape off typical in 41%",
       "SL shape off typical in 15%"
@@ -624,17 +594,15 @@
       "sample": 59,
       "since": "2025-06-04"
     },
-    "confidence": 0.63
+    "confidence": 0.5
   },
   "Luis Misla": {
     "current": [],
     "suggested": [
-      "CB",
-      "SPL"
+      "CB"
     ],
     "notes": [
       "CB shape present 8% across 2 games",
-      "SPL shape present 28% across 2 games",
       "FF shape off typical in 44%",
       "SL shape off typical in 36%",
       "CH shape off typical in 14%"
