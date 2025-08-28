@@ -281,17 +281,18 @@ export default function PitchingLogsPage() {
     let current = null;
     for (let i = 0; i < rawRows.length; i++) {
       const r = rawRows[i];
-      const inn = r.inning;
-      const bat = r.batter || 'Unknown Batter';
-      const type = r.type ?? r.pitchType ?? r.pitch ?? '—';
+      const inn = r.inning ?? r.inn ?? '?';
+      const bat = r.batter ?? r.hitter ?? 'Unknown';
+      const type = r.pitchType ?? r.type ?? r.pitch ?? '—';
       const startNew = !current || current.inning !== inn || current.batter !== bat;
       if (startNew) {
         if (current) groups.push(current);
         current = { id: `${inn}-${bat}-${i}`, inning: inn, batter: bat, rows: [], startIndex: i };
       }
       current.rows.push({
-        id: r.id ?? `${inn}-${bat}-${i}`,
-        pitchIndex: i + 1,
+        id: `${inn}-${bat}-${i}`,
+        // pitch number strictly within the AB
+        pitchIndex: current.rows.length + 1,
         type,
         velo: r.velo,
         spin: r.spin,
@@ -302,8 +303,17 @@ export default function PitchingLogsPage() {
       });
     }
     if (current) groups.push(current);
+    // Dev-only sanity: ensure counts align
+    if (process.env.NODE_ENV !== 'production') {
+      const src = rawRows.length;
+      const rendered = groups.reduce((a,g)=>a + g.rows.length, 0);
+      if (src !== rendered) {
+        // eslint-disable-next-line no-console
+        console.warn('[PitchingLogs] Row count mismatch', { date: dateStr, pitcher, inning, src, rendered });
+      }
+    }
     return groups;
-  }, [rawRows]);
+  }, [rawRows, dateStr, pitcher, inning]);
 
   // Expanded state per group (collapsed by default)
   const [openIds, setOpenIds] = useState(() => new Set());
@@ -316,6 +326,8 @@ export default function PitchingLogsPage() {
     if (n.has(id)) n.delete(id); else n.add(id);
     return n;
   });
+
+  
 
   // Season aggregates per type (for tooltip deltas)
   const seasonAggByType = useMemo(() => {
@@ -380,7 +392,7 @@ export default function PitchingLogsPage() {
       if (useVerified && selectedPitcherId) {
         const allowed = arsenalMap[selectedPitcherId]?.allowed || null;
         const suggestedRaw = classifyPitch({ velo: r.velo, ivb: r.ivb, hb: r.hb, spin: r.spin, fbVeloAvg });
-        const suggested = allowed && suggestedRaw && allowed.has(suggestedRaw) ? suggestedRaw : null;
+        const suggested = suggestedRaw && allowed && allowed.has(suggestedRaw) ? suggestedRaw : null;
         if (suggested) t = suggested;
       }
       counts.set(t, (counts.get(t) || 0) + 1);
@@ -434,7 +446,7 @@ export default function PitchingLogsPage() {
       const mappedCode = mapPitchLabel(rawT, selectedPitcherId, arsenalMap).code;
       const allowed = arsenalMap[selectedPitcherId]?.allowed || new Set();
       const suggestedRaw = classifyPitch({ velo: r.velo, ivb: r.ivb, hb: r.hb, spin: r.spin, fbVeloAvg });
-      const suggested = suggestedRaw && allowed.has(suggestedRaw) ? suggestedRaw : null;
+      const suggested = suggestedRaw && allowed && allowed.has(suggestedRaw) ? suggestedRaw : null;
       if (suggested && suggested !== mappedCode) disagreeCount++;
       if (mappedCode === 'SL' && suggested === 'SW') swVsSl++;
       if (suggestedRaw === 'CT' && !allowed.has('CT')) ctSuggest++;
@@ -528,7 +540,7 @@ export default function PitchingLogsPage() {
             </div>
           )}
 
-          {abGroups.map((g) => {
+          {abGroups.map((g, abIndex) => {
             const last = g.rows[g.rows.length - 1];
             const outcome = last?.result || '—';
             const pitches = g.rows.length;
@@ -559,9 +571,19 @@ export default function PitchingLogsPage() {
                         <div className="col col-num">HB</div>
                         <div className="col col-res">Result</div>
                       </div>
-                      {g.rows.map((r, i) => {
+                      {(() => {
+                        const sourceRows = g.pitches || g.rows || [];
+                        const mappedPitchRows = [...g.rows].sort((a,b)=>a.pitchIndex - b.pitchIndex);
+                        const abKey = `${dateStr}-${g.inning}-${abIndex}`;
+                        if (process.env.NODE_ENV !== 'production' && mappedPitchRows.length !== sourceRows.length) {
+                          // eslint-disable-next-line no-console
+                          console.warn('[AB RENDER] Mismatch', { abKey, rendered: mappedPitchRows.length, source: sourceRows.length });
+                        }
+                        return mappedPitchRows;
+                      })().map((r, i) => {
                         const rawType = r.type;
-                        const mapped = useVerified ? mapPitchLabel(rawType, selectedPitcherId, arsenalMap) : { code: pitchShort(rawType), inArsenal: true };
+                        let mapped = useVerified ? mapPitchLabel(rawType, selectedPitcherId, arsenalMap) : { code: pitchShort(rawType), inArsenal: true };
+                        if (!mapped || !mapped.code) mapped = { code: 'UNK', inArsenal: false };
                         const short = mapped.code;
                         const fam = useVerified ? pitchFamily(short) : pitchFamily(rawType);
                         const allowed = selectedPitcherId ? (arsenalMap[selectedPitcherId]?.allowed || null) : null;
@@ -593,7 +615,7 @@ export default function PitchingLogsPage() {
                         }
                         const tipContent = parts.join('\n\n');
                         return (
-                          <div key={r.id || i} className={`ab-row ${i % 2 ? 'odd' : 'even'} ${showExt ? 'with-ext' : 'no-ext'}`}>
+                          <div key={`${dateStr}-${g.inning}-${abIndex}-${r.pitchIndex}`} className={`ab-row ${i % 2 ? 'odd' : 'even'} ${showExt ? 'with-ext' : 'no-ext'}`}>
                             <div className="col col-idx">{r.pitchIndex}</div>
                             <div className="col col-type">
                               <Tooltip content={r.type}>

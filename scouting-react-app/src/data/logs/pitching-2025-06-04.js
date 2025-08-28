@@ -159,6 +159,8 @@ const pitchersData = {
             { pitchType: "Four-Seam Fastball", velo: 94.3, spin: 2080, ivb: 19.0, hb: 10.7, ext: 6.1, result: "Ball", batter: "Amman Dewberry" },
             { pitchType: "Sinker", velo: 93.4, spin: 2050, ivb: 10.3, hb: 17.0, ext: 6.1, result: "Ball In Dirt", batter: "Amman Dewberry" },
             { pitchType: "Four-Seam Fastball", velo: 93.2, spin: 2066, ivb: 15.7, hb: 10.7, ext: 6.3, result: "Called Strike", batter: "Amman Dewberry" },
+            // Missing 4th pitch inserted: Sinker Ball
+            { pitchType: "Sinker", velo: 93.6, spin: 2054, ivb: 10.3, hb: 17.9, ext: 6.1, result: "Ball", batter: "Amman Dewberry" },
             { pitchType: "Sinker", velo: 93.4, spin: 2006, ivb: 13.2, hb: 14.5, ext: 5.8, result: "Walk", batter: "Amman Dewberry" },
           
             { pitchType: "Four-Seam Fastball", velo: 93.9, spin: 2075, ivb: 17.3, hb: 11.4, ext: 6.2, result: "Foul", batter: "Matt Ilgenfritz" },
