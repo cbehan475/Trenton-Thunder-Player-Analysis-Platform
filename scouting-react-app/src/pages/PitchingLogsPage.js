@@ -6,7 +6,7 @@ import { getBench, delta, BENCH_LEVEL, FEATURE_BENCHMARK_BADGES } from '../lib/b
 import dataFirstHalf from '../data/arsenals/firstHalf.json';
 import { buildArsenalMap } from '../lib/arsenalMap.js';
 import { mapPitchLabel, normalizePitchLabel } from '../lib/pitchLabel.js';
-import { classifyPitch } from '../lib/pitchHeuristics.js';
+import { classifyPitch, constrainedSuggest, verifyShape } from '../lib/pitchHeuristics.js';
 import { updateOuting } from '../lib/reviewCache.js';
 import pitching2025_06_04 from '../data/logs/pitching-2025-06-04.js';
 import pitching2025_06_05 from '../data/logs/pitching-2025-06-05.js';
@@ -391,8 +391,7 @@ export default function PitchingLogsPage() {
       // If using verified labels, prefer constrained classifier suggestion for roll-up
       if (useVerified && selectedPitcherId) {
         const allowed = arsenalMap[selectedPitcherId]?.allowed || null;
-        const suggestedRaw = classifyPitch({ velo: r.velo, ivb: r.ivb, hb: r.hb, spin: r.spin, fbVeloAvg });
-        const suggested = suggestedRaw && allowed && allowed.has(suggestedRaw) ? suggestedRaw : null;
+        const suggested = constrainedSuggest({ velo: r.velo, ivb: r.ivb, hb: r.hb, spin: r.spin, fbVeloAvg, allowed });
         if (suggested) t = suggested;
       }
       counts.set(t, (counts.get(t) || 0) + 1);
@@ -445,11 +444,12 @@ export default function PitchingLogsPage() {
       const rawT = r.type ?? r.pitchType ?? r.pitch ?? '—';
       const mappedCode = mapPitchLabel(rawT, selectedPitcherId, arsenalMap).code;
       const allowed = arsenalMap[selectedPitcherId]?.allowed || new Set();
-      const suggestedRaw = classifyPitch({ velo: r.velo, ivb: r.ivb, hb: r.hb, spin: r.spin, fbVeloAvg });
-      const suggested = suggestedRaw && allowed && allowed.has(suggestedRaw) ? suggestedRaw : null;
+      const suggested = constrainedSuggest({ velo: r.velo, ivb: r.ivb, hb: r.hb, spin: r.spin, fbVeloAvg, allowed });
       if (suggested && suggested !== mappedCode) disagreeCount++;
       if (mappedCode === 'SL' && suggested === 'SW') swVsSl++;
-      if (suggestedRaw === 'CT' && !allowed.has('CT')) ctSuggest++;
+      // count CT suggestions even if not allowed
+      const rawSuggest = classifyPitch({ velo: r.velo, ivb: r.ivb, hb: r.hb, spin: r.spin, fbVeloAvg });
+      if (rawSuggest === 'CT' && !allowed.has('CT')) ctSuggest++;
     }
     const pct = (n) => (total ? (n / total) * 100 : 0);
     const disagreePct = pct(disagreeCount);
@@ -587,14 +587,11 @@ export default function PitchingLogsPage() {
                         const short = mapped.code;
                         const fam = useVerified ? pitchFamily(short) : pitchFamily(rawType);
                         const allowed = selectedPitcherId ? (arsenalMap[selectedPitcherId]?.allowed || null) : null;
-                        const suggestedRaw = classifyPitch({ velo: r.velo, ivb: r.ivb, hb: r.hb, spin: r.spin, fbVeloAvg });
-                        const suggested = allowed && suggestedRaw && allowed.has(suggestedRaw) ? suggestedRaw : null;
+                        const suggested = allowed ? constrainedSuggest({ velo: r.velo, ivb: r.ivb, hb: r.hb, spin: r.spin, fbVeloAvg, allowed }) : null;
                         const disagree = suggested != null && suggested !== short;
-                        // CH shape guard: when label is CH but shape gates fail, flag subtle dot (still in arsenal)
-                        const chShapeOff = useVerified && short === 'CH' && (
-                          !(Number.isFinite(fbVeloAvg) && Number.isFinite(r.velo) && (fbVeloAvg - r.velo >= 8) &&
-                            Number.isFinite(r.hb) && r.hb >= 12 && Number.isFinite(r.ivb) && r.ivb >= 4 && r.ivb <= 14)
-                        );
+                        // General shape guard via loose gates
+                        const shape = useVerified ? verifyShape(short, { velo: r.velo, ivb: r.ivb, hb: r.hb, spin: r.spin, fbVeloAvg }) : { ok: true };
+                        const shapeOff = useVerified && shape && shape.ok === false;
                         const agg = seasonAggByType.get(r.type);
                         const b = getBench(BENCH_LEVEL, r.type);
                         const dv = b?.p50Velo != null && Number.isFinite(agg?.veloAvg) ? delta(agg.veloAvg, b.p50Velo) : null;
@@ -622,8 +619,8 @@ export default function PitchingLogsPage() {
                                 <span className="chip" style={{ ...chipStyle(fam), position:'relative' }}>
                                   <span className="dot" style={{ width:8, height:8, borderRadius:999, background: chipStyle(fam).color, opacity:.9 }} />
                                   {short}
-                                  {useVerified && (mapped.inArsenal === false || chShapeOff) && (
-                                    <Tooltip content={mapped.inArsenal === false ? 'Not in verified arsenal' : 'Not in verified shape'}>
+                                  {useVerified && (mapped.inArsenal === false || shapeOff) && (
+                                    <Tooltip content={mapped.inArsenal === false ? 'Not in verified arsenal' : `Not in verified shape${shape?.reason ? ` — ${shape.reason}` : ''}`}>
                                       <span style={{ position:'absolute', top:-3, right:-3, width:8, height:8, borderRadius:999, background:'#f59e0b', border:'1px solid rgba(0,0,0,.4)' }} />
                                     </Tooltip>
                                   )}
