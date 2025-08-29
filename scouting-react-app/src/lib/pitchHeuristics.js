@@ -51,6 +51,8 @@ function toNums({ velo, ivb, hb, spin, fbVeloAvg }) {
 
 // classifyPitch({ velo, ivb, hb, spin, fbVeloAvg }) => FF|SI|CT|SL|SW|CB|CH|SPL|null
 export function classifyPitch({ velo, ivb, hb, spin, fbVeloAvg }) {
+  // Note: when CH is verified in a pitcher's arsenal, downstream batch logic prefers CH over SPL
+  // unless strong SPL gates are satisfied (ΔV, IVB, HB, usage/games). See Step 3F batch script.
   const nums = toNums({ velo, ivb, hb, spin, fbVeloAvg });
   if (gates.FF(nums)) return 'FF';
   if (gates.SI(nums)) return 'SI';

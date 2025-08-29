@@ -114,8 +114,7 @@
       "SI",
       "SL",
       "SW",
-      "CH",
-      "SPL"
+      "CH"
     ],
     "notes": [
       "SPL shape present 33% across 6 games",
@@ -126,7 +125,7 @@
       "sample": 416,
       "since": "2025-06-04"
     },
-    "confidence": 0.63
+    "confidence": 0.5
   },
   "821330": {
     "current": [

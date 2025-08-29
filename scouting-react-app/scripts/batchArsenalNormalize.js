@@ -184,12 +184,21 @@ function runBatch({ logsDir = path.join('src','data','logs'), outPath = path.joi
     const labeledCount = new Map();
     const suggestedCount = new Map();
     const shapeOffCount = new Map();
+    // Track SPL aggregates for tie-break decision
+    let splCount = 0;
+    let splVSum = 0, splISum = 0, splHSum = 0;
 
     for (const p of pitches) {
       const lab = shortFromLabel(p.pitchType);
       labeledCount.set(lab, (labeledCount.get(lab) || 0) + 1);
       const sug = classifyPitch(p, fbVeloAvg);
       if (sug) suggestedCount.set(sug, (suggestedCount.get(sug) || 0) + 1);
+      if (sug === 'SPL') {
+        splCount += 1;
+        if (Number.isFinite(p.velo)) splVSum += p.velo;
+        if (Number.isFinite(p.ivb)) splISum += p.ivb;
+        if (Number.isFinite(p.hb)) splHSum += p.hb;
+      }
       if (lab !== 'UNK' && !verifyShape(lab, p, fbVeloAvg)) {
         shapeOffCount.set(lab, (shapeOffCount.get(lab) || 0) + 1);
       }
@@ -212,10 +221,23 @@ function runBatch({ logsDir = path.join('src','data','logs'), outPath = path.joi
     }
 
     // Missing families: general rule ≥8% across ≥2 games; SPL stricter ≥18% across ≥3 games
+    // Additionally, CH vs SPL tie-break: if CH is verified in current, prefer CH and only allow SPL
+    // when strong SPL gates hold: ΔV>=10 mph, IVB<=6, HB<=8, usage>=20% across >=3 games.
     for (const fam of ['SW','SI','CT','CB','CH','SPL']) {
       const c = suggestedCount.get(fam) || 0;
       const usage = c / total;
-      const meets = fam === 'SPL' ? (usage >= 0.18 && games >= 3) : (usage >= 0.08 && games >= 2);
+      let meets = fam === 'SPL' ? (usage >= 0.18 && games >= 3) : (usage >= 0.08 && games >= 2);
+      if (fam === 'SPL' && current.includes('CH')) {
+        // compute SPL avg metrics
+        const splV = splCount ? splVSum / splCount : null;
+        const splI = splCount ? splISum / splCount : null;
+        const splH = splCount ? splHSum / splCount : null;
+        const dv = (fbVeloAvg != null && splV != null) ? (fbVeloAvg - splV) : null;
+        const strongSPL = (dv != null && dv >= 10) && (splI != null && splI <= 6) && (splH != null && splH <= 8) && (usage >= 0.20) && (games >= 3);
+        if (!strongSPL) {
+          meets = false; // prefer CH over SPL when CH is verified, unless strong SPL gates
+        }
+      }
       if (meets && !allowed.has(fam)) {
         suggestSet.add(fam);
         notes.push(`${fam} shape present ${(100*usage).toFixed(0)}% across ${games} games`);
