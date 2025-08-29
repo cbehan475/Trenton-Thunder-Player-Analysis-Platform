@@ -1,8 +1,11 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { Box, Container, Button, Dialog, DialogTitle, DialogContent, DialogActions, Typography, Tabs, Tab, Table, TableHead, TableRow, TableCell, TableBody, Chip, Stack, Alert, Snackbar } from '@mui/material';
+import { Box, Container, Button, Dialog, DialogTitle, DialogContent, DialogActions, Typography, Tabs, Tab, Table, TableHead, TableRow, TableCell, TableBody, Chip, Stack, Alert, Snackbar, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import PitchersTable from '../components/PitchersTable';
+import { getPid } from '../components/PitchersTable';
+import { safeKey } from '../lib/safeKey';
 import dataFirstHalf from '../data/arsenals/firstHalf.json';
+import pitcherArsenals from '../data/pitcherArsenals';
 import { getCache, getLatestOuting } from '../lib/reviewCache.js';
 import { API_BASE } from '../lib/apiBase';
 
@@ -13,15 +16,9 @@ export default function ArsenalsPage() {
   const [proposals, setProposals] = useState({});
   const [loading, setLoading] = useState(false);
   const [snack, setSnack] = useState({ open: false, message: '', severity: 'info' });
+  const [selectedPlayerId, setSelectedPlayerId] = useState('');
 
-  // String-only, stable row id with fallback
-  const getPid = useCallback((row, index = 0) => {
-    const raw = row?.playerId ?? row?.pid ?? row?.id ?? row?.PlayerID ?? row?.PlayerId;
-    const id = (raw !== undefined && raw !== null && String(raw).trim() !== '')
-      ? String(raw)
-      : `row-${index}`;
-    return id;
-  }, []);
+  // using shared getPid from PitchersTable
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -52,6 +49,7 @@ export default function ArsenalsPage() {
   }, []);
 
   React.useEffect(() => { fetchData(); }, [fetchData]);
+
 
   // Merge review cache telemetry into displayed status per precedence
   const rowsForDisplay = useMemo(() => {
@@ -86,10 +84,10 @@ export default function ArsenalsPage() {
   const handleRowDoubleClick = useCallback((paramsOrRow) => {
     // Support both MUI DataGrid params and plain row objects
     const row = paramsOrRow?.row ?? paramsOrRow;
-    const pid = getPid(row, row?._i ?? 0);
+    const pid = row?.pid || getPid(row, row?._i ?? 0);
     if (!pid || String(pid).startsWith('row-')) return;
     navigate(`/pitching/reports?pid=${encodeURIComponent(pid)}`);
-  }, [navigate, getPid]);
+  }, [navigate]);
 
   const navy = '#0B1220';
   const gold = '#FFB300';
@@ -101,6 +99,12 @@ export default function ArsenalsPage() {
   }, [proposals]);
 
   const toast = useCallback((message, severity = 'info') => setSnack({ open: true, message, severity }), []);
+
+  // Find selected pitcher from new JSON by playerId (string-compare for safety)
+  const selectedPitcher = useMemo(() => {
+    if (!selectedPlayerId) return null;
+    return pitcherArsenals.find((p) => String(p.playerId) === String(selectedPlayerId)) || null;
+  }, [selectedPlayerId]);
 
   const handleApply = useCallback(async (row) => {
     // Call API to apply
@@ -213,13 +217,49 @@ export default function ArsenalsPage() {
         </Tabs>
 
         {tab === 0 && (
-          !arsenals.length ? (
-            <Box sx={{ p: 3, bgcolor: '#fff', borderRadius: 2, textAlign: 'center', color: '#6b7280' }}>
-              No arsenals loaded yet.
+          <>
+            <Box sx={{ display:'flex', gap:2, alignItems:'center', mb: 2 }}>
+              <FormControl size="small" sx={{ minWidth: 260 }}>
+                <InputLabel id="arsenal-pitcher-label">Select Pitcher</InputLabel>
+                <Select
+                  labelId="arsenal-pitcher-label"
+                  label="Select Pitcher"
+                  value={selectedPlayerId}
+                  onChange={(e)=>setSelectedPlayerId(e.target.value)}
+                >
+                  {pitcherArsenals
+                    .slice()
+                    .sort((a,b)=>String(a.name).localeCompare(String(b.name)))
+                    .map(p => (
+                      <MenuItem key={p.playerId} value={String(p.playerId)}>
+                        {p.name} ({p.handedness})
+                      </MenuItem>
+                    ))}
+                </Select>
+              </FormControl>
             </Box>
-          ) : (
-            <PitchersTable mode="arsenals" arsenals={rowsForDisplay} onRowDoubleClick={handleRowDoubleClick} />
-          )
+
+            {selectedPitcher && (
+              <Box sx={{ p:2, mb:2, bgcolor:'#fff', borderRadius:2, border:'1px solid rgba(0,0,0,0.06)' }}>
+                <Typography variant="h6" sx={{ fontWeight:800, mb:1 }}>
+                  {selectedPitcher.name} ({selectedPitcher.handedness})
+                </Typography>
+                <ul style={{ margin:0, paddingLeft: '1.25rem' }}>
+                  {selectedPitcher.arsenal.map((pitch, idx) => (
+                    <li key={idx}>{pitch}</li>
+                  ))}
+                </ul>
+              </Box>
+            )}
+
+            {!arsenals.length ? (
+              <Box sx={{ p: 3, bgcolor: '#fff', borderRadius: 2, textAlign: 'center', color: '#6b7280' }}>
+                No arsenals loaded yet.
+              </Box>
+            ) : (
+              <PitchersTable mode="arsenals" arsenals={rowsForDisplay} onRowDoubleClick={handleRowDoubleClick} />
+            )}
+          </>
         )}
 
         {tab === 1 && (
@@ -245,21 +285,24 @@ export default function ArsenalsPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {proposalsRows.map((row, i) => (
-                    <TableRow key={getPid(row, i)}>
-                      <TableCell>{row.playerId}</TableCell>
-                      <TableCell>{(row.current||[]).map(p => (<Chip key={p} size="small" label={p} sx={{ mr: .5 }} />))}</TableCell>
-                      <TableCell>{(row.suggested||[]).map(p => (<Chip key={p} size="small" color="primary" variant="outlined" label={p} sx={{ mr: .5 }} />))}</TableCell>
-                      <TableCell>{row.confidence != null ? (row.confidence*100).toFixed(0)+'%' : '—'}</TableCell>
-                      <TableCell>{(row.notes||[]).join(' • ')}</TableCell>
-                      <TableCell align="right">
-                        <Stack direction="row" spacing={1} justifyContent="flex-end">
-                          <Button size="small" variant="contained" onClick={()=>handleApply(row)}>Apply</Button>
-                          <Button size="small" variant="text" color="warning" onClick={()=>handleIgnore(row)}>Ignore</Button>
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {proposalsRows.map((row, i) => {
+                    const pid = getPid(row, i);
+                    return (
+                      <TableRow key={safeKey(pid, 'proposal', i)}>
+                        <TableCell>{row.playerId}</TableCell>
+                        <TableCell>{(row.current||[]).map((p, j) => (<Chip key={safeKey(pid, 'curr', j, p)} size="small" label={p} sx={{ mr: .5 }} />))}</TableCell>
+                        <TableCell>{(row.suggested||[]).map((p, j) => (<Chip key={safeKey(pid, 'sugg', j, p)} size="small" color="primary" variant="outlined" label={p} sx={{ mr: .5 }} />))}</TableCell>
+                        <TableCell>{row.confidence != null ? (row.confidence*100).toFixed(0)+'%' : '—'}</TableCell>
+                        <TableCell>{(row.notes||[]).join(' • ')}</TableCell>
+                        <TableCell align="right">
+                          <Stack direction="row" spacing={1} justifyContent="flex-end">
+                            <Button size="small" variant="contained" onClick={()=>handleApply(row)}>Apply</Button>
+                            <Button size="small" variant="text" color="warning" onClick={()=>handleIgnore(row)}>Ignore</Button>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}
