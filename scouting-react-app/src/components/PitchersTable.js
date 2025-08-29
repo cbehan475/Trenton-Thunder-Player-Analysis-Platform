@@ -173,6 +173,7 @@ export default function PitchersTable({
   mode = 'logs',
   arsenals,
   usageByCode,
+  gradesByCode,
   selectedPlayerId,
 }) {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -214,7 +215,7 @@ export default function PitchersTable({
       result: pitch.result,
       batter: pitch.batter,
     }));
-  }, [mode, arsenals, pitchersData, selectedPitcher, selectedInning, usageByCode]);
+  }, [mode, arsenals, pitchersData, selectedPitcher, selectedInning, usageByCode, gradesByCode]);
 
   const columns = useMemo(() => {
     if (mode === 'arsenals') {
@@ -263,6 +264,30 @@ export default function PitchersTable({
                   const val = has && usageByCode && Number.isFinite(usageByCode[code]) ? `${usageByCode[code]}%` : '—';
                   return (
                     <Chip key={safeKey(params.row.id, 'usage', i, code)} label={`${code} ${val}`} size="small" sx={{ height: 22 }} />
+                  );
+                })}
+              </Box>
+            );
+          }
+        },
+        {
+          field: 'grade', headerName: 'Grade (20–80)', flex: 1, minWidth: 200, align: 'right', headerAlign: 'right', sortable: false,
+          renderCell: (params) => {
+            const has = gradesByCode && typeof gradesByCode === 'object';
+            const list = Array.isArray(params?.row?.pitches) ? params.row.pitches : [];
+            const codes = [];
+            const seen = new Set();
+            for (const p of list) {
+              const { code } = normalizePitchLabel(p);
+              if (!seen.has(code)) { seen.add(code); codes.push(code); }
+            }
+            if (!codes.length) return <span style={{ color: '#9ca3af' }}>—</span>;
+            return (
+              <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end', width: '100%' }}>
+                {codes.map((code, i) => {
+                  const val = has && Number.isFinite(gradesByCode[code]) ? String(gradesByCode[code]) : '—';
+                  return (
+                    <Chip key={safeKey(params.row.id, 'grade', i, code)} label={`${code} ${val}`} size="small" sx={{ height: 22 }} />
                   );
                 })}
               </Box>
