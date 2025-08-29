@@ -72,8 +72,13 @@ export default function HittersTable({ rows, onRowClick, selectedRowId }) {
           density="compact"
           rowHeight={40}
           columnHeaderHeight={40}
-          rows={rows}
+          rows={(rows || []).map((r, i) => ({ ...r, _i: i }))}
           columns={columns}
+          getRowId={(row) => {
+            const raw = row?.playerId ?? row?.pid ?? row?.id ?? row?.PlayerID ?? row?.PlayerId;
+            const id = (raw !== undefined && raw !== null && String(raw).trim() !== '') ? String(raw) : `row-${row?._i ?? 0}`;
+            return id;
+          }}
           pagination
           pageSizeOptions={[10, 25, 50]}
           initialState={{ pagination: { paginationModel: { pageSize: 50 } } }}

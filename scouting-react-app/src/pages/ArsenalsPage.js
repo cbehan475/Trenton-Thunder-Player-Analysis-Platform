@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import PitchersTable from '../components/PitchersTable';
 import dataFirstHalf from '../data/arsenals/firstHalf.json';
 import { getCache, getLatestOuting } from '../lib/reviewCache.js';
+import { API_BASE } from '../lib/apiBase';
 
 export default function ArsenalsPage() {
   const navigate = useNavigate();
@@ -13,12 +14,21 @@ export default function ArsenalsPage() {
   const [loading, setLoading] = useState(false);
   const [snack, setSnack] = useState({ open: false, message: '', severity: 'info' });
 
+  // String-only, stable row id with fallback
+  const getPid = useCallback((row, index = 0) => {
+    const raw = row?.playerId ?? row?.pid ?? row?.id ?? row?.PlayerID ?? row?.PlayerId;
+    const id = (raw !== undefined && raw !== null && String(raw).trim() !== '')
+      ? String(raw)
+      : `row-${index}`;
+    return id;
+  }, []);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [aRes, pRes] = await Promise.allSettled([
-        fetch('/api/arsenals').then(r => r.ok ? r.json() : Promise.reject('arsenals')),
-        fetch('/api/proposals').then(r => r.ok ? r.json() : Promise.reject('proposals')),
+        fetch(`${API_BASE}/arsenals`).then(r => r.ok ? r.json() : Promise.reject('arsenals')),
+        fetch(`${API_BASE}/proposals`).then(r => r.ok ? r.json() : Promise.reject('proposals')),
       ]);
 
       // Arsenals
@@ -76,10 +86,10 @@ export default function ArsenalsPage() {
   const handleRowDoubleClick = useCallback((paramsOrRow) => {
     // Support both MUI DataGrid params and plain row objects
     const row = paramsOrRow?.row ?? paramsOrRow;
-    const pid = row?.playerId || row?.pid || paramsOrRow?.id;
-    if (!pid) return;
+    const pid = getPid(row, row?._i ?? 0);
+    if (!pid || String(pid).startsWith('row-')) return;
     navigate(`/pitching/reports?pid=${encodeURIComponent(pid)}`);
-  }, [navigate]);
+  }, [navigate, getPid]);
 
   const navy = '#0B1220';
   const gold = '#FFB300';
@@ -95,7 +105,7 @@ export default function ArsenalsPage() {
   const handleApply = useCallback(async (row) => {
     // Call API to apply
     try {
-      const res = await fetch('/api/apply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ playerId: row.playerId, suggested: row.suggested, notes: row.notes||[], support: row.support||{}, confidence: row.confidence }) });
+      const res = await fetch(`${API_BASE}/apply`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ playerId: row.playerId, suggested: row.suggested, notes: row.notes||[], support: row.support||{}, confidence: row.confidence }) });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       // Update in-memory arsenals
@@ -114,7 +124,7 @@ export default function ArsenalsPage() {
 
   const handleIgnore = useCallback(async (row) => {
     try {
-      const res = await fetch('/api/ignore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ playerId: row.playerId }) });
+      const res = await fetch(`${API_BASE}/ignore`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ playerId: row.playerId }) });
       if (!res.ok) throw new Error(await res.text());
       setProposals(prev => { const clone = { ...prev }; delete clone[row.playerId]; return clone; });
       toast('Ignored. Overrides updated.', 'success');
@@ -125,7 +135,7 @@ export default function ArsenalsPage() {
 
   const handleApplyAll = useCallback(async () => {
     try {
-      const res = await fetch('/api/apply-bulk', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+      const res = await fetch(`${API_BASE}/apply-bulk`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       await fetchData();
@@ -137,7 +147,7 @@ export default function ArsenalsPage() {
 
   const handleIgnoreAll = useCallback(async () => {
     try {
-      const res = await fetch('/api/ignore-bulk', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+      const res = await fetch(`${API_BASE}/ignore-bulk`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
       if (!res.ok) throw new Error(await res.text());
       await fetchData();
       toast('Ignored all visible proposals. Overrides updated.', 'success');
@@ -148,12 +158,12 @@ export default function ArsenalsPage() {
 
   const handleRebatch = useCallback(async () => {
     try {
-      const res = await fetch('/api/rebatch', { method: 'POST' });
+      const res = await fetch(`${API_BASE}/rebatch`, { method: 'POST' });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json().catch(()=>({}));
       // Immediately refresh proposals list from API
       try {
-        const list = await fetch('/api/proposals').then(r => r.ok ? r.json() : Promise.reject(new Error('proposals api')));
+        const list = await fetch(`${API_BASE}/proposals`).then(r => r.ok ? r.json() : Promise.reject(new Error('proposals api')));
         setProposals(list || {});
         const n = Number.isFinite(data?.count) ? data.count : Object.keys(list||{}).length;
         toast(`Regenerated ${n} proposals`, 'success');
@@ -235,8 +245,8 @@ export default function ArsenalsPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {proposalsRows.map((row) => (
-                    <TableRow key={row.playerId}>
+                  {proposalsRows.map((row, i) => (
+                    <TableRow key={getPid(row, i)}>
                       <TableCell>{row.playerId}</TableCell>
                       <TableCell>{(row.current||[]).map(p => (<Chip key={p} size="small" label={p} sx={{ mr: .5 }} />))}</TableCell>
                       <TableCell>{(row.suggested||[]).map(p => (<Chip key={p} size="small" color="primary" variant="outlined" label={p} sx={{ mr: .5 }} />))}</TableCell>
