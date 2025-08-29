@@ -1,5 +1,6 @@
 // src/pages/HitterReportsPage.js
 import React, { useEffect, useMemo, useState } from 'react';
+import { safeKey } from '../lib/safeKey';
 import AppSelect from '../components/ui/AppSelect.jsx';
 import { getAllHitterNames, getHittingMetricsFor, getHittingLogStats, getHitterEntries } from '../data/logs/hittingIndex';
 
@@ -136,7 +137,7 @@ export default function HitterReportsPage() {
               </div>
             </div>
             <ul style={{ margin: 0, paddingLeft: 18, color: '#bcd7ff' }}>
-              {bullets.map((line, i) => <li key={i} style={{ margin: '6px 0' }}>{line}</li>)}
+              {bullets.map((line, i) => <li key={safeKey('bullet', i, line)} style={{ margin: '6px 0' }}>{line}</li>)}
             </ul>
           </div>
         )}

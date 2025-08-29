@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { safeKey } from '../lib/safeKey';
 import AppSelect from '../components/ui/AppSelect.jsx';
 import { getAllPitcherNames, getPitchingMetricsFor, getPitchingLogStats } from '../data/logs/pitchingIndex';
 
@@ -166,7 +167,7 @@ export default function PitcherReports() {
               <div style={{ fontWeight: 800, marginBottom: 6, color: 'rgba(255,255,255,0.9)' }}>Scouting-style report</div>
               <ul style={{ margin: 0, paddingLeft: 18 }}>
                 { (bullets).map((line, idx) => (
-                  <li key={idx} style={{ margin: '6px 0', lineHeight: 1.35, color: 'rgba(255,255,255,0.9)' }}>{line}</li>
+                  <li key={safeKey('bullet', selectedName, idx, line)} style={{ margin: '6px 0', lineHeight: 1.35, color: 'rgba(255,255,255,0.9)' }}>{line}</li>
                 )) }
               </ul>
             </div>

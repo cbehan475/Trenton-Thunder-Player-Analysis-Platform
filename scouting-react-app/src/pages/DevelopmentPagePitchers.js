@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { safeKey } from '../lib/safeKey';
 import { Box, Typography, Card, CardContent, Grid, Divider, List, ListItem, ListItemText, MenuItem, FormControl, Select, InputLabel } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -47,7 +48,7 @@ export default function DevelopmentPagePitchers() {
                 </Typography>
                 <List dense>
                   {pitcher?.strengths.map((item, idx) => (
-                    <ListItem key={idx}><ListItemText primary={item} /></ListItem>
+                    <ListItem key={safeKey('strength', pitcher?.name, idx, item)}><ListItemText primary={item} /></ListItem>
                   ))}
                 </List>
               </Box>
@@ -59,7 +60,7 @@ export default function DevelopmentPagePitchers() {
                 </Typography>
                 <List dense>
                   {pitcher?.focusAreas.map((item, idx) => (
-                    <ListItem key={idx}><ListItemText primary={item} /></ListItem>
+                    <ListItem key={safeKey('focus', pitcher?.name, idx, item)}><ListItemText primary={item} /></ListItem>
                   ))}
                 </List>
               </Box>
@@ -71,7 +72,7 @@ export default function DevelopmentPagePitchers() {
                 </Typography>
                 <List dense>
                   {pitcher?.drills.map((item, idx) => (
-                    <ListItem key={idx}><ListItemText primary={item} /></ListItem>
+                    <ListItem key={safeKey('drill', pitcher?.name, idx, item)}><ListItemText primary={item} /></ListItem>
                   ))}
                 </List>
               </Box>
@@ -83,7 +84,7 @@ export default function DevelopmentPagePitchers() {
                 </Typography>
                 <List dense>
                   {pitcher?.longTermGoals.map((item, idx) => (
-                    <ListItem key={idx}><ListItemText primary={item} /></ListItem>
+                    <ListItem key={safeKey('goal', pitcher?.name, idx, item)}><ListItemText primary={item} /></ListItem>
                   ))}
                 </List>
               </Box>
