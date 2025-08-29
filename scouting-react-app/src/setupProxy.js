@@ -12,4 +12,15 @@ module.exports = function(app) {
       logLevel: 'silent',
     })
   );
+
+  // WebSocket pass-through if the backend exposes /ws
+  app.use(
+    '/ws',
+    createProxyMiddleware({
+      target: 'ws://localhost:4001',
+      changeOrigin: true,
+      ws: true,
+      logLevel: 'silent',
+    })
+  );
 };

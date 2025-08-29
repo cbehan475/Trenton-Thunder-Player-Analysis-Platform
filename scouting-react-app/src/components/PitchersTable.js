@@ -257,7 +257,7 @@ export default function PitchersTable({
           <DataGrid
             autoHeight
             rows={rows}
-            getRowId={(row) => row?.playerId ?? row?.id ?? `${row?.name ?? 'row'}-${row?.bt ?? 'bt'}`}
+            getRowId={(row) => String(row?.playerId ?? row?.pid ?? row?.id ?? `${row?.name ?? 'row'}-${row?.bt ?? 'bt'}`)}
             columns={columns}
             pageSize={mode === 'arsenals' ? 25 : 10}
             rowsPerPageOptions={mode === 'arsenals' ? [25, 50, 100] : [10, 25, 50]}
