@@ -8,7 +8,8 @@ module.exports = function(app) {
     createProxyMiddleware({
       target: 'http://localhost:4001',
       changeOrigin: true,
-      logLevel: 'warn',
+      ws: true,
+      logLevel: 'silent',
     })
   );
 };

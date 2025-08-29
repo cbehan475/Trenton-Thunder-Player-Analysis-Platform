@@ -25,8 +25,8 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "dev:api": "PORT=4001 node scripts/dev-api.js",
-    "start": "concurrently -k -n APP,API \"react-scripts start\" \"npm:dev:api\"",
+    "start": "cross-env PORT=3002 react-scripts start",
+    "dev-api": "node scripts/dev-api.js",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
@@ -35,9 +35,9 @@
     "gen:agg": "node scripts/genPitchingAggregates.mjs"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "concurrently": "^9.1.0",
+    "cross-env": "^7.0.3"
   },
-  "proxy": "http://localhost:5001",
   "eslintConfig": {
     "extends": [
       "react-app",

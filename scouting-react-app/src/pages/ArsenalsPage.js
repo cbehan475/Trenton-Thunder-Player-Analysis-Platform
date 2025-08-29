@@ -74,8 +74,9 @@ export default function ArsenalsPage() {
   }, [arsenals]);
 
   const handleRowDoubleClick = useCallback((paramsOrRow) => {
-    const row = paramsOrRow?.row ?? paramsOrRow; // support either signature
-    const pid = row?.playerId;
+    // Support both MUI DataGrid params and plain row objects
+    const row = paramsOrRow?.row ?? paramsOrRow;
+    const pid = row?.playerId || row?.pid || paramsOrRow?.id;
     if (!pid) return;
     navigate(`/pitching/reports?pid=${encodeURIComponent(pid)}`);
   }, [navigate]);
@@ -150,9 +151,27 @@ export default function ArsenalsPage() {
       const res = await fetch('/api/rebatch', { method: 'POST' });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json().catch(()=>({}));
-      await fetchData();
-      const n = Number.isFinite(data?.count) ? data.count : Object.keys(proposals||{}).length;
-      toast(`Regenerated proposals: ${n} found`, 'success');
+      // Immediately refresh proposals list from API
+      try {
+        const list = await fetch('/api/proposals').then(r => r.ok ? r.json() : Promise.reject(new Error('proposals api')));
+        setProposals(list || {});
+        const n = Number.isFinite(data?.count) ? data.count : Object.keys(list||{}).length;
+        toast(`Regenerated ${n} proposals`, 'success');
+      } catch {
+        // Dev fallback: read from local file if proxy/api unavailable
+        try {
+          const local = await import('../data/arsenals/proposals.json');
+          const obj = (local && local.default) ? local.default : local;
+          setProposals(obj || {});
+          const n = Number.isFinite(data?.count) ? data.count : Object.keys(obj||{}).length;
+          toast(`Regenerated ${n} proposals (local)`, 'warning');
+        } catch (e2) {
+          // As a last resort, refetch all
+          await fetchData();
+          const n = Number.isFinite(data?.count) ? data.count : Object.keys(proposals||{}).length;
+          toast(`Regenerated ${n} proposals`, 'info');
+        }
+      }
     } catch (e) {
       toast(`Re-run failed: ${String(e)}`, 'error');
     }

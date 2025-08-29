@@ -10,6 +10,7 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 4001;
 const PROPOSALS_PATH = path.join(__dirname, '..', 'src', 'data', 'arsenals', 'proposals.json');
+const ARSENALS_PATH = path.join(__dirname, '..', 'src', 'data', 'arsenals', 'firstHalf.json');
 const LOGS_DIR = path.join(__dirname, '..', 'src', 'data', 'logs');
 
 function readJsonSafe(p, fallback) {
@@ -23,6 +24,11 @@ function readJsonSafe(p, fallback) {
 app.get('/api/proposals', (req, res) => {
   const json = readJsonSafe(PROPOSALS_PATH, {});
   res.json(json);
+});
+
+app.get('/api/arsenals', (req, res) => {
+  const arr = readJsonSafe(ARSENALS_PATH, []);
+  res.json(Array.isArray(arr) ? arr : []);
 });
 
 app.post('/api/rebatch', (req, res) => {
@@ -90,5 +96,5 @@ app.post('/api/ignore-bulk', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Dev API listening on http://localhost:${PORT}`);
+  console.log(`Server running at http://localhost:${PORT}`);
 });
