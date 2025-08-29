@@ -172,6 +172,8 @@ export default function PitchersTable({
   // arsenals mode props
   mode = 'logs',
   arsenals,
+  usageByCode,
+  selectedPlayerId,
 }) {
   const [anchorEl, setAnchorEl] = useState(null);
   const menuOpen = Boolean(anchorEl);
@@ -212,7 +214,7 @@ export default function PitchersTable({
       result: pitch.result,
       batter: pitch.batter,
     }));
-  }, [mode, arsenals, pitchersData, selectedPitcher, selectedInning]);
+  }, [mode, arsenals, pitchersData, selectedPitcher, selectedInning, usageByCode]);
 
   const columns = useMemo(() => {
     if (mode === 'arsenals') {
@@ -238,6 +240,31 @@ export default function PitchersTable({
                     <Chip label={code} size="small" sx={{ fontWeight: 700, height: 22 }} />
                   </Tooltip>
                 ))}
+              </Box>
+            );
+          }
+        },
+        {
+          field: 'usage', headerName: 'Usage%', flex: 1, minWidth: 180, align: 'right', headerAlign: 'right', sortable: false,
+          renderCell: (params) => {
+            // Guard: if no usage map (no logs) show em dash
+            const has = usageByCode && typeof usageByCode === 'object';
+            const list = Array.isArray(params?.row?.pitches) ? params.row.pitches : [];
+            const codes = [];
+            const seen = new Set();
+            for (const p of list) {
+              const { code } = normalizePitchLabel(p);
+              if (!seen.has(code)) { seen.add(code); codes.push(code); }
+            }
+            if (!codes.length) return <span style={{ color: '#9ca3af' }}>—</span>;
+            return (
+              <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end', width: '100%' }}>
+                {codes.map((code, i) => {
+                  const val = has && usageByCode && Number.isFinite(usageByCode[code]) ? `${usageByCode[code]}%` : '—';
+                  return (
+                    <Chip key={safeKey(params.row.id, 'usage', i, code)} label={`${code} ${val}`} size="small" sx={{ height: 22 }} />
+                  );
+                })}
               </Box>
             );
           }

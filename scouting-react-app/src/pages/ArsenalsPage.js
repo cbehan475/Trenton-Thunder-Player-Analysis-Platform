@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import PitchersTable from '../components/PitchersTable';
 import { getPid } from '../components/PitchersTable';
 import pitcherArsenals from '../data/pitcherArsenals';
+import ALL_PITCH_EVENTS from '../data/logs/pitchingIndex.js';
 import { getCache, getLatestOuting } from '../lib/reviewCache.js';
 
 export default function ArsenalsPage() {
@@ -74,6 +75,70 @@ export default function ArsenalsPage() {
     return pitcherArsenals.find((p) => String(p.playerId) === String(selectedPlayerId)) || null;
   }, [selectedPlayerId]);
 
+  // Usage% is computed from logs keyed by pitcherId; source of truth for arsenal is src/data/pitcherArsenals.json
+  const usageByCode = useMemo(() => {
+    const pid = String(selectedPlayerId || '');
+    if (!pid) return null;
+    // Build name -> playerId map from source-of-truth JSON
+    const nameToPid = new Map();
+    for (const r of Array.isArray(pitcherArsenals) ? pitcherArsenals : []) {
+      if (r?.name && r?.playerId != null) nameToPid.set(String(r.name), String(r.playerId));
+    }
+    // Local lightweight normalizer to MLB-like short codes
+    const norm = (input) => {
+      if (!input) return 'OTH';
+      const raw = String(input).trim().toLowerCase();
+      const al = [
+        { keys: ['ff','four-seam','four seam','fourseam','4-seam','4 seam','fastball','fb'], out: 'FF' },
+        { keys: ['si','sinker','two-seam','two seam','2-seam','2 seam','2seam','ft'], out: 'SI' },
+        { keys: ['ct','cutter','cut'], out: 'CT' },
+        { keys: ['sl','slider'], out: 'SL' },
+        { keys: ['sw','sweeper','sl-sweeper','sl sweeper','sweeping slider'], out: 'SW' },
+        { keys: ['cb','curve','curveball','knuckle-curve','knuckle curve','kc'], out: 'CB' },
+        { keys: ['ch','change','changeup'], out: 'CH' },
+        { keys: ['spl','splitter','split','fs','forkball'], out: 'SPL' },
+      ];
+      for (const m of al) if (m.keys.includes(raw)) return m.out;
+      const key = raw
+        .replace(/[_\s-]+/g, '')
+        .replace('fourseam','ff').replace('twoseam','si').replace('sinker','si')
+        .replace('cutter','ct').replace('slider','sl').replace('sweeper','sw')
+        .replace('curveball','cb').replace('curve','cb').replace('changeup','ch')
+        .replace('splitter','spl').replace('forkball','spl');
+      if (key.startsWith('ff')) return 'FF';
+      if (key.startsWith('si')) return 'SI';
+      if (key.startsWith('ct')) return 'CT';
+      if (key.startsWith('sl') && !key.startsWith('spl')) return 'SL';
+      if (key.startsWith('sw')) return 'SW';
+      if (key.startsWith('cb') || key.startsWith('kc')) return 'CB';
+      if (key.startsWith('ch')) return 'CH';
+      if (key.startsWith('spl') || key.startsWith('fs')) return 'SPL';
+      return 'OTH';
+    };
+    // Filter logs to those mapping to this pitcherId
+    const rows = (Array.isArray(ALL_PITCH_EVENTS) ? ALL_PITCH_EVENTS : []).filter((e) => {
+      const name = e?.pitcher ? String(e.pitcher) : '';
+      const mapped = name ? nameToPid.get(name) : undefined;
+      return mapped && String(mapped) === pid;
+    });
+    if (!rows.length) return null;
+    const counts = new Map();
+    let total = 0;
+    for (const e of rows) {
+      const type = e?.pitchType || e?.type || e?.pitch || e?.pitch_name || e?.pitchClass || null;
+      const code = norm(type);
+      if (!code || code === 'OTH') { continue; }
+      counts.set(code, (counts.get(code) || 0) + 1);
+      total += 1;
+    }
+    if (!total) return null;
+    const out = Object.create(null);
+    for (const [code, n] of counts.entries()) {
+      out[code] = Number(((n / total) * 100).toFixed(1));
+    }
+    return out;
+  }, [selectedPlayerId]);
+
   // Proposals-related actions removed.
 
   return (
@@ -136,7 +201,7 @@ export default function ArsenalsPage() {
                 No arsenals loaded yet.
               </Box>
             ) : (
-              <PitchersTable mode="arsenals" arsenals={rowsForDisplay} onRowDoubleClick={handleRowDoubleClick} />
+              <PitchersTable mode="arsenals" arsenals={rowsForDisplay} onRowDoubleClick={handleRowDoubleClick} usageByCode={usageByCode} selectedPlayerId={selectedPlayerId} />
             )}
           </>
 
