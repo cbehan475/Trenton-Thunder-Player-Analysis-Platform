@@ -133,6 +133,7 @@ export default function PitchersTable({
     if (mode === 'arsenals') {
       const arr = Array.isArray(arsenals) ? arsenals : [];
       return arr.map((r, idx) => ({
+        _i: idx,
         id: r.playerId || r.name || idx + 1,
         playerId: r.playerId,
         name: r.name,
@@ -144,6 +145,7 @@ export default function PitchersTable({
     }
     if (!selectedPitcher || !selectedInning || !pitchersData?.[selectedPitcher]?.[selectedInning]) return [];
     return pitchersData[selectedPitcher][selectedInning].map((pitch, idx) => ({
+      _i: idx,
       id: idx + 1,
       pitch: idx + 1,
       type: pitch.pitchType,
@@ -257,7 +259,11 @@ export default function PitchersTable({
           <DataGrid
             autoHeight
             rows={rows}
-            getRowId={(row) => String(row?.playerId ?? row?.pid ?? row?.id ?? `${row?.name ?? 'row'}-${row?.bt ?? 'bt'}`)}
+            getRowId={(row) => {
+              const raw = row?.playerId ?? row?.pid ?? row?.id ?? row?.PlayerID ?? row?.PlayerId;
+              const id = (raw !== undefined && raw !== null && String(raw).trim() !== '') ? String(raw) : `row-${row?._i ?? 0}`;
+              return id;
+            }}
             columns={columns}
             pageSize={mode === 'arsenals' ? 25 : 10}
             rowsPerPageOptions={mode === 'arsenals' ? [25, 50, 100] : [10, 25, 50]}
