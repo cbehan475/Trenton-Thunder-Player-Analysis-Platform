@@ -14,17 +14,28 @@ export default function ArsenalsPage() {
   const [snack, setSnack] = useState({ open: false, message: '', severity: 'info' });
 
   const fetchData = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const [aRes, pRes] = await Promise.all([
+      const [aRes, pRes] = await Promise.allSettled([
         fetch('/api/arsenals').then(r => r.ok ? r.json() : Promise.reject('arsenals')),
         fetch('/api/proposals').then(r => r.ok ? r.json() : Promise.reject('proposals')),
       ]);
-      if (Array.isArray(aRes)) setArsenals(aRes);
-      if (pRes && typeof pRes === 'object') setProposals(pRes);
-    } catch (e) {
-      // Fallback to static imports if server not running
-      setArsenals(Array.isArray(dataFirstHalf) ? dataFirstHalf : []);
+
+      // Arsenals
+      if (aRes.status === 'fulfilled' && Array.isArray(aRes.value)) {
+        setArsenals(aRes.value);
+      } else {
+        setArsenals(Array.isArray(dataFirstHalf) ? dataFirstHalf : []);
+      }
+
+      // Proposals
+      if (pRes.status === 'fulfilled' && pRes.value && typeof pRes.value === 'object') {
+        setProposals(pRes.value);
+        const ids = Object.keys(pRes.value || {});
+        console.log(`[proposals] count=${ids.length}`, ids.slice(0,3));
+      } else {
+        setProposals({});
+      }
     } finally {
       setLoading(false);
     }
@@ -138,12 +149,14 @@ export default function ArsenalsPage() {
     try {
       const res = await fetch('/api/rebatch', { method: 'POST' });
       if (!res.ok) throw new Error(await res.text());
+      const data = await res.json().catch(()=>({}));
       await fetchData();
-      toast('Proposals regenerated.', 'success');
+      const n = Number.isFinite(data?.count) ? data.count : Object.keys(proposals||{}).length;
+      toast(`Regenerated proposals: ${n} found`, 'success');
     } catch (e) {
       toast(`Re-run failed: ${String(e)}`, 'error');
     }
-  }, [fetchData, toast]);
+  }, [fetchData, toast, proposals]);
 
   return (
     <div>
@@ -189,7 +202,7 @@ export default function ArsenalsPage() {
               <Button size="small" variant="text" onClick={handleRebatch}>Re-run batch</Button>
             </Stack>
             {!proposalsRows.length ? (
-              <Typography sx={{ color:'#6b7280' }}>No proposals.</Typography>
+              <Typography sx={{ color:'#6b7280' }}>No proposals. Try RE-RUN BATCH.</Typography>
             ) : (
               <Table size="small">
                 <TableHead>
