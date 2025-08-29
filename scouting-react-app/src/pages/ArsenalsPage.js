@@ -1,61 +1,35 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { Box, Container, Button, Dialog, DialogTitle, DialogContent, DialogActions, Typography, Tabs, Tab, Table, TableHead, TableRow, TableCell, TableBody, Chip, Stack, Alert, Snackbar, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Box, Container, Button, Dialog, DialogTitle, DialogContent, DialogActions, Typography, Snackbar, FormControl, InputLabel, Select, MenuItem, Stack } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import PitchersTable from '../components/PitchersTable';
 import { getPid } from '../components/PitchersTable';
-import { safeKey } from '../lib/safeKey';
-import dataFirstHalf from '../data/arsenals/firstHalf.json';
 import pitcherArsenals from '../data/pitcherArsenals';
 import { getCache, getLatestOuting } from '../lib/reviewCache.js';
-import { API_BASE } from '../lib/apiBase';
 
 export default function ArsenalsPage() {
   const navigate = useNavigate();
   const [openBatchFix, setOpenBatchFix] = useState(false);
-  const [arsenals, setArsenals] = useState(Array.isArray(dataFirstHalf) ? dataFirstHalf : []);
-  const [proposals, setProposals] = useState({});
-  const [loading, setLoading] = useState(false);
   const [snack, setSnack] = useState({ open: false, message: '', severity: 'info' });
   const [selectedPlayerId, setSelectedPlayerId] = useState('');
 
   // using shared getPid from PitchersTable
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [aRes, pRes] = await Promise.allSettled([
-        fetch(`${API_BASE}/arsenals`).then(r => r.ok ? r.json() : Promise.reject('arsenals')),
-        fetch(`${API_BASE}/proposals`).then(r => r.ok ? r.json() : Promise.reject('proposals')),
-      ]);
-
-      // Arsenals
-      if (aRes.status === 'fulfilled' && Array.isArray(aRes.value)) {
-        setArsenals(aRes.value);
-      } else {
-        setArsenals(Array.isArray(dataFirstHalf) ? dataFirstHalf : []);
-      }
-
-      // Proposals
-      if (pRes.status === 'fulfilled' && pRes.value && typeof pRes.value === 'object') {
-        setProposals(pRes.value);
-        const ids = Object.keys(pRes.value || {});
-        console.log(`[proposals] count=${ids.length}`, ids.slice(0,3));
-      } else {
-        setProposals({});
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  React.useEffect(() => { fetchData(); }, [fetchData]);
-
 
   // Merge review cache telemetry into displayed status per precedence
+  // Build rows from the new JSON only (single source of truth)
+  const baseArsenals = useMemo(() => {
+    return (Array.isArray(pitcherArsenals) ? pitcherArsenals : []).map((p) => ({
+      playerId: p.playerId,
+      name: p.name,
+      bt: p.handedness ? `-/${p.handedness}` : null,
+      pitches: Array.isArray(p.arsenal) ? p.arsenal : [],
+    }));
+  }, []);
+
   const rowsForDisplay = useMemo(() => {
     const cache = getCache();
     const out = [];
-    for (const row of arsenals) {
+    for (const row of baseArsenals) {
       const latest = getLatestOuting(row?.playerId);
       let status = row?.status || null;
       let note = row?.statusNote || '';
@@ -79,7 +53,7 @@ export default function ArsenalsPage() {
       out.push({ ...row, status, statusNote: note });
     }
     return out;
-  }, [arsenals]);
+  }, [baseArsenals]);
 
   const handleRowDoubleClick = useCallback((paramsOrRow) => {
     // Support both MUI DataGrid params and plain row objects
@@ -92,13 +66,7 @@ export default function ArsenalsPage() {
   const navy = '#0B1220';
   const gold = '#FFB300';
 
-  const [tab, setTab] = useState(0); // 0 = Arsenals, 1 = Proposals
-
-  const proposalsRows = useMemo(() => {
-    return Object.entries(proposals || {}).map(([playerId, p]) => ({ playerId, ...p }));
-  }, [proposals]);
-
-  const toast = useCallback((message, severity = 'info') => setSnack({ open: true, message, severity }), []);
+  // Single-tab page now; proposals removed.
 
   // Find selected pitcher from new JSON by playerId (string-compare for safety)
   const selectedPitcher = useMemo(() => {
@@ -106,90 +74,7 @@ export default function ArsenalsPage() {
     return pitcherArsenals.find((p) => String(p.playerId) === String(selectedPlayerId)) || null;
   }, [selectedPlayerId]);
 
-  const handleApply = useCallback(async (row) => {
-    // Call API to apply
-    try {
-      const res = await fetch(`${API_BASE}/apply`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ playerId: row.playerId, suggested: row.suggested, notes: row.notes||[], support: row.support||{}, confidence: row.confidence }) });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      // Update in-memory arsenals
-      setArsenals(prev => {
-        const map = new Map(prev.map(p => [p.playerId, p]));
-        map.set(data.row.playerId, data.row);
-        return Array.from(map.values());
-      });
-      // Remove from proposals
-      setProposals(prev => { const clone = { ...prev }; delete clone[row.playerId]; return clone; });
-      toast('Applied. firstHalf.json updated • patch saved.', 'success');
-    } catch (e) {
-      toast(`Error applying: ${String(e)}`, 'error');
-    }
-  }, [toast]);
-
-  const handleIgnore = useCallback(async (row) => {
-    try {
-      const res = await fetch(`${API_BASE}/ignore`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ playerId: row.playerId }) });
-      if (!res.ok) throw new Error(await res.text());
-      setProposals(prev => { const clone = { ...prev }; delete clone[row.playerId]; return clone; });
-      toast('Ignored. Overrides updated.', 'success');
-    } catch (e) {
-      toast(`Error ignoring: ${String(e)}`, 'error');
-    }
-  }, [toast]);
-
-  const handleApplyAll = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE}/apply-bulk`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      await fetchData();
-      toast(`Applied ${data.applied}, Skipped ${data.skipped}.`, 'success');
-    } catch (e) {
-      toast(`Bulk apply failed: ${String(e)}`, 'error');
-    }
-  }, [fetchData, toast]);
-
-  const handleIgnoreAll = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE}/ignore-bulk`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
-      if (!res.ok) throw new Error(await res.text());
-      await fetchData();
-      toast('Ignored all visible proposals. Overrides updated.', 'success');
-    } catch (e) {
-      toast(`Bulk ignore failed: ${String(e)}`, 'error');
-    }
-  }, [fetchData, toast]);
-
-  const handleRebatch = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE}/rebatch`, { method: 'POST' });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json().catch(()=>({}));
-      // Immediately refresh proposals list from API
-      try {
-        const list = await fetch(`${API_BASE}/proposals`).then(r => r.ok ? r.json() : Promise.reject(new Error('proposals api')));
-        setProposals(list || {});
-        const n = Number.isFinite(data?.count) ? data.count : Object.keys(list||{}).length;
-        toast(`Regenerated ${n} proposals`, 'success');
-      } catch {
-        // Dev fallback: read from local file if proxy/api unavailable
-        try {
-          const local = await import('../data/arsenals/proposals.json');
-          const obj = (local && local.default) ? local.default : local;
-          setProposals(obj || {});
-          const n = Number.isFinite(data?.count) ? data.count : Object.keys(obj||{}).length;
-          toast(`Regenerated ${n} proposals (local)`, 'warning');
-        } catch (e2) {
-          // As a last resort, refetch all
-          await fetchData();
-          const n = Number.isFinite(data?.count) ? data.count : Object.keys(proposals||{}).length;
-          toast(`Regenerated ${n} proposals`, 'info');
-        }
-      }
-    } catch (e) {
-      toast(`Re-run failed: ${String(e)}`, 'error');
-    }
-  }, [fetchData, toast, proposals]);
+  // Proposals-related actions removed.
 
   return (
     <div>
@@ -211,12 +96,6 @@ export default function ArsenalsPage() {
       </Box>
 
       <Container maxWidth="lg">
-        <Tabs value={tab} onChange={(_,v)=>setTab(v)} sx={{ mb: 2 }}>
-          <Tab label="Arsenals" />
-          <Tab label={`Proposals${proposalsRows.length?` (${proposalsRows.length})`:''}`} />
-        </Tabs>
-
-        {tab === 0 && (
           <>
             <Box sx={{ display:'flex', gap:2, alignItems:'center', mb: 2 }}>
               <FormControl size="small" sx={{ minWidth: 260 }}>
@@ -252,7 +131,7 @@ export default function ArsenalsPage() {
               </Box>
             )}
 
-            {!arsenals.length ? (
+            {!rowsForDisplay.length ? (
               <Box sx={{ p: 3, bgcolor: '#fff', borderRadius: 2, textAlign: 'center', color: '#6b7280' }}>
                 No arsenals loaded yet.
               </Box>
@@ -260,54 +139,8 @@ export default function ArsenalsPage() {
               <PitchersTable mode="arsenals" arsenals={rowsForDisplay} onRowDoubleClick={handleRowDoubleClick} />
             )}
           </>
-        )}
 
-        {tab === 1 && (
-          <Box sx={{ p: 2, bgcolor: '#fff', borderRadius: 2 }}>
-            <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-              <Button size="small" variant="contained" onClick={handleApplyAll} disabled={!proposalsRows.length}>Apply All</Button>
-              <Button size="small" variant="outlined" color="warning" onClick={handleIgnoreAll} disabled={!proposalsRows.length}>Ignore All</Button>
-              <Box sx={{ flex: 1 }} />
-              <Button size="small" variant="text" onClick={handleRebatch}>Re-run batch</Button>
-            </Stack>
-            {!proposalsRows.length ? (
-              <Typography sx={{ color:'#6b7280' }}>No proposals. Try RE-RUN BATCH.</Typography>
-            ) : (
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Player</TableCell>
-                    <TableCell>Current</TableCell>
-                    <TableCell>Suggested</TableCell>
-                    <TableCell>Confidence</TableCell>
-                    <TableCell>Notes</TableCell>
-                    <TableCell align="right">Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {proposalsRows.map((row, i) => {
-                    const pid = getPid(row, i);
-                    return (
-                      <TableRow key={safeKey(pid, 'proposal', i)}>
-                        <TableCell>{row.playerId}</TableCell>
-                        <TableCell>{(row.current||[]).map((p, j) => (<Chip key={safeKey(pid, 'curr', j, p)} size="small" label={p} sx={{ mr: .5 }} />))}</TableCell>
-                        <TableCell>{(row.suggested||[]).map((p, j) => (<Chip key={safeKey(pid, 'sugg', j, p)} size="small" color="primary" variant="outlined" label={p} sx={{ mr: .5 }} />))}</TableCell>
-                        <TableCell>{row.confidence != null ? (row.confidence*100).toFixed(0)+'%' : '—'}</TableCell>
-                        <TableCell>{(row.notes||[]).join(' • ')}</TableCell>
-                        <TableCell align="right">
-                          <Stack direction="row" spacing={1} justifyContent="flex-end">
-                            <Button size="small" variant="contained" onClick={()=>handleApply(row)}>Apply</Button>
-                            <Button size="small" variant="text" color="warning" onClick={()=>handleIgnore(row)}>Ignore</Button>
-                          </Stack>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            )}
-          </Box>
-        )}
+        
       </Container>
 
       <Snackbar open={snack.open} autoHideDuration={3000} onClose={()=>setSnack(s=>({ ...s, open:false }))} message={snack.message} />
