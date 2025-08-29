@@ -174,6 +174,7 @@ export default function PitchersTable({
   arsenals,
   usageByCode,
   gradesByCode,
+  statsByCode,
   selectedPlayerId,
 }) {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -188,23 +189,21 @@ export default function PitchersTable({
   // Centralized rows/columns based on mode (single top-level hooks)
   const rows = useMemo(() => {
     if (mode === 'arsenals') {
-      const arr = Array.isArray(arsenals) ? arsenals : [];
-      return arr.map((r, idx) => ({
-        _i: idx,
-        id: getPid(r, idx),   // DataGrid key/row id
-        pid: getPid(r, idx),  // keep explicit pid for navigation
-        name: getName(r),
-        bt: getBT(r),
-        pitches: getPitches(r),
-        status: r.status,
-        statusNote: r.statusNote,
-        ...r,                 // preserve the original fields too
+      const list = Array.isArray(arsenals) ? arsenals : [];
+      return list.map((row, idx) => ({
+        id: row.playerId ?? row.id ?? idx,
+        playerId: row.playerId ?? row.id ?? idx,
+        name: row.name ?? '-',
+        bt: row.bt ?? '-',
+        pitches: Array.isArray(row.pitches) ? row.pitches : [],
+        status: row.status ?? null,
+        statusNote: row.statusNote ?? null,
       }));
     }
-    if (!selectedPitcher || !selectedInning || !pitchersData?.[selectedPitcher]?.[selectedInning]) return [];
-    return pitchersData[selectedPitcher][selectedInning].map((pitch, idx) => ({
-      _i: idx,
-      id: idx + 1,
+    // logs mode (unchanged here)
+    const data = Array.isArray(pitchersData) ? pitchersData : [];
+    return data.map((pitch, idx) => ({
+      id: `${selectedPitcher}-${selectedInning}-${idx}`,
       pitch: idx + 1,
       type: pitch.pitchType,
       velo: pitch.velo,
@@ -215,10 +214,11 @@ export default function PitchersTable({
       result: pitch.result,
       batter: pitch.batter,
     }));
-  }, [mode, arsenals, pitchersData, selectedPitcher, selectedInning, usageByCode, gradesByCode]);
+  }, [mode, arsenals, pitchersData, selectedPitcher, selectedInning, usageByCode, gradesByCode, statsByCode]);
 
   const columns = useMemo(() => {
     if (mode === 'arsenals') {
+      // N = sample count from logs for this pitcherId/pitchType; tooltip shows aggregates for quick scouting context.
       return [
         { field: 'name', headerName: 'Name', flex: 1, minWidth: 160, sortable: true,
           valueGetter: (params) => params.row?.name ?? '-' },
@@ -286,8 +286,46 @@ export default function PitchersTable({
               <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end', width: '100%' }}>
                 {codes.map((code, i) => {
                   const val = has && Number.isFinite(gradesByCode[code]) ? String(gradesByCode[code]) : '—';
+                  const s = statsByCode && statsByCode[code] ? statsByCode[code] : null;
+                  const lines = [];
+                  if (s && Number.isFinite(s.avgVelo)) lines.push(`Avg Velo: ${s.avgVelo.toFixed(1)}`);
+                  if (s && Number.isFinite(s.avgIVB)) lines.push(`Avg IVB: ${s.avgIVB.toFixed(1)}`);
+                  if (s && Number.isFinite(s.avgHB)) lines.push(`Avg HB: ${s.avgHB.toFixed(1)}`);
+                  if (s && Number.isFinite(s.avgSpin)) lines.push(`Avg Spin: ${Math.round(s.avgSpin)}`);
+                  const usage = (s && Number.isFinite(s.usagePct)) ? `${s.usagePct}%` : (usageByCode && Number.isFinite(usageByCode[code]) ? `${usageByCode[code]}%` : null);
+                  if (usage) lines.push(`Usage%: ${usage}`);
+                  if (s && Number.isFinite(s.n)) lines.push(`N: ${s.n}`);
+                  const title = lines.length ? (
+                    <Box sx={{ whiteSpace: 'pre-line' }}>{lines.join('\n')}</Box>
+                  ) : '—';
                   return (
-                    <Chip key={safeKey(params.row.id, 'grade', i, code)} label={`${code} ${val}`} size="small" sx={{ height: 22 }} />
+                    <Tooltip key={safeKey(params.row.id, 'grade', i, code)} title={title} arrow>
+                      <Chip label={`${code} ${val}`} size="small" sx={{ height: 22 }} />
+                    </Tooltip>
+                  );
+                })}
+              </Box>
+            );
+          }
+        },
+        {
+          field: 'n', headerName: 'N', width: 110, align: 'right', headerAlign: 'right', sortable: false,
+          renderCell: (params) => {
+            const list = Array.isArray(params?.row?.pitches) ? params.row.pitches : [];
+            const codes = [];
+            const seen = new Set();
+            for (const p of list) {
+              const { code } = normalizePitchLabel(p);
+              if (!seen.has(code)) { seen.add(code); codes.push(code); }
+            }
+            if (!codes.length) return <span style={{ color: '#9ca3af' }}>—</span>;
+            return (
+              <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end', width: '100%' }}>
+                {codes.map((code, i) => {
+                  const s = statsByCode && statsByCode[code] ? statsByCode[code] : null;
+                  const val = s && Number.isFinite(s.n) ? String(s.n) : '—';
+                  return (
+                    <Chip key={safeKey(params.row.id, 'n', i, code)} label={`${code} ${val}`} size="small" sx={{ height: 22 }} />
                   );
                 })}
               </Box>

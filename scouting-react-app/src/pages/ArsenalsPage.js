@@ -75,6 +75,83 @@ export default function ArsenalsPage() {
     return pitcherArsenals.find((p) => String(p.playerId) === String(selectedPlayerId)) || null;
   }, [selectedPlayerId]);
 
+  // Compute per-code sample size (N) and averages used for tooltips
+  const statsByCode = useMemo(() => {
+    const pid = String(selectedPlayerId || '');
+    if (!pid) return null;
+    const nameToPid = new Map();
+    for (const r of Array.isArray(pitcherArsenals) ? pitcherArsenals : []) {
+      if (r?.name && r?.playerId != null) nameToPid.set(String(r.name), String(r.playerId));
+    }
+    const norm = (input) => {
+      if (!input) return 'OTH';
+      const raw = String(input).trim().toLowerCase();
+      const al = [
+        { keys: ['ff','four-seam','four seam','fourseam','4-seam','4 seam','fastball','fb'], out: 'FF' },
+        { keys: ['si','sinker','two-seam','two seam','2-seam','2 seam','2seam','ft'], out: 'SI' },
+        { keys: ['ct','cutter','cut','fc'], out: 'CT' },
+        { keys: ['sl','slider'], out: 'SL' },
+        { keys: ['sw','sweeper','sl-sweeper','sl sweeper','sweeping slider','swp'], out: 'SW' },
+        { keys: ['cb','curve','curveball','knuckle-curve','knuckle curve','kc'], out: 'CB' },
+        { keys: ['ch','change','changeup'], out: 'CH' },
+        { keys: ['spl','splitter','split','fs','forkball'], out: 'SPL' },
+      ];
+      for (const m of al) if (m.keys.includes(raw)) return m.out;
+      const key = raw
+        .replace(/[_\s-]+/g, '')
+        .replace('fourseam','ff').replace('twoseam','si').replace('sinker','si')
+        .replace('cutter','ct').replace('fc','ct').replace('slider','sl').replace('sweeper','sw')
+        .replace('curveball','cb').replace('curve','cb').replace('changeup','ch')
+        .replace('splitter','spl').replace('forkball','spl');
+      if (key.startsWith('ff')) return 'FF';
+      if (key.startsWith('si')) return 'SI';
+      if (key.startsWith('ct')) return 'CT';
+      if (key.startsWith('sl') && !key.startsWith('spl')) return 'SL';
+      if (key.startsWith('sw')) return 'SW';
+      if (key.startsWith('cb') || key.startsWith('kc')) return 'CB';
+      if (key.startsWith('ch')) return 'CH';
+      if (key.startsWith('spl') || key.startsWith('fs')) return 'SPL';
+      return 'OTH';
+    };
+    const rows = (Array.isArray(ALL_PITCH_EVENTS) ? ALL_PITCH_EVENTS : []).filter((e) => {
+      const name = e?.pitcher ? String(e.pitcher) : '';
+      const mapped = name ? nameToPid.get(name) : undefined;
+      return mapped && String(mapped) === pid;
+    });
+    if (!rows.length) return null;
+    const agg = new Map();
+    let total = 0;
+    for (const e of rows) {
+      const code = norm(e?.pitchType || e?.type || e?.pitch || e?.pitch_name || e?.pitchClass || null);
+      if (!code || code === 'OTH') continue;
+      const velo = Number(e?.velo ?? e?.velocity ?? e?.v ?? e?.speed);
+      const ivb  = Number(e?.ivb ?? e?.vert ?? e?.rise);
+      const hb   = Number(e?.hb ?? e?.horz ?? e?.run);
+      const spin = Number(e?.spin ?? e?.rpm);
+      if (!agg.has(code)) agg.set(code, { n: 0, sv: 0, si: 0, sh: 0, ss: 0 });
+      const a = agg.get(code);
+      a.n += 1; total += 1;
+      if (Number.isFinite(velo)) a.sv += velo;
+      if (Number.isFinite(ivb)) a.si += ivb;
+      if (Number.isFinite(hb)) a.sh += hb;
+      if (Number.isFinite(spin)) a.ss += spin;
+    }
+    if (agg.size === 0 || total === 0) return null;
+    const out = Object.create(null);
+    for (const [code, a] of agg) {
+      const n = a.n;
+      out[code] = {
+        n,
+        avgVelo: a.sv / n,
+        avgIVB: a.si / n,
+        avgHB: a.sh / n,
+        avgSpin: a.ss / n,
+        usagePct: Number(((n / total) * 100).toFixed(1)),
+      };
+    }
+    return out;
+  }, [selectedPlayerId]);
+
   // Heuristic 20–80 grading from logs per pitcherId; arsenal source of truth remains src/data/pitcherArsenals.json
   const gradesByCode = useMemo(() => {
     const pid = String(selectedPlayerId || '');
@@ -359,7 +436,7 @@ export default function ArsenalsPage() {
                 No arsenals loaded yet.
               </Box>
             ) : (
-              <PitchersTable mode="arsenals" arsenals={rowsForDisplay} onRowDoubleClick={handleRowDoubleClick} usageByCode={usageByCode} gradesByCode={gradesByCode} selectedPlayerId={selectedPlayerId} />
+              <PitchersTable mode="arsenals" arsenals={rowsForDisplay} onRowDoubleClick={handleRowDoubleClick} usageByCode={usageByCode} gradesByCode={gradesByCode} statsByCode={statsByCode} selectedPlayerId={selectedPlayerId} />
             )}
           </>
 
