@@ -1,6 +1,60 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { FormControl, InputLabel, Select, MenuItem, Box, Card, CardContent, Tooltip, Button, Menu, Chip } from '@mui/material';
+import { safeKey } from '../lib/safeKey';
+
+// --- ID + field normalization helpers ---
+export function getPid(row, i = 0) {
+  const raw =
+    row?.playerId ?? row?.pid ?? row?.id ??
+    row?.PlayerID ?? row?.PlayerId ?? row?.PID ?? row?.Pid ??
+    row?.player_id ?? row?.PLAYER_ID ?? row?.uid ?? row?.UUID ?? row?.uuid;
+  // Treat NaN specially: if raw is numeric NaN or string 'NaN', ignore it
+  let s = raw == null ? '' : String(raw).trim();
+  if (typeof raw === 'number' && Number.isNaN(raw)) s = '';
+  if (/^nan$/i.test(s)) s = '';
+  return s !== '' ? s : `row-${i}`; // stable fallback
+}
+
+function getName(row) {
+  // Try common variants; add more if needed
+  const raw =
+    row?.name ?? row?.Name ?? row?.playerName ?? row?.PlayerName ??
+    row?.player ?? row?.Player ?? row?.fullName ?? row?.FullName ?? row?.full_name ??
+    row?.display_name ?? row?.DisplayName ?? row?.displayName ??
+    row?.lastFirst ?? row?.LastFirst ?? row?.last_first;
+  const s = raw == null ? '' : String(raw).trim();
+  return s !== '' ? s : '-';
+}
+
+function getBT(row) {
+  // Single-field variants
+  const one =
+    row?.bt ?? row?.BT ?? row?.b_t ??
+    row?.batsThrows ?? row?.BatsThrows ?? row?.bats_throws ??
+    row?.hand ?? row?.Hand;
+  if (one && String(one).trim() !== '') return String(one).trim();
+
+  // Compose from separate bats/throws if present
+  const bats =
+    row?.bats ?? row?.Bats ?? row?.bat ?? row?.Bat ?? row?.bat_hand ?? row?.Batside;
+  const thr =
+    row?.throws ?? row?.Throws ?? row?.thr ?? row?.Throw ?? row?.throw_hand ?? row?.ThrowingHand;
+  if (bats || thr) return `${String(bats ?? '?').toUpperCase()}/${String(thr ?? '?').toUpperCase()}`;
+
+  return '-';
+}
+
+function getPitches(row) {
+  const arr = Array.isArray(row?.pitches) ? row.pitches
+           : Array.isArray(row?.Pitches) ? row.Pitches
+           : null;
+  if (arr) return arr;
+  const csv = typeof row?.pitches === 'string' ? row.pitches
+            : typeof row?.Pitches === 'string' ? row.Pitches
+            : '';
+  return csv ? csv.split(',').map(s => s.trim()).filter(Boolean) : [];
+}
 
 export function PitcherDropdown({ pitchersData, selectedPitcher, onPitcherChange }) {
   const pitcherNames = Object.keys(pitchersData || {});
@@ -134,13 +188,14 @@ export default function PitchersTable({
       const arr = Array.isArray(arsenals) ? arsenals : [];
       return arr.map((r, idx) => ({
         _i: idx,
-        id: r.playerId || r.name || idx + 1,
-        playerId: r.playerId,
-        name: r.name,
-        bt: r.bt,
-        pitches: Array.isArray(r.pitches) ? r.pitches : [],
+        id: getPid(r, idx),   // DataGrid key/row id
+        pid: getPid(r, idx),  // keep explicit pid for navigation
+        name: getName(r),
+        bt: getBT(r),
+        pitches: getPitches(r),
         status: r.status,
         statusNote: r.statusNote,
+        ...r,                 // preserve the original fields too
       }));
     }
     if (!selectedPitcher || !selectedInning || !pitchersData?.[selectedPitcher]?.[selectedInning]) return [];
@@ -162,10 +217,10 @@ export default function PitchersTable({
   const columns = useMemo(() => {
     if (mode === 'arsenals') {
       return [
-        { field: 'name', headerName: 'Name', flex: 1.2, minWidth: 160, sortable: true,
-          valueGetter: (params) => params?.row?.name ?? '—' },
-        { field: 'bt', headerName: 'B/T', width: 84, align: 'right', headerAlign: 'right', sortable: true,
-          valueGetter: (params) => params?.row?.bt ?? '—' },
+        { field: 'name', headerName: 'Name', flex: 1, minWidth: 160, sortable: true,
+          valueGetter: (params) => params.row?.name ?? '-' },
+        { field: 'bt', headerName: 'B/T', width: 100, align: 'right', headerAlign: 'right', sortable: true,
+          valueGetter: (params) => params.row?.bt ?? '-' },
         {
           field: 'pitches', headerName: 'Pitches', flex: 1, minWidth: 160, align: 'right', headerAlign: 'right', sortable: false,
           renderCell: (params) => {
@@ -174,12 +229,12 @@ export default function PitchersTable({
             const seen = new Set();
             for (const p of list) {
               const { code, full } = normalizePitchLabel(p);
-              if (!seen.has(code)) { seen.add(code); codes.push({ code, full }); }
+              if (!seen.has(code)) { seen.add(code); codes.push({ code, full, raw: p }); }
             }
             return (
               <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end', width: '100%' }}>
-                {codes.map(({ code, full }) => (
-                  <Tooltip key={code} title={FULL_LABELS[code] ?? full ?? code} arrow>
+                {codes.map(({ code, full, raw }, i) => (
+                  <Tooltip key={safeKey(params.row.id, 'pitch', i, code, raw)} title={FULL_LABELS[code] ?? full ?? code} arrow>
                     <Chip label={code} size="small" sx={{ fontWeight: 700, height: 22 }} />
                   </Tooltip>
                 ))}
@@ -259,11 +314,7 @@ export default function PitchersTable({
           <DataGrid
             autoHeight
             rows={rows}
-            getRowId={(row) => {
-              const raw = row?.playerId ?? row?.pid ?? row?.id ?? row?.PlayerID ?? row?.PlayerId;
-              const id = (raw !== undefined && raw !== null && String(raw).trim() !== '') ? String(raw) : `row-${row?._i ?? 0}`;
-              return id;
-            }}
+            getRowId={(row) => row.id}
             columns={columns}
             pageSize={mode === 'arsenals' ? 25 : 10}
             rowsPerPageOptions={mode === 'arsenals' ? [25, 50, 100] : [10, 25, 50]}
