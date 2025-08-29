@@ -96,5 +96,5 @@ app.post('/api/ignore-bulk', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`Dev API running on http://localhost:${PORT}`);
 });
