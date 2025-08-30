@@ -549,6 +549,58 @@ export default function PitchersTable({
     ];
   }, [mode, arsenals, pitchersData, selectedPitcher, selectedInning, sortColumn, sortDirection, cycleSort]);
 
+  // Prepare table content fragment for reuse in ternary below
+  const tableContent = (
+    <>
+      {mode === 'arsenals' && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+          <FormControl size="small" sx={{ minWidth: 140 }}>
+            <InputLabel id="sort-pitch-label">Sort pitch</InputLabel>
+            <Select
+              labelId="sort-pitch-label"
+              aria-label="Sort pitch"
+              value={sortPitch}
+              label="Sort pitch"
+              onChange={(e) => setSortPitch(e.target.value)}
+            >
+              {SORT_PITCH_OPTIONS.map((opt) => (
+                <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+      )}
+      <DataGrid
+        autoHeight
+        rows={mode === 'arsenals' ? sortedRows : rows}
+        getRowId={(row) => row.id}
+        columns={columns}
+        pageSize={mode === 'arsenals' ? 25 : 10}
+        rowsPerPageOptions={mode === 'arsenals' ? [25, 50, 100] : [10, 25, 50]}
+        disableSelectionOnClick
+        density="compact"
+        rowHeight={34}
+        columnHeaderHeight={38}
+        onRowDoubleClick={handleRowDouble}
+        sx={{
+          background: '#fff',
+          borderRadius: 2,
+          '& .MuiDataGrid-columnHeaders': {
+            position: 'sticky',
+            top: 0,
+            backgroundColor: 'background.paper',
+            zIndex: 1,
+          },
+          '& .MuiDataGrid-row:hover': { backgroundColor: 'rgba(25, 118, 210, 0.08)' },
+          '& .MuiDataGrid-row:nth-of-type(odd)': { backgroundColor: '#f9fafb' },
+          '& .MuiDataGrid-cell': { fontSize: 13, py: 0.25 },
+          '& .MuiDataGrid-columnHeadersInner': { fontSize: 12, fontWeight: 700 },
+          '& .MuiDataGrid-root': { overflowX: 'auto' },
+        }}
+      />
+    </>
+  );
+
   return (
     <Card elevation={3} sx={{ mb: 4, borderRadius: 3 }}>
       <CardContent>
@@ -571,57 +623,11 @@ export default function PitchersTable({
             </Box>
           </Box>
 
+        {/* Show EmptyState when no arsenals; otherwise render the table (valid single ternary) */}
         {mode === 'arsenals' && rows.length === 0 ? (
           <EmptyState message="No arsenals loaded yet." />
         ) : (
-          <>
-            {mode === 'arsenals' && (
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
-                <FormControl size="small" sx={{ minWidth: 140 }}>
-                  <InputLabel id="sort-pitch-label">Sort pitch</InputLabel>
-                  <Select
-                    labelId="sort-pitch-label"
-                    aria-label="Sort pitch"
-                    value={sortPitch}
-                    label="Sort pitch"
-                    onChange={(e) => setSortPitch(e.target.value)}
-                  >
-                    {SORT_PITCH_OPTIONS.map((opt) => (
-                      <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
-            )}
-            <DataGrid
-              autoHeight
-              rows={sortedRows}
-              getRowId={(row) => row.id}
-              columns={columns}
-              pageSize={mode === 'arsenals' ? 25 : 10}
-              rowsPerPageOptions={mode === 'arsenals' ? [25, 50, 100] : [10, 25, 50]}
-              disableSelectionOnClick
-              density="compact"
-              rowHeight={34}
-              columnHeaderHeight={38}
-              onRowDoubleClick={handleRowDouble}
-              sx={{
-                background: '#fff',
-                borderRadius: 2,
-                '& .MuiDataGrid-columnHeaders': {
-                  position: 'sticky',
-                  top: 0,
-                  backgroundColor: 'background.paper',
-                  zIndex: 1,
-                },
-                '& .MuiDataGrid-row:hover': { backgroundColor: 'rgba(25, 118, 210, 0.08)' },
-                '& .MuiDataGrid-row:nth-of-type(odd)': { backgroundColor: '#f9fafb' },
-                '& .MuiDataGrid-cell': { fontSize: 13, py: 0.25 },
-                '& .MuiDataGrid-columnHeadersInner': { fontSize: 12, fontWeight: 700 },
-                '& .MuiDataGrid-root': { overflowX: 'auto' },
-              }}
-            />
-          </>
+          <>{tableContent}</>
         )}
       </CardContent>
     </Card>
