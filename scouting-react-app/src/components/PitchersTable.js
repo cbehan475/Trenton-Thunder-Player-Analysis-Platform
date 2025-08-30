@@ -171,6 +171,15 @@ export default function PitchersTable({
   useEffect(() => {
     try { sessionStorage.setItem('arsenalsSearch', debouncedSearch); } catch {}
   }, [debouncedSearch]);
+  // Reset returns Arsenals table to default state (order, sort pitch, search).
+  const handleReset = useCallback(() => {
+    setSortColumn(null);
+    setSortDirection(null);
+    setSortPitch('FF');
+    setSearchText('');
+    try { sessionStorage.setItem('arsenalsSearch', ''); } catch {}
+    try { window.scrollTo({ top: 0 }); } catch {}
+  }, []);
   // Stable wrapper for double-click handler (passes through to prop if provided)
   const handleRowDouble = useCallback((params) => {
     if (typeof onRowDoubleClick === 'function') onRowDoubleClick(params);
@@ -564,20 +573,25 @@ export default function PitchersTable({
             aria-label="Search pitcher by name"
             sx={{ width: 260, '& .MuiOutlinedInput-root': { bgcolor: 'white' } }}
           />
-          <FormControl size="small" sx={{ minWidth: 140 }}>
-            <InputLabel id="sort-pitch-label">Sort pitch</InputLabel>
-            <Select
-              labelId="sort-pitch-label"
-              aria-label="Sort pitch"
-              value={sortPitch}
-              label="Sort pitch"
-              onChange={(e) => setSortPitch(e.target.value)}
-            >
-              {SORT_PITCH_OPTIONS.map((opt) => (
-                <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <InputLabel id="sort-pitch-label">Sort pitch</InputLabel>
+              <Select
+                labelId="sort-pitch-label"
+                aria-label="Sort pitch"
+                value={sortPitch}
+                label="Sort pitch"
+                onChange={(e) => setSortPitch(e.target.value)}
+              >
+                {SORT_PITCH_OPTIONS.map((opt) => (
+                  <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <Button variant="text" size="small" onClick={handleReset} aria-label="Reset table state" sx={{ textTransform: 'none', cursor: 'pointer' }}>
+              Reset
+            </Button>
+          </Box>
         </Box>
       )}
       <DataGrid
