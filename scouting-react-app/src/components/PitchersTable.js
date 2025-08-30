@@ -2,6 +2,7 @@ import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { FormControl, InputLabel, Select, MenuItem, Box, Card, CardContent, Tooltip, Button, Menu, Chip } from '@mui/material';
 import { safeKey } from '../lib/safeKey';
+import { useNavigate } from 'react-router-dom';
 
 // --- ID + field normalization helpers ---
 export function getPid(row, i = 0) {
@@ -153,6 +154,7 @@ export default function PitchersTable({
   statsByCode,
   selectedPlayerId,
 }) {
+  const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
   const menuOpen = Boolean(anchorEl);
   const handleMenuOpen = (e) => setAnchorEl(e.currentTarget);
@@ -319,7 +321,39 @@ export default function PitchersTable({
       const arrow = (key) => sortColumn === key ? (sortDirection === 'asc' ? ' ▲' : sortDirection === 'desc' ? ' ▼' : '') : '';
       return [
         { field: 'name', headerName: 'Name', flex: 1, minWidth: 160, sortable: false,
-          valueGetter: (params) => params.row?.name ?? '-' },
+          renderCell: (params) => {
+            const row = params?.row || {};
+            const name = row?.name ?? '-';
+            const pid = getPid(row, 0);
+            // Clicking the Name navigates to that pitcher’s report using pitcherId.
+            const go = (e) => {
+              e?.stopPropagation?.();
+              if (!pid || String(pid).startsWith('row-')) return;
+              navigate(`/pitching/reports?pid=${encodeURIComponent(pid)}`);
+            };
+            const onKeyDown = (e) => {
+              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(e); }
+            };
+            return (
+              <Box
+                role="button"
+                tabIndex={0}
+                aria-label={`Open report for ${name}`}
+                onClick={go}
+                onKeyDown={onKeyDown}
+                sx={{
+                  color: 'primary.main',
+                  cursor: 'pointer',
+                  textDecoration: 'none',
+                  '&:hover': { textDecoration: 'underline' },
+                  fontWeight: 700,
+                }}
+              >
+                {name}
+              </Box>
+            );
+          }
+        },
         { field: 'bt', headerName: 'B/T', width: 100, align: 'right', headerAlign: 'right', sortable: false,
           valueGetter: (params) => params.row?.bt ?? '-' },
         {
@@ -493,7 +527,7 @@ export default function PitchersTable({
     // sort indicators and toggles
     sortColumn, sortDirection, cycleSort,
     // stats + selection used inside renderers
-    sortPitch, statsByCode, usageByCode, gradesByCode,
+    sortPitch, statsByCode, usageByCode, gradesByCode, navigate,
   ]);
 
   // Prepare table content fragment for reuse in ternary below
