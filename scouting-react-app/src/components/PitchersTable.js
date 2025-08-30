@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { FormControl, InputLabel, Select, MenuItem, Box, Card, CardContent, Tooltip, Button, Menu, Chip } from '@mui/material';
 import { safeKey } from '../lib/safeKey';
@@ -216,16 +216,119 @@ export default function PitchersTable({
     }));
   }, [mode, arsenals, pitchersData, selectedPitcher, selectedInning, usageByCode, gradesByCode, statsByCode]);
 
+  // Sorting uses the selected "Sort pitch" (dropdown). Numeric columns read that pitch's aggregates; missing = — and sort last.
+  // Column sorting: toggles asc/desc/reset; resets to arsenal JSON order on pitcher change
+  const SORT_PITCH_OPTIONS = [
+    { value: 'FF', label: 'FF' },
+    { value: 'SI', label: 'SI/SNK' },
+    { value: 'CT', label: 'FC' },
+    { value: 'SL', label: 'SL' },
+    { value: 'SW', label: 'SWP' },
+    { value: 'CH', label: 'CH' },
+    { value: 'CB', label: 'CB' },
+  ];
+  const [sortPitch, setSortPitch] = useState('FF');
+  const [sortColumn, setSortColumn] = useState(null); // 'pitchType' | 'velo' | 'ivb' | 'hb' | 'spin' | 'usage' | 'grade' | 'n'
+  const [sortDirection, setSortDirection] = useState(null); // 'asc' | 'desc' | null
+
+  // Reset sort to default order on pitcher change
+  useEffect(() => {
+    if (mode === 'arsenals') {
+      setSortColumn(null);
+      setSortDirection(null);
+    }
+  }, [mode, selectedPlayerId]);
+
+  const cycleSort = useCallback((colKey) => {
+    setSortColumn((prevCol) => {
+      if (prevCol !== colKey) {
+        setSortDirection('asc');
+        return colKey;
+      }
+      setSortDirection((prevDir) => {
+        if (prevDir === 'asc') return 'desc';
+        if (prevDir === 'desc') return null; // reset
+        return 'asc';
+      });
+      // If resetting, also clear column
+      return colKey;
+    });
+  }, []);
+
+  // Value accessor per row for sorting based on selected sort pitch
+  const getRowMetric = useCallback((row, key) => {
+    const list = Array.isArray(row?.pitches) ? row.pitches : [];
+    const hasPitch = list.some((p) => normalizePitchLabel(p).code === sortPitch);
+    if (key === 'pitchType') return hasPitch ? sortPitch : null; // alpha
+    if (!hasPitch) return null;
+    switch (key) {
+      case 'velo': {
+        const v = statsByCode?.[sortPitch]?.avgVelo;
+        return Number.isFinite(v) ? v : null;
+      }
+      case 'ivb': {
+        const v = statsByCode?.[sortPitch]?.avgIVB;
+        return Number.isFinite(v) ? v : null;
+      }
+      case 'hb': {
+        const v = statsByCode?.[sortPitch]?.avgHB;
+        return Number.isFinite(v) ? v : null;
+      }
+      case 'spin': {
+        const v = statsByCode?.[sortPitch]?.avgSpin;
+        return Number.isFinite(v) ? v : null;
+      }
+      case 'usage': {
+        const v = usageByCode?.[sortPitch] ?? statsByCode?.[sortPitch]?.usagePct;
+        return Number.isFinite(v) ? v : null;
+      }
+      case 'grade': {
+        const v = gradesByCode?.[sortPitch];
+        return Number.isFinite(v) ? v : null;
+      }
+      case 'n': {
+        const v = statsByCode?.[sortPitch]?.n;
+        return Number.isFinite(v) ? v : null;
+      }
+      default:
+        return null;
+    }
+  }, [sortPitch, usageByCode, gradesByCode, statsByCode]);
+
+  const sortedRows = useMemo(() => {
+    if (mode !== 'arsenals' || !sortColumn || !sortDirection) return rows;
+    const arr = [...rows];
+    const dir = sortDirection === 'asc' ? 1 : -1;
+    arr.sort((a, b) => {
+      const va = getRowMetric(a, sortColumn);
+      const vb = getRowMetric(b, sortColumn);
+      const aNull = va == null || Number.isNaN(va);
+      const bNull = vb == null || Number.isNaN(vb);
+      if (aNull && bNull) return 0;
+      if (aNull) return 1;
+      if (bNull) return -1;
+      if (sortColumn === 'pitchType') return String(va).localeCompare(String(vb)) * dir;
+      return (va === vb ? 0 : (va > vb ? 1 : -1)) * dir;
+    });
+    return arr;
+  }, [rows, mode, sortColumn, sortDirection, getRowMetric]);
+
   const columns = useMemo(() => {
     if (mode === 'arsenals') {
       // N = sample count from logs for this pitcherId/pitchType; tooltip shows aggregates for quick scouting context.
+      const arrow = (key) => sortColumn === key ? (sortDirection === 'asc' ? ' ▲' : sortDirection === 'desc' ? ' ▼' : '') : '';
       return [
-        { field: 'name', headerName: 'Name', flex: 1, minWidth: 160, sortable: true,
+        { field: 'name', headerName: 'Name', flex: 1, minWidth: 160, sortable: false,
           valueGetter: (params) => params.row?.name ?? '-' },
-        { field: 'bt', headerName: 'B/T', width: 100, align: 'right', headerAlign: 'right', sortable: true,
+        { field: 'bt', headerName: 'B/T', width: 100, align: 'right', headerAlign: 'right', sortable: false,
           valueGetter: (params) => params.row?.bt ?? '-' },
         {
-          field: 'pitches', headerName: 'Pitches', flex: 1, minWidth: 160, align: 'right', headerAlign: 'right', sortable: false,
+          field: 'pitches', headerName: `Pitch Type${arrow('pitchType')}`, flex: 1, minWidth: 160, align: 'right', headerAlign: 'right', sortable: false,
+          renderHeader: () => (
+            <Box onClick={() => cycleSort('pitchType')} sx={{ cursor: 'pointer', userSelect: 'none', textAlign: 'right', width: '100%' }}>
+              {`Pitch Type${arrow('pitchType')}`}
+            </Box>
+          ),
           renderCell: (params) => {
             const list = Array.isArray(params?.row?.pitches) ? params.row.pitches : [];
             const codes = [];
@@ -246,7 +349,68 @@ export default function PitchersTable({
           }
         },
         {
-          field: 'usage', headerName: 'Usage%', flex: 1, minWidth: 180, align: 'right', headerAlign: 'right', sortable: false,
+          field: 'velo', headerName: `Velo${arrow('velo')}`, width: 90, align: 'right', headerAlign: 'right', sortable: false,
+          renderHeader: () => (
+            <Box onClick={() => cycleSort('velo')} sx={{ cursor: 'pointer', userSelect: 'none', textAlign: 'right', width: '100%' }}>
+              {`Velo${arrow('velo')}`}
+            </Box>
+          ),
+          renderCell: (params) => {
+            const list = Array.isArray(params?.row?.pitches) ? params.row.pitches : [];
+            const hasPitch = list.some((p) => normalizePitchLabel(p).code === sortPitch);
+            const v = hasPitch ? statsByCode?.[sortPitch]?.avgVelo : null;
+            return <span>{Number.isFinite(v) ? v.toFixed(1) : <span style={{ color: '#9ca3af' }}>—</span>}</span>;
+          }
+        },
+        {
+          field: 'ivb', headerName: `IVB${arrow('ivb')}`, width: 90, align: 'right', headerAlign: 'right', sortable: false,
+          renderHeader: () => (
+            <Box onClick={() => cycleSort('ivb')} sx={{ cursor: 'pointer', userSelect: 'none', textAlign: 'right', width: '100%' }}>
+              {`IVB${arrow('ivb')}`}
+            </Box>
+          ),
+          renderCell: (params) => {
+            const list = Array.isArray(params?.row?.pitches) ? params.row.pitches : [];
+            const hasPitch = list.some((p) => normalizePitchLabel(p).code === sortPitch);
+            const v = hasPitch ? statsByCode?.[sortPitch]?.avgIVB : null;
+            return <span>{Number.isFinite(v) ? v.toFixed(1) : <span style={{ color: '#9ca3af' }}>—</span>}</span>;
+          }
+        },
+        {
+          field: 'hb', headerName: `HB${arrow('hb')}`, width: 90, align: 'right', headerAlign: 'right', sortable: false,
+          renderHeader: () => (
+            <Box onClick={() => cycleSort('hb')} sx={{ cursor: 'pointer', userSelect: 'none', textAlign: 'right', width: '100%' }}>
+              {`HB${arrow('hb')}`}
+            </Box>
+          ),
+          renderCell: (params) => {
+            const list = Array.isArray(params?.row?.pitches) ? params.row.pitches : [];
+            const hasPitch = list.some((p) => normalizePitchLabel(p).code === sortPitch);
+            const v = hasPitch ? statsByCode?.[sortPitch]?.avgHB : null;
+            return <span>{Number.isFinite(v) ? v.toFixed(1) : <span style={{ color: '#9ca3af' }}>—</span>}</span>;
+          }
+        },
+        {
+          field: 'spin', headerName: `Spin${arrow('spin')}`, width: 100, align: 'right', headerAlign: 'right', sortable: false,
+          renderHeader: () => (
+            <Box onClick={() => cycleSort('spin')} sx={{ cursor: 'pointer', userSelect: 'none', textAlign: 'right', width: '100%' }}>
+              {`Spin${arrow('spin')}`}
+            </Box>
+          ),
+          renderCell: (params) => {
+            const list = Array.isArray(params?.row?.pitches) ? params.row.pitches : [];
+            const hasPitch = list.some((p) => normalizePitchLabel(p).code === sortPitch);
+            const v = hasPitch ? statsByCode?.[sortPitch]?.avgSpin : null;
+            return <span>{Number.isFinite(v) ? Math.round(v) : <span style={{ color: '#9ca3af' }}>—</span>}</span>;
+          }
+        },
+        {
+          field: 'usage', headerName: `Usage%${arrow('usage')}`, flex: 1, minWidth: 180, align: 'right', headerAlign: 'right', sortable: false,
+          renderHeader: () => (
+            <Box onClick={() => cycleSort('usage')} sx={{ cursor: 'pointer', userSelect: 'none', textAlign: 'right', width: '100%' }}>
+              {`Usage%${arrow('usage')}`}
+            </Box>
+          ),
           renderCell: (params) => {
             // Guard: if no usage map (no logs) show em dash
             const has = usageByCode && typeof usageByCode === 'object';
@@ -271,7 +435,12 @@ export default function PitchersTable({
           }
         },
         {
-          field: 'grade', headerName: 'Grade (20–80)', flex: 1, minWidth: 200, align: 'right', headerAlign: 'right', sortable: false,
+          field: 'grade', headerName: `Grade (20–80)${arrow('grade')}`, flex: 1, minWidth: 200, align: 'right', headerAlign: 'right', sortable: false,
+          renderHeader: () => (
+            <Box onClick={() => cycleSort('grade')} sx={{ cursor: 'pointer', userSelect: 'none', textAlign: 'right', width: '100%' }}>
+              {`Grade (20–80)${arrow('grade')}`}
+            </Box>
+          ),
           renderCell: (params) => {
             const has = gradesByCode && typeof gradesByCode === 'object';
             const list = Array.isArray(params?.row?.pitches) ? params.row.pitches : [];
@@ -309,7 +478,12 @@ export default function PitchersTable({
           }
         },
         {
-          field: 'n', headerName: 'N', width: 110, align: 'right', headerAlign: 'right', sortable: false,
+          field: 'n', headerName: `N${arrow('n')}`, width: 110, align: 'right', headerAlign: 'right', sortable: false,
+          renderHeader: () => (
+            <Box onClick={() => cycleSort('n')} sx={{ cursor: 'pointer', userSelect: 'none', textAlign: 'right', width: '100%' }}>
+              {`N${arrow('n')}`}
+            </Box>
+          ),
           renderCell: (params) => {
             const list = Array.isArray(params?.row?.pitches) ? params.row.pitches : [];
             const codes = [];
@@ -373,7 +547,7 @@ export default function PitchersTable({
       { field: 'result', headerName: 'Result', width: 120, sortable: true },
       { field: 'batter', headerName: 'Batter', width: 150, sortable: true },
     ];
-  }, [mode, arsenals, pitchersData, selectedPitcher, selectedInning]);
+  }, [mode, arsenals, pitchersData, selectedPitcher, selectedInning, sortColumn, sortDirection, cycleSort]);
 
   return (
     <Card elevation={3} sx={{ mb: 4, borderRadius: 3 }}>
@@ -396,39 +570,58 @@ export default function PitchersTable({
               </Menu>
             </Box>
           </Box>
-        )}
 
         {mode === 'arsenals' && rows.length === 0 ? (
           <EmptyState message="No arsenals loaded yet." />
         ) : (
-          <DataGrid
-            autoHeight
-            rows={rows}
-            getRowId={(row) => row.id}
-            columns={columns}
-            pageSize={mode === 'arsenals' ? 25 : 10}
-            rowsPerPageOptions={mode === 'arsenals' ? [25, 50, 100] : [10, 25, 50]}
-            disableSelectionOnClick
-            density="compact"
-            rowHeight={34}
-            columnHeaderHeight={38}
-            onRowDoubleClick={handleRowDouble}
-            sx={{
-              background: '#fff',
-              borderRadius: 2,
-              '& .MuiDataGrid-columnHeaders': {
-                position: 'sticky',
-                top: 0,
-                backgroundColor: 'background.paper',
-                zIndex: 1,
-              },
-              '& .MuiDataGrid-row:hover': { backgroundColor: 'rgba(25, 118, 210, 0.08)' },
-              '& .MuiDataGrid-row:nth-of-type(odd)': { backgroundColor: '#f9fafb' },
-              '& .MuiDataGrid-cell': { fontSize: 13, py: 0.25 },
-              '& .MuiDataGrid-columnHeadersInner': { fontSize: 12, fontWeight: 700 },
-              '& .MuiDataGrid-root': { overflowX: 'auto' },
-            }}
-          />
+          <>
+            {mode === 'arsenals' && (
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+                <FormControl size="small" sx={{ minWidth: 140 }}>
+                  <InputLabel id="sort-pitch-label">Sort pitch</InputLabel>
+                  <Select
+                    labelId="sort-pitch-label"
+                    aria-label="Sort pitch"
+                    value={sortPitch}
+                    label="Sort pitch"
+                    onChange={(e) => setSortPitch(e.target.value)}
+                  >
+                    {SORT_PITCH_OPTIONS.map((opt) => (
+                      <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            )}
+            <DataGrid
+              autoHeight
+              rows={sortedRows}
+              getRowId={(row) => row.id}
+              columns={columns}
+              pageSize={mode === 'arsenals' ? 25 : 10}
+              rowsPerPageOptions={mode === 'arsenals' ? [25, 50, 100] : [10, 25, 50]}
+              disableSelectionOnClick
+              density="compact"
+              rowHeight={34}
+              columnHeaderHeight={38}
+              onRowDoubleClick={handleRowDouble}
+              sx={{
+                background: '#fff',
+                borderRadius: 2,
+                '& .MuiDataGrid-columnHeaders': {
+                  position: 'sticky',
+                  top: 0,
+                  backgroundColor: 'background.paper',
+                  zIndex: 1,
+                },
+                '& .MuiDataGrid-row:hover': { backgroundColor: 'rgba(25, 118, 210, 0.08)' },
+                '& .MuiDataGrid-row:nth-of-type(odd)': { backgroundColor: '#f9fafb' },
+                '& .MuiDataGrid-cell': { fontSize: 13, py: 0.25 },
+                '& .MuiDataGrid-columnHeadersInner': { fontSize: 12, fontWeight: 700 },
+                '& .MuiDataGrid-root': { overflowX: 'auto' },
+              }}
+            />
+          </>
         )}
       </CardContent>
     </Card>
