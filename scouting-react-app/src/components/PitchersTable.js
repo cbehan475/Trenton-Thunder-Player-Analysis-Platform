@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
-import { FormControl, InputLabel, Select, MenuItem, Box, Card, CardContent, Tooltip, Button, Menu, Chip } from '@mui/material';
+import { FormControl, InputLabel, Select, MenuItem, Box, Card, CardContent, Tooltip, Button, Menu, Chip, TextField } from '@mui/material';
 import { safeKey } from '../lib/safeKey';
 import { useNavigate } from 'react-router-dom';
 
@@ -159,6 +159,18 @@ export default function PitchersTable({
   const menuOpen = Boolean(anchorEl);
   const handleMenuOpen = (e) => setAnchorEl(e.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
+  // Search filter: case-insensitive match on Name; debounced.
+  const [searchText, setSearchText] = useState(() => {
+    try { return sessionStorage.getItem('arsenalsSearch') || ''; } catch { return ''; }
+  });
+  const [debouncedSearch, setDebouncedSearch] = useState(searchText);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchText), 200);
+    return () => clearTimeout(t);
+  }, [searchText]);
+  useEffect(() => {
+    try { sessionStorage.setItem('arsenalsSearch', debouncedSearch); } catch {}
+  }, [debouncedSearch]);
   // Stable wrapper for double-click handler (passes through to prop if provided)
   const handleRowDouble = useCallback((params) => {
     if (typeof onRowDoubleClick === 'function') onRowDoubleClick(params);
@@ -313,6 +325,15 @@ export default function PitchersTable({
     });
     return arr;
   }, [rows, mode, sortColumn, sortDirection, getRowMetric]);
+
+  // Apply filtering AFTER sorting (per requirements)
+  const filteredRows = useMemo(() => {
+    if (mode !== 'arsenals') return rows;
+    const source = sortedRows;
+    const q = (debouncedSearch || '').trim().toLowerCase();
+    if (!q) return source;
+    return source.filter(r => String(r?.name ?? '').toLowerCase().includes(q));
+  }, [mode, rows, sortedRows, debouncedSearch]);
 
   // Dependencies reflect all values read inside this memo; keep in sync when logic changes.
   const columns = useMemo(() => {
@@ -534,7 +555,15 @@ export default function PitchersTable({
   const tableContent = (
     <>
       {mode === 'arsenals' && (
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, gap: 2 }}>
+          <TextField
+            size="small"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            placeholder="Search pitcher…"
+            aria-label="Search pitcher by name"
+            sx={{ width: 260, '& .MuiOutlinedInput-root': { bgcolor: 'white' } }}
+          />
           <FormControl size="small" sx={{ minWidth: 140 }}>
             <InputLabel id="sort-pitch-label">Sort pitch</InputLabel>
             <Select
@@ -553,7 +582,7 @@ export default function PitchersTable({
       )}
       <DataGrid
         autoHeight
-        rows={mode === 'arsenals' ? sortedRows : rows}
+        rows={mode === 'arsenals' ? filteredRows : rows}
         getRowId={(row) => row.id}
         columns={columns}
         pageSize={mode === 'arsenals' ? 25 : 10}
