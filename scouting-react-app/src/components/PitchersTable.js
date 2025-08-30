@@ -16,45 +16,7 @@ export function getPid(row, i = 0) {
   return s !== '' ? s : `row-${i}`; // stable fallback
 }
 
-function getName(row) {
-  // Try common variants; add more if needed
-  const raw =
-    row?.name ?? row?.Name ?? row?.playerName ?? row?.PlayerName ??
-    row?.player ?? row?.Player ?? row?.fullName ?? row?.FullName ?? row?.full_name ??
-    row?.display_name ?? row?.DisplayName ?? row?.displayName ??
-    row?.lastFirst ?? row?.LastFirst ?? row?.last_first;
-  const s = raw == null ? '' : String(raw).trim();
-  return s !== '' ? s : '-';
-}
-
-function getBT(row) {
-  // Single-field variants
-  const one =
-    row?.bt ?? row?.BT ?? row?.b_t ??
-    row?.batsThrows ?? row?.BatsThrows ?? row?.bats_throws ??
-    row?.hand ?? row?.Hand;
-  if (one && String(one).trim() !== '') return String(one).trim();
-
-  // Compose from separate bats/throws if present
-  const bats =
-    row?.bats ?? row?.Bats ?? row?.bat ?? row?.Bat ?? row?.bat_hand ?? row?.Batside;
-  const thr =
-    row?.throws ?? row?.Throws ?? row?.thr ?? row?.Throw ?? row?.throw_hand ?? row?.ThrowingHand;
-  if (bats || thr) return `${String(bats ?? '?').toUpperCase()}/${String(thr ?? '?').toUpperCase()}`;
-
-  return '-';
-}
-
-function getPitches(row) {
-  const arr = Array.isArray(row?.pitches) ? row.pitches
-           : Array.isArray(row?.Pitches) ? row.Pitches
-           : null;
-  if (arr) return arr;
-  const csv = typeof row?.pitches === 'string' ? row.pitches
-            : typeof row?.Pitches === 'string' ? row.Pitches
-            : '';
-  return csv ? csv.split(',').map(s => s.trim()).filter(Boolean) : [];
-}
+// Removed unused helpers to satisfy no-unused-vars lint (they can be reintroduced if needed)
 
 export function PitcherDropdown({ pitchersData, selectedPitcher, onPitcherChange }) {
   const pitcherNames = Object.keys(pitchersData || {});
@@ -187,6 +149,7 @@ export default function PitchersTable({
   }, [onRowDoubleClick]);
 
   // Centralized rows/columns based on mode (single top-level hooks)
+  // Dependencies reflect all values read inside this memo; keep in sync when logic changes.
   const rows = useMemo(() => {
     if (mode === 'arsenals') {
       const list = Array.isArray(arsenals) ? arsenals : [];
@@ -214,7 +177,7 @@ export default function PitchersTable({
       result: pitch.result,
       batter: pitch.batter,
     }));
-  }, [mode, arsenals, pitchersData, selectedPitcher, selectedInning, usageByCode, gradesByCode, statsByCode]);
+  }, [mode, arsenals, pitchersData, selectedPitcher, selectedInning]);
 
   // Sorting uses the selected "Sort pitch" (dropdown). Numeric columns read that pitch's aggregates; missing = — and sort last.
   // Column sorting: toggles asc/desc/reset; resets to arsenal JSON order on pitcher change
@@ -295,6 +258,7 @@ export default function PitchersTable({
     }
   }, [sortPitch, usageByCode, gradesByCode, statsByCode]);
 
+  // Dependencies reflect all values read inside this memo; keep in sync when logic changes.
   const sortedRows = useMemo(() => {
     if (mode !== 'arsenals' || !sortColumn || !sortDirection) return rows;
     const arr = [...rows];
@@ -313,6 +277,7 @@ export default function PitchersTable({
     return arr;
   }, [rows, mode, sortColumn, sortDirection, getRowMetric]);
 
+  // Dependencies reflect all values read inside this memo; keep in sync when logic changes.
   const columns = useMemo(() => {
     if (mode === 'arsenals') {
       // N = sample count from logs for this pitcherId/pitchType; tooltip shows aggregates for quick scouting context.
@@ -547,7 +512,14 @@ export default function PitchersTable({
       { field: 'result', headerName: 'Result', width: 120, sortable: true },
       { field: 'batter', headerName: 'Batter', width: 150, sortable: true },
     ];
-  }, [mode, arsenals, pitchersData, selectedPitcher, selectedInning, sortColumn, sortDirection, cycleSort]);
+  }, [
+    // top-level switches
+    mode,
+    // sort indicators and toggles
+    sortColumn, sortDirection, cycleSort,
+    // stats + selection used inside renderers
+    sortPitch, statsByCode, usageByCode, gradesByCode,
+  ]);
 
   // Prepare table content fragment for reuse in ternary below
   const tableContent = (
@@ -622,13 +594,15 @@ export default function PitchersTable({
               </Menu>
             </Box>
           </Box>
-
-        {/* Show EmptyState when no arsenals; otherwise render the table (valid single ternary) */}
-        {mode === 'arsenals' && rows.length === 0 ? (
-          <EmptyState message="No arsenals loaded yet." />
-        ) : (
-          <>{tableContent}</>
         )}
+        {/* Empty state vs table separated with logical && to avoid ternary parse issues */}
+        {/* Show EmptyState only when in arsenals mode AND there are zero rows */}
+        {mode === 'arsenals' && rows.length === 0 && (
+          <EmptyState message="No arsenals loaded yet." />
+        )}
+
+        {/* Otherwise render the tableContent */}
+        {!(mode === 'arsenals' && rows.length === 0) && <>{tableContent}</>}
       </CardContent>
     </Card>
   );
