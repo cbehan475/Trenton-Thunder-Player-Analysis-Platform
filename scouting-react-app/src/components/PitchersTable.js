@@ -18,6 +18,20 @@ export function getPid(row, i = 0) {
 
 // Removed unused helpers to satisfy no-unused-vars lint (they can be reintroduced if needed)
 
+// --- Simple format helpers for numeric display ---
+function formatMph(v, digits = 1) {
+  return Number.isFinite(v) ? v.toFixed(digits) : null;
+}
+function formatIn(v, digits = 1) {
+  return Number.isFinite(v) ? v.toFixed(digits) : null;
+}
+function formatRpm(v) {
+  return Number.isFinite(v) ? String(Math.round(v)) : null;
+}
+function formatPct(v, digits = 1) {
+  return Number.isFinite(v) ? `${v.toFixed(digits)}%` : null;
+}
+
 export function PitcherDropdown({ pitchersData, selectedPitcher, onPitcherChange }) {
   const pitcherNames = Object.keys(pitchersData || {});
   return (
@@ -179,6 +193,47 @@ export default function PitchersTable({
     }));
   }, [mode, arsenals, pitchersData, selectedPitcher, selectedInning]);
 
+  // Build per-pitcher aggregates for numeric cells in arsenals mode.
+  // Dependencies reflect all values read inside this memo; keep in sync when logic changes.
+  const aggregatesByPitcher = useMemo(() => {
+    // Expect incoming shapes like:
+    // statsByCode: { [playerId]: { [code]: { avgVelo, avgIVB, avgHB, avgSpin, usagePct, n } } }
+    // usageByCode: { [playerId]: { [code]: number } }
+    // gradesByCode: { [playerId]: { [code]: number } }
+    const result = {};
+    const players = new Set([
+      ...Object.keys(statsByCode || {}),
+      ...Object.keys(usageByCode || {}),
+      ...Object.keys(gradesByCode || {}),
+    ]);
+    players.forEach((pid) => {
+      const s = (statsByCode && statsByCode[pid]) || {};
+      const u = (usageByCode && usageByCode[pid]) || {};
+      const g = (gradesByCode && gradesByCode[pid]) || {};
+      const codes = new Set([
+        ...Object.keys(s || {}),
+        ...Object.keys(u || {}),
+        ...Object.keys(g || {}),
+      ]);
+      codes.forEach((code) => {
+        const sv = s && s[code] ? s[code] : {};
+        const up = u && Number.isFinite(u[code]) ? u[code] : (Number.isFinite(sv.usagePct) ? sv.usagePct : null);
+        const gr = g && Number.isFinite(g[code]) ? g[code] : null;
+        if (!result[pid]) result[pid] = {};
+        result[pid][code] = {
+          avgVelo: Number.isFinite(sv.avgVelo) ? sv.avgVelo : null,
+          avgIVB: Number.isFinite(sv.avgIVB) ? sv.avgIVB : null,
+          avgHB: Number.isFinite(sv.avgHB) ? sv.avgHB : null,
+          avgSpin: Number.isFinite(sv.avgSpin) ? sv.avgSpin : null,
+          usagePct: Number.isFinite(up) ? up : null,
+          grade: Number.isFinite(gr) ? gr : null,
+          sampleCount: Number.isFinite(sv.n) ? sv.n : null,
+        };
+      });
+    });
+    return result;
+  }, [statsByCode, usageByCode, gradesByCode]);
+
   // Sorting uses the selected "Sort pitch" (dropdown). Numeric columns read that pitch's aggregates; missing = — and sort last.
   // Column sorting: toggles asc/desc/reset; resets to arsenal JSON order on pitcher change
   const SORT_PITCH_OPTIONS = [
@@ -224,39 +279,19 @@ export default function PitchersTable({
     const hasPitch = list.some((p) => normalizePitchLabel(p).code === sortPitch);
     if (key === 'pitchType') return hasPitch ? sortPitch : null; // alpha
     if (!hasPitch) return null;
+    const agg = aggregatesByPitcher?.[row?.playerId]?.[sortPitch];
+    if (!agg) return null;
     switch (key) {
-      case 'velo': {
-        const v = statsByCode?.[sortPitch]?.avgVelo;
-        return Number.isFinite(v) ? v : null;
-      }
-      case 'ivb': {
-        const v = statsByCode?.[sortPitch]?.avgIVB;
-        return Number.isFinite(v) ? v : null;
-      }
-      case 'hb': {
-        const v = statsByCode?.[sortPitch]?.avgHB;
-        return Number.isFinite(v) ? v : null;
-      }
-      case 'spin': {
-        const v = statsByCode?.[sortPitch]?.avgSpin;
-        return Number.isFinite(v) ? v : null;
-      }
-      case 'usage': {
-        const v = usageByCode?.[sortPitch] ?? statsByCode?.[sortPitch]?.usagePct;
-        return Number.isFinite(v) ? v : null;
-      }
-      case 'grade': {
-        const v = gradesByCode?.[sortPitch];
-        return Number.isFinite(v) ? v : null;
-      }
-      case 'n': {
-        const v = statsByCode?.[sortPitch]?.n;
-        return Number.isFinite(v) ? v : null;
-      }
-      default:
-        return null;
+      case 'velo': return Number.isFinite(agg.avgVelo) ? agg.avgVelo : null;
+      case 'ivb': return Number.isFinite(agg.avgIVB) ? agg.avgIVB : null;
+      case 'hb': return Number.isFinite(agg.avgHB) ? agg.avgHB : null;
+      case 'spin': return Number.isFinite(agg.avgSpin) ? agg.avgSpin : null;
+      case 'usage': return Number.isFinite(agg.usagePct) ? agg.usagePct : null;
+      case 'grade': return Number.isFinite(agg.grade) ? agg.grade : null;
+      case 'n': return Number.isFinite(agg.sampleCount) ? agg.sampleCount : null;
+      default: return null;
     }
-  }, [sortPitch, usageByCode, gradesByCode, statsByCode]);
+  }, [sortPitch, aggregatesByPitcher]);
 
   // Dependencies reflect all values read inside this memo; keep in sync when logic changes.
   const sortedRows = useMemo(() => {
@@ -321,10 +356,10 @@ export default function PitchersTable({
             </Box>
           ),
           renderCell: (params) => {
-            const list = Array.isArray(params?.row?.pitches) ? params.row.pitches : [];
-            const hasPitch = list.some((p) => normalizePitchLabel(p).code === sortPitch);
-            const v = hasPitch ? statsByCode?.[sortPitch]?.avgVelo : null;
-            return <span>{Number.isFinite(v) ? v.toFixed(1) : <span style={{ color: '#9ca3af' }}>—</span>}</span>;
+            // Numeric cells read aggregates for the selected sortPitch; missing ⇒ em dash.
+            const agg = aggregatesByPitcher?.[params?.row?.playerId]?.[sortPitch];
+            const out = agg ? formatMph(agg.avgVelo, 1) : null;
+            return <span>{out ?? <span style={{ color: '#9ca3af' }}>—</span>}</span>;
           }
         },
         {
@@ -335,10 +370,10 @@ export default function PitchersTable({
             </Box>
           ),
           renderCell: (params) => {
-            const list = Array.isArray(params?.row?.pitches) ? params.row.pitches : [];
-            const hasPitch = list.some((p) => normalizePitchLabel(p).code === sortPitch);
-            const v = hasPitch ? statsByCode?.[sortPitch]?.avgIVB : null;
-            return <span>{Number.isFinite(v) ? v.toFixed(1) : <span style={{ color: '#9ca3af' }}>—</span>}</span>;
+            // Numeric cells read aggregates for the selected sortPitch; missing ⇒ em dash.
+            const agg = aggregatesByPitcher?.[params?.row?.playerId]?.[sortPitch];
+            const out = agg ? formatIn(agg.avgIVB, 1) : null;
+            return <span>{out ?? <span style={{ color: '#9ca3af' }}>—</span>}</span>;
           }
         },
         {
@@ -349,10 +384,10 @@ export default function PitchersTable({
             </Box>
           ),
           renderCell: (params) => {
-            const list = Array.isArray(params?.row?.pitches) ? params.row.pitches : [];
-            const hasPitch = list.some((p) => normalizePitchLabel(p).code === sortPitch);
-            const v = hasPitch ? statsByCode?.[sortPitch]?.avgHB : null;
-            return <span>{Number.isFinite(v) ? v.toFixed(1) : <span style={{ color: '#9ca3af' }}>—</span>}</span>;
+            // Numeric cells read aggregates for the selected sortPitch; missing ⇒ em dash.
+            const agg = aggregatesByPitcher?.[params?.row?.playerId]?.[sortPitch];
+            const out = agg ? formatIn(agg.avgHB, 1) : null;
+            return <span>{out ?? <span style={{ color: '#9ca3af' }}>—</span>}</span>;
           }
         },
         {
@@ -363,10 +398,10 @@ export default function PitchersTable({
             </Box>
           ),
           renderCell: (params) => {
-            const list = Array.isArray(params?.row?.pitches) ? params.row.pitches : [];
-            const hasPitch = list.some((p) => normalizePitchLabel(p).code === sortPitch);
-            const v = hasPitch ? statsByCode?.[sortPitch]?.avgSpin : null;
-            return <span>{Number.isFinite(v) ? Math.round(v) : <span style={{ color: '#9ca3af' }}>—</span>}</span>;
+            // Numeric cells read aggregates for the selected sortPitch; missing ⇒ em dash.
+            const agg = aggregatesByPitcher?.[params?.row?.playerId]?.[sortPitch];
+            const out = agg ? formatRpm(agg.avgSpin) : null;
+            return <span>{out ?? <span style={{ color: '#9ca3af' }}>—</span>}</span>;
           }
         },
         {
@@ -377,26 +412,10 @@ export default function PitchersTable({
             </Box>
           ),
           renderCell: (params) => {
-            // Guard: if no usage map (no logs) show em dash
-            const has = usageByCode && typeof usageByCode === 'object';
-            const list = Array.isArray(params?.row?.pitches) ? params.row.pitches : [];
-            const codes = [];
-            const seen = new Set();
-            for (const p of list) {
-              const { code } = normalizePitchLabel(p);
-              if (!seen.has(code)) { seen.add(code); codes.push(code); }
-            }
-            if (!codes.length) return <span style={{ color: '#9ca3af' }}>—</span>;
-            return (
-              <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end', width: '100%' }}>
-                {codes.map((code, i) => {
-                  const val = has && usageByCode && Number.isFinite(usageByCode[code]) ? `${usageByCode[code]}%` : '—';
-                  return (
-                    <Chip key={safeKey(params.row.id, 'usage', i, code)} label={`${code} ${val}`} size="small" sx={{ height: 22 }} />
-                  );
-                })}
-              </Box>
-            );
+            // Numeric cells read aggregates for the selected sortPitch; missing ⇒ em dash.
+            const agg = aggregatesByPitcher?.[params?.row?.playerId]?.[sortPitch];
+            const out = agg ? formatPct(agg.usagePct, 1) : null;
+            return <span>{out ?? <span style={{ color: '#9ca3af' }}>—</span>}</span>;
           }
         },
         {
@@ -407,39 +426,10 @@ export default function PitchersTable({
             </Box>
           ),
           renderCell: (params) => {
-            const has = gradesByCode && typeof gradesByCode === 'object';
-            const list = Array.isArray(params?.row?.pitches) ? params.row.pitches : [];
-            const codes = [];
-            const seen = new Set();
-            for (const p of list) {
-              const { code } = normalizePitchLabel(p);
-              if (!seen.has(code)) { seen.add(code); codes.push(code); }
-            }
-            if (!codes.length) return <span style={{ color: '#9ca3af' }}>—</span>;
-            return (
-              <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end', width: '100%' }}>
-                {codes.map((code, i) => {
-                  const val = has && Number.isFinite(gradesByCode[code]) ? String(gradesByCode[code]) : '—';
-                  const s = statsByCode && statsByCode[code] ? statsByCode[code] : null;
-                  const lines = [];
-                  if (s && Number.isFinite(s.avgVelo)) lines.push(`Avg Velo: ${s.avgVelo.toFixed(1)}`);
-                  if (s && Number.isFinite(s.avgIVB)) lines.push(`Avg IVB: ${s.avgIVB.toFixed(1)}`);
-                  if (s && Number.isFinite(s.avgHB)) lines.push(`Avg HB: ${s.avgHB.toFixed(1)}`);
-                  if (s && Number.isFinite(s.avgSpin)) lines.push(`Avg Spin: ${Math.round(s.avgSpin)}`);
-                  const usage = (s && Number.isFinite(s.usagePct)) ? `${s.usagePct}%` : (usageByCode && Number.isFinite(usageByCode[code]) ? `${usageByCode[code]}%` : null);
-                  if (usage) lines.push(`Usage%: ${usage}`);
-                  if (s && Number.isFinite(s.n)) lines.push(`N: ${s.n}`);
-                  const title = lines.length ? (
-                    <Box sx={{ whiteSpace: 'pre-line' }}>{lines.join('\n')}</Box>
-                  ) : '—';
-                  return (
-                    <Tooltip key={safeKey(params.row.id, 'grade', i, code)} title={title} arrow>
-                      <Chip label={`${code} ${val}`} size="small" sx={{ height: 22 }} />
-                    </Tooltip>
-                  );
-                })}
-              </Box>
-            );
+            // Numeric cells read aggregates for the selected sortPitch; missing ⇒ em dash.
+            const agg = aggregatesByPitcher?.[params?.row?.playerId]?.[sortPitch];
+            const out = agg && Number.isFinite(agg.grade) ? String(agg.grade) : null;
+            return <span>{out ?? <span style={{ color: '#9ca3af' }}>—</span>}</span>;
           }
         },
         {
@@ -450,25 +440,10 @@ export default function PitchersTable({
             </Box>
           ),
           renderCell: (params) => {
-            const list = Array.isArray(params?.row?.pitches) ? params.row.pitches : [];
-            const codes = [];
-            const seen = new Set();
-            for (const p of list) {
-              const { code } = normalizePitchLabel(p);
-              if (!seen.has(code)) { seen.add(code); codes.push(code); }
-            }
-            if (!codes.length) return <span style={{ color: '#9ca3af' }}>—</span>;
-            return (
-              <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end', width: '100%' }}>
-                {codes.map((code, i) => {
-                  const s = statsByCode && statsByCode[code] ? statsByCode[code] : null;
-                  const val = s && Number.isFinite(s.n) ? String(s.n) : '—';
-                  return (
-                    <Chip key={safeKey(params.row.id, 'n', i, code)} label={`${code} ${val}`} size="small" sx={{ height: 22 }} />
-                  );
-                })}
-              </Box>
-            );
+            // Numeric cells read aggregates for the selected sortPitch; missing ⇒ em dash.
+            const agg = aggregatesByPitcher?.[params?.row?.playerId]?.[sortPitch];
+            const out = agg && Number.isFinite(agg.sampleCount) ? String(agg.sampleCount) : null;
+            return <span>{out ?? <span style={{ color: '#9ca3af' }}>—</span>}</span>;
           }
         },
         {

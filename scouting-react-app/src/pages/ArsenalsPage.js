@@ -75,10 +75,8 @@ export default function ArsenalsPage() {
     return pitcherArsenals.find((p) => String(p.playerId) === String(selectedPlayerId)) || null;
   }, [selectedPlayerId]);
 
-  // Compute per-code sample size (N) and averages used for tooltips
-  const statsByCode = useMemo(() => {
-    const pid = String(selectedPlayerId || '');
-    if (!pid) return null;
+  // Build maps for ALL pitchers: statsByCodeAll, usageByCodeAll, gradesByCodeAll
+  const { statsByCodeAll, usageByCodeAll, gradesByCodeAll } = useMemo(() => {
     const nameToPid = new Map();
     for (const r of Array.isArray(pitcherArsenals) ? pitcherArsenals : []) {
       if (r?.name && r?.playerId != null) nameToPid.set(String(r.name), String(r.playerId));
@@ -113,142 +111,68 @@ export default function ArsenalsPage() {
       if (key.startsWith('spl') || key.startsWith('fs')) return 'SPL';
       return 'OTH';
     };
-    const rows = (Array.isArray(ALL_PITCH_EVENTS) ? ALL_PITCH_EVENTS : []).filter((e) => {
+
+    // Aggregate sums by playerId and code
+    const sums = new Map(); // pid -> code -> { n, sv, si, sh, ss }
+    const totals = new Map(); // pid -> total n
+    for (const e of (Array.isArray(ALL_PITCH_EVENTS) ? ALL_PITCH_EVENTS : [])) {
       const name = e?.pitcher ? String(e.pitcher) : '';
-      const mapped = name ? nameToPid.get(name) : undefined;
-      return mapped && String(mapped) === pid;
-    });
-    if (!rows.length) return null;
-    const agg = new Map();
-    let total = 0;
-    for (const e of rows) {
+      const pid = nameToPid.get(name);
+      if (!pid) continue;
       const code = norm(e?.pitchType || e?.type || e?.pitch || e?.pitch_name || e?.pitchClass || null);
       if (!code || code === 'OTH') continue;
       const velo = Number(e?.velo ?? e?.velocity ?? e?.v ?? e?.speed);
       const ivb  = Number(e?.ivb ?? e?.vert ?? e?.rise);
       const hb   = Number(e?.hb ?? e?.horz ?? e?.run);
       const spin = Number(e?.spin ?? e?.rpm);
-      if (!agg.has(code)) agg.set(code, { n: 0, sv: 0, si: 0, sh: 0, ss: 0 });
-      const a = agg.get(code);
-      a.n += 1; total += 1;
-      if (Number.isFinite(velo)) a.sv += velo;
-      if (Number.isFinite(ivb)) a.si += ivb;
-      if (Number.isFinite(hb)) a.sh += hb;
-      if (Number.isFinite(spin)) a.ss += spin;
-    }
-    if (agg.size === 0 || total === 0) return null;
-    const out = Object.create(null);
-    for (const [code, a] of agg) {
-      const n = a.n;
-      out[code] = {
-        n,
-        avgVelo: a.sv / n,
-        avgIVB: a.si / n,
-        avgHB: a.sh / n,
-        avgSpin: a.ss / n,
-        usagePct: Number(((n / total) * 100).toFixed(1)),
-      };
-    }
-    return out;
-  }, [selectedPlayerId]);
-
-  // Heuristic 20–80 grading from logs per pitcherId; arsenal source of truth remains src/data/pitcherArsenals.json
-  const gradesByCode = useMemo(() => {
-    const pid = String(selectedPlayerId || '');
-    if (!pid) return null;
-    const nameToPid = new Map();
-    for (const r of Array.isArray(pitcherArsenals) ? pitcherArsenals : []) {
-      if (r?.name && r?.playerId != null) nameToPid.set(String(r.name), String(r.playerId));
-    }
-    // reuse same normalizer as usage
-    const norm = (input) => {
-      if (!input) return 'OTH';
-      const raw = String(input).trim().toLowerCase();
-      const al = [
-        { keys: ['ff','four-seam','four seam','fourseam','4-seam','4 seam','fastball','fb'], out: 'FF' },
-        { keys: ['si','sinker','two-seam','two seam','2-seam','2 seam','2seam','ft'], out: 'SI' },
-        { keys: ['ct','cutter','cut','fc'], out: 'CT' },
-        { keys: ['sl','slider'], out: 'SL' },
-        { keys: ['sw','sweeper','sl-sweeper','sl sweeper','sweeping slider','swp'], out: 'SW' },
-        { keys: ['cb','curve','curveball','knuckle-curve','knuckle curve','kc'], out: 'CB' },
-        { keys: ['ch','change','changeup'], out: 'CH' },
-        { keys: ['spl','splitter','split','fs','forkball'], out: 'SPL' },
-      ];
-      for (const m of al) if (m.keys.includes(raw)) return m.out;
-      const key = raw
-        .replace(/[_\s-]+/g, '')
-        .replace('fourseam','ff').replace('twoseam','si').replace('sinker','si')
-        .replace('cutter','ct').replace('fc','ct').replace('slider','sl').replace('sweeper','sw')
-        .replace('curveball','cb').replace('curve','cb').replace('changeup','ch')
-        .replace('splitter','spl').replace('forkball','spl');
-      if (key.startsWith('ff')) return 'FF';
-      if (key.startsWith('si')) return 'SI';
-      if (key.startsWith('ct')) return 'CT';
-      if (key.startsWith('sl') && !key.startsWith('spl')) return 'SL';
-      if (key.startsWith('sw')) return 'SW';
-      if (key.startsWith('cb') || key.startsWith('kc')) return 'CB';
-      if (key.startsWith('ch')) return 'CH';
-      if (key.startsWith('spl') || key.startsWith('fs')) return 'SPL';
-      return 'OTH';
-    };
-
-    const rows = (Array.isArray(ALL_PITCH_EVENTS) ? ALL_PITCH_EVENTS : []).filter((e) => {
-      const name = e?.pitcher ? String(e.pitcher) : '';
-      const mapped = name ? nameToPid.get(name) : undefined;
-      return mapped && String(mapped) === pid;
-    });
-    if (!rows.length) return null;
-
-    // aggregate sums/counts per code
-    const agg = new Map();
-    function add(code, velo, ivb, hb, spin) {
-      if (!agg.has(code)) agg.set(code, { n: 0, sv: 0, si: 0, sh: 0, ss: 0 });
-      const a = agg.get(code);
+      if (!sums.has(pid)) sums.set(pid, new Map());
+      const m = sums.get(pid);
+      if (!m.has(code)) m.set(code, { n: 0, sv: 0, si: 0, sh: 0, ss: 0 });
+      const a = m.get(code);
       a.n += 1;
       if (Number.isFinite(velo)) a.sv += velo;
       if (Number.isFinite(ivb)) a.si += ivb;
       if (Number.isFinite(hb)) a.sh += hb;
       if (Number.isFinite(spin)) a.ss += spin;
+      totals.set(pid, (totals.get(pid) || 0) + 1);
     }
-    for (const e of rows) {
-      const code = norm(e?.pitchType || e?.type || e?.pitch || e?.pitch_name || e?.pitchClass || null);
-      if (!code || code === 'OTH') continue;
-      const velo = Number(e?.velo ?? e?.velocity ?? e?.v ?? e?.speed);
-      const ivb  = Number(e?.ivb ?? e?.vert ?? e?.rise);
-      const hb   = Number(e?.hb ?? e?.horz ?? e?.run);
-      const spin = Number(e?.spin ?? e?.rpm);
-      add(code, velo, ivb, hb, spin);
-    }
-    if (agg.size === 0) return null;
 
-    const avgs = new Map();
-    let ffAvgVelo = null;
-    let fastest = { code: null, avgV: -Infinity };
-    for (const [code, a] of agg) {
-      const n = a.n || 1;
-      const avgV = a.sv / n;
-      const avgI = a.si / n;
-      const avgH = a.sh / n;
-      const avgS = a.ss / n;
-      avgs.set(code, { avgVelo: avgV, avgIVB: avgI, avgHB: avgH, avgSpin: avgS });
-      if (code === 'FF') ffAvgVelo = avgV;
-      if (avgV > fastest.avgV) fastest = { code, avgV };
+    // Produce per-player stats with averages and usage%
+    const statsByCodeAll = Object.create(null);
+    const usageByCodeAll = Object.create(null);
+    for (const [pid, codesMap] of sums) {
+      const total = totals.get(pid) || 0;
+      if (!total) continue;
+      const stats = Object.create(null);
+      const usage = Object.create(null);
+      for (const [code, a] of codesMap) {
+        const n = a.n || 1;
+        stats[code] = {
+          n,
+          avgVelo: a.sv / n,
+          avgIVB: a.si / n,
+          avgHB: a.sh / n,
+          avgSpin: a.ss / n,
+          usagePct: Number(((n / total) * 100).toFixed(1)),
+        };
+        usage[code] = stats[code].usagePct;
+      }
+      statsByCodeAll[pid] = stats;
+      usageByCodeAll[pid] = usage;
     }
-    if (!Number.isFinite(ffAvgVelo)) ffAvgVelo = fastest.avgV;
 
+    // Grades per player based on averages
     function roundTo5(x) { return Math.max(20, Math.min(80, Math.round(x / 5) * 5)); }
     function baseGradeFF(v) {
       if (v >= 98) return 80; if (v >= 96) return 70; if (v >= 94) return 60; if (v >= 92) return 50; if (v >= 90) return 40; return 30;
     }
     function gradePitch(pitchType, avgVelo, avgIVB, avgHB, avgSpin, ffV) {
       const t = pitchType;
-      // FF
       if (t === 'FF') {
         let g = baseGradeFF(avgVelo);
         if (Number.isFinite(avgIVB)) { if (avgIVB >= 17) g += 5; else if (avgIVB <= 12) g -= 5; }
         return roundTo5(g);
       }
-      // SI
       if (t === 'SI') {
         let g = 30;
         const hbMag = Number.isFinite(avgHB) ? Math.abs(avgHB) : -Infinity;
@@ -256,7 +180,6 @@ export default function ArsenalsPage() {
         if ((Number.isFinite(avgIVB) && avgIVB <= 10) || (Number.isFinite(avgVelo) && avgVelo >= 94)) g += 5;
         return roundTo5(g);
       }
-      // CT
       if (t === 'CT') {
         let g = 50;
         const gap = (Number.isFinite(ffV) && Number.isFinite(avgVelo)) ? (ffV - avgVelo) : NaN;
@@ -265,7 +188,6 @@ export default function ArsenalsPage() {
         if ((Number.isFinite(avgVelo) && avgVelo >= 92) || (Number.isFinite(avgIVB) && avgIVB >= 8 && avgIVB <= 12)) g += 5;
         return roundTo5(g);
       }
-      // SL
       if (t === 'SL') {
         const sweep = Number.isFinite(avgHB) ? Math.abs(avgHB) : -Infinity;
         let g = 45;
@@ -273,7 +195,6 @@ export default function ArsenalsPage() {
         if ((Number.isFinite(avgSpin) && avgSpin >= 2400) || (Number.isFinite(avgIVB) && avgIVB >= 0 && avgIVB <= 5)) g += 5;
         return roundTo5(g);
       }
-      // SW (sweeper)
       if (t === 'SW') {
         const sweep = Number.isFinite(avgHB) ? Math.abs(avgHB) : -Infinity;
         let g = 45;
@@ -281,7 +202,6 @@ export default function ArsenalsPage() {
         if ((Number.isFinite(avgSpin) && avgSpin >= 2400) && (Number.isFinite(avgIVB) && avgIVB <= 3)) g += 5;
         return roundTo5(g);
       }
-      // CH
       if (t === 'CH') {
         let g = 50;
         if (Number.isFinite(avgHB) && avgHB >= 12) g += 5;
@@ -290,7 +210,6 @@ export default function ArsenalsPage() {
         if (Number.isFinite(avgIVB) && avgIVB <= 8) g += 5;
         return Math.min(70, roundTo5(g));
       }
-      // CB
       if (t === 'CB') {
         const ivb = Number.isFinite(avgIVB) ? avgIVB : Infinity;
         let g = 45;
@@ -298,81 +217,29 @@ export default function ArsenalsPage() {
         if (Number.isFinite(avgSpin) && avgSpin >= 2600) g += 5;
         return roundTo5(g);
       }
-      // SPL & others default to neutral 50 if present
       return 50;
     }
 
-    const out = Object.create(null);
-    for (const [code, v] of avgs) {
-      const g = gradePitch(code, v.avgVelo, v.avgIVB, v.avgHB, v.avgSpin, ffAvgVelo);
-      if (Number.isFinite(g)) out[code] = g;
+    const gradesByCodeAll = Object.create(null);
+    for (const [pid, stats] of Object.entries(statsByCodeAll)) {
+      let ffAvgVelo = null;
+      let fastest = { code: null, avgV: -Infinity };
+      for (const [code, v] of Object.entries(stats)) {
+        const avgV = v.avgVelo;
+        if (code === 'FF') ffAvgVelo = avgV;
+        if (Number.isFinite(avgV) && avgV > fastest.avgV) fastest = { code, avgV };
+      }
+      if (!Number.isFinite(ffAvgVelo)) ffAvgVelo = fastest.avgV;
+      const grades = Object.create(null);
+      for (const [code, v] of Object.entries(stats)) {
+        const g = gradePitch(code, v.avgVelo, v.avgIVB, v.avgHB, v.avgSpin, ffAvgVelo);
+        if (Number.isFinite(g)) grades[code] = g;
+      }
+      gradesByCodeAll[pid] = grades;
     }
-    return out;
-  }, [selectedPlayerId]);
 
-  // Usage% is computed from logs keyed by pitcherId; source of truth for arsenal is src/data/pitcherArsenals.json
-  const usageByCode = useMemo(() => {
-    const pid = String(selectedPlayerId || '');
-    if (!pid) return null;
-    // Build name -> playerId map from source-of-truth JSON
-    const nameToPid = new Map();
-    for (const r of Array.isArray(pitcherArsenals) ? pitcherArsenals : []) {
-      if (r?.name && r?.playerId != null) nameToPid.set(String(r.name), String(r.playerId));
-    }
-    // Local lightweight normalizer to MLB-like short codes
-    const norm = (input) => {
-      if (!input) return 'OTH';
-      const raw = String(input).trim().toLowerCase();
-      const al = [
-        { keys: ['ff','four-seam','four seam','fourseam','4-seam','4 seam','fastball','fb'], out: 'FF' },
-        { keys: ['si','sinker','two-seam','two seam','2-seam','2 seam','2seam','ft'], out: 'SI' },
-        { keys: ['ct','cutter','cut'], out: 'CT' },
-        { keys: ['sl','slider'], out: 'SL' },
-        { keys: ['sw','sweeper','sl-sweeper','sl sweeper','sweeping slider'], out: 'SW' },
-        { keys: ['cb','curve','curveball','knuckle-curve','knuckle curve','kc'], out: 'CB' },
-        { keys: ['ch','change','changeup'], out: 'CH' },
-        { keys: ['spl','splitter','split','fs','forkball'], out: 'SPL' },
-      ];
-      for (const m of al) if (m.keys.includes(raw)) return m.out;
-      const key = raw
-        .replace(/[_\s-]+/g, '')
-        .replace('fourseam','ff').replace('twoseam','si').replace('sinker','si')
-        .replace('cutter','ct').replace('slider','sl').replace('sweeper','sw')
-        .replace('curveball','cb').replace('curve','cb').replace('changeup','ch')
-        .replace('splitter','spl').replace('forkball','spl');
-      if (key.startsWith('ff')) return 'FF';
-      if (key.startsWith('si')) return 'SI';
-      if (key.startsWith('ct')) return 'CT';
-      if (key.startsWith('sl') && !key.startsWith('spl')) return 'SL';
-      if (key.startsWith('sw')) return 'SW';
-      if (key.startsWith('cb') || key.startsWith('kc')) return 'CB';
-      if (key.startsWith('ch')) return 'CH';
-      if (key.startsWith('spl') || key.startsWith('fs')) return 'SPL';
-      return 'OTH';
-    };
-    // Filter logs to those mapping to this pitcherId
-    const rows = (Array.isArray(ALL_PITCH_EVENTS) ? ALL_PITCH_EVENTS : []).filter((e) => {
-      const name = e?.pitcher ? String(e.pitcher) : '';
-      const mapped = name ? nameToPid.get(name) : undefined;
-      return mapped && String(mapped) === pid;
-    });
-    if (!rows.length) return null;
-    const counts = new Map();
-    let total = 0;
-    for (const e of rows) {
-      const type = e?.pitchType || e?.type || e?.pitch || e?.pitch_name || e?.pitchClass || null;
-      const code = norm(type);
-      if (!code || code === 'OTH') { continue; }
-      counts.set(code, (counts.get(code) || 0) + 1);
-      total += 1;
-    }
-    if (!total) return null;
-    const out = Object.create(null);
-    for (const [code, n] of counts.entries()) {
-      out[code] = Number(((n / total) * 100).toFixed(1));
-    }
-    return out;
-  }, [selectedPlayerId]);
+    return { statsByCodeAll, usageByCodeAll, gradesByCodeAll };
+  }, []);
 
   // Proposals-related actions removed.
 
@@ -436,7 +303,15 @@ export default function ArsenalsPage() {
                 No arsenals loaded yet.
               </Box>
             ) : (
-              <PitchersTable mode="arsenals" arsenals={rowsForDisplay} onRowDoubleClick={handleRowDoubleClick} usageByCode={usageByCode} gradesByCode={gradesByCode} statsByCode={statsByCode} selectedPlayerId={selectedPlayerId} />
+              <PitchersTable
+                mode="arsenals"
+                arsenals={rowsForDisplay}
+                onRowDoubleClick={handleRowDoubleClick}
+                usageByCode={usageByCodeAll}
+                gradesByCode={gradesByCodeAll}
+                statsByCode={statsByCodeAll}
+                selectedPlayerId={selectedPlayerId}
+              />
             )}
           </>
 
