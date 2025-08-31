@@ -166,16 +166,19 @@ export default function PitchersTable({
       sp: sp.get('sp') || 'FF',
       sc: sp.get('sc') || null,
       sd: sp.get('sd') || null,
-      q:  sp.get('q')  || ''
+      q:  sp.get('q')  || '',
+      hand: (sp.get('hand') || 'all').toLowerCase(),
     };
   };
   // Initialize from URL via lazy useState; all code that reads table state must come after these declarations.
-  const { sp, sc, sd, q } = readParams();
+  const { sp, sc, sd, q, hand } = readParams();
   const [sortPitch, setSortPitch] = useState(() => sp);
   const [sortColumn, setSortColumn] = useState(() => sc);
   const [sortDirection, setSortDirection] = useState(() => sd);
   // Search filter: case-insensitive match on Name; debounced.
   const [searchText, setSearchText] = useState(() => q);
+  // Hand filter (All/RHP/LHP) applies post-sort and persists via ?hand=.
+  const [handFilter, setHandFilter] = useState(() => (hand === 'r' ? 'R' : hand === 'l' ? 'L' : 'all'));
   const [debouncedSearch, setDebouncedSearch] = useState(searchText);
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(searchText), 200);
@@ -195,18 +198,20 @@ export default function PitchersTable({
       if (sortDirection) p.set('sd', String(sortDirection));
       const qStr = (searchText || '').trim();
       if (qStr) p.set('q', qStr);
+      if (handFilter && handFilter !== 'all') p.set('hand', handFilter);
       const qs = p.toString();
       const url = qs ? `?${qs}` : window.location.pathname;
       window.history.replaceState(null, '', url);
     }, 200);
     return () => clearTimeout(t);
-  }, [mode, sortPitch, sortColumn, sortDirection, searchText]);
+  }, [mode, sortPitch, sortColumn, sortDirection, searchText, handFilter]);
   // Reset returns Arsenals table to default state (order, sort pitch, search).
   const handleReset = useCallback(() => {
     setSortColumn(null);
     setSortDirection(null);
     setSortPitch('FF');
     setSearchText('');
+    setHandFilter('all');
     try { sessionStorage.setItem('arsenalsSearch', ''); } catch {}
     try { window.scrollTo({ top: 0 }); } catch {}
     try { window.history.replaceState(null, '', window.location.pathname); } catch {}
@@ -369,9 +374,20 @@ export default function PitchersTable({
     if (mode !== 'arsenals') return rows;
     const source = sortedRows;
     const q = (debouncedSearch || '').trim().toLowerCase();
-    if (!q) return source;
-    return source.filter(r => String(r?.name ?? '').toLowerCase().includes(q));
-  }, [mode, rows, sortedRows, debouncedSearch]);
+    let out = source;
+    if (q) {
+      out = out.filter(r => String(r?.name ?? '').toLowerCase().includes(q));
+    }
+    // Apply hand filter if selected (use throw side from B/T, e.g., 'R/R' -> 'R')
+    if (handFilter !== 'all') {
+      out = out.filter(r => {
+        const bt = String(r?.bt ?? '').toUpperCase();
+        const throwSide = bt.split('/')[0]?.trim()?.charAt(0) || '';
+        return throwSide === handFilter;
+      });
+    }
+    return out;
+  }, [mode, rows, sortedRows, debouncedSearch, handFilter]);
 
   // Dependencies reflect all values read inside this memo; keep in sync when logic changes.
   const columns = useMemo(() => {
@@ -603,6 +619,20 @@ export default function PitchersTable({
             sx={{ width: 260, '& .MuiOutlinedInput-root': { bgcolor: 'white' } }}
           />
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <FormControl size="small" sx={{ minWidth: 110 }}>
+              <InputLabel id="hand-filter-label">Hand</InputLabel>
+              <Select
+                labelId="hand-filter-label"
+                aria-label="Filter by throwing hand"
+                value={handFilter}
+                label="Hand"
+                onChange={(e) => setHandFilter(e.target.value)}
+              >
+                <MenuItem value="all">All</MenuItem>
+                <MenuItem value="R">RHP</MenuItem>
+                <MenuItem value="L">LHP</MenuItem>
+              </Select>
+            </FormControl>
             <FormControl size="small" sx={{ minWidth: 140 }}>
               <InputLabel id="sort-pitch-label">Sort pitch</InputLabel>
               <Select
