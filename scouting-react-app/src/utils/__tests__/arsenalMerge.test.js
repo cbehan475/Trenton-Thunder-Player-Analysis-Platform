@@ -21,7 +21,7 @@ function buildOverrides({ key, codes }) {
 describe('arsenalMerge.getMergedArsenalForPitcher()', () => {
   test('logs-first with override ordering', () => {
     const name = 'John Doe';
-    const pid = 'player-123';
+    const pid = name; // util matches logs by pitcherId string or its slug; pass the name here
     const logs = [
       ...buildLogs({ name, events: ['FF', 'SL', 'FF', 'CH'] }),
     ];
@@ -39,7 +39,7 @@ describe('arsenalMerge.getMergedArsenalForPitcher()', () => {
 
   test('needsReview true when override differs (missing/extra)', () => {
     const name = 'Jane Smith';
-    const pid = 'p-1';
+    const pid = name;
     const logs = [
       ...buildLogs({ name, events: ['FF', 'SL'] }),
     ];
@@ -53,7 +53,7 @@ describe('arsenalMerge.getMergedArsenalForPitcher()', () => {
 
   test('needsReview true when same label resolves to different normalized codes', () => {
     const name = 'Alias Case';
-    const pid = 'alias-1';
+    const pid = name;
     // Logs use alias that normalizes to SI
     const logs = buildLogs({ name, events: ['Two-Seam', 'SI'] });
     // Override uses FT which normalizes to SI as well; no diff should result.
@@ -70,22 +70,21 @@ describe('arsenalMerge.getMergedArsenalForPitcher()', () => {
     expect(merged2.details.fromOverride).toContain('CT');
   });
 
-  test('slug mapping: favor playerId key, else slugify(name)', () => {
+  test('slug mapping: favor exact name key over slug(name)', () => {
     const name = 'José Álvarez';
-    const pid = 'id-777';
+    const pid = name; // pass name as identifier
     const slug = slugifyId(name);
 
     const logs = [
       ...buildLogs({ name, events: ['FF', 'CH'] }),
     ];
 
-    // Only override under slug key
+    // Only override under slug key -> should be found
     const overrides1 = buildOverrides({ key: slug, codes: ['FF'] });
     const merged1 = getMergedArsenalForPitcher(pid, logs, overrides1);
-    // No exact playerId override; util should still find slug match
     expect(merged1.pitches).toEqual(['FF']);
 
-    // Exact playerId override should take precedence
+    // If both exact name and slug keys exist, exact name takes precedence
     const overrides2 = { ...overrides1, ...buildOverrides({ key: pid, codes: ['CH'] }) };
     const merged2 = getMergedArsenalForPitcher(pid, logs, overrides2);
     expect(merged2.pitches).toEqual(['CH']);
