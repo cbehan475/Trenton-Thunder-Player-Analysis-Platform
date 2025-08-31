@@ -18,6 +18,12 @@ export function fmtIn(n) {
   return Number.isFinite(v) ? v.toFixed(1) : DASH;
 }
 
+// Feet (e.g., extension) - 1 decimal
+export function fmtFt(n) {
+  const v = Number(n);
+  return Number.isFinite(v) ? v.toFixed(1) : DASH;
+}
+
 export function fmtRpm(n) {
   const v = Number(n);
   return Number.isFinite(v) ? String(Math.round(v)) : DASH;
