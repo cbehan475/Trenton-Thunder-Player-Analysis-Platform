@@ -3,7 +3,8 @@ import AppSelect from '../components/ui/AppSelect.jsx';
 import './PitchingLogsPage.css';
 import { getBench, delta, BENCH_LEVEL, FEATURE_BENCHMARK_BADGES } from '../lib/benchmarks.js';
 import { seedLogsByDate, getPitchersForDate, getInningsFor, getLogs } from '../data/logs/pitchingIndex.js';
-import { fmtMph, fmtIn, fmtRpm, fmtFt, fmtPct, DASH } from '../utils/formatters.js';
+import { fmtMph, fmtIn, fmtRpm, fmtFt, fmtPct, fmtGrade, fmtDash, DASH } from '../utils/formatters.js';
+import { summarizePitchType, avgVelo, avgIVB, avgHB, avgSpin, usagePercent, grade2080, countN } from '../utils/pitchAggregates.js';
 // Import existing date modules to seed logs (keep in sync with PitchingLogsPage)
 import pitching2025_06_04 from '../data/logs/pitching-2025-06-04.js';
 import pitching2025_06_05 from '../data/logs/pitching-2025-06-05.js';
@@ -159,14 +160,14 @@ export default function PitchTypeAnalysisPage() {
   // Optional pitch type filter driven by cards
   const [selectedType, setSelectedType] = useState(null);
   const filteredRows = useMemo(
-    () => (selectedType ? rawRows.filter(r => (r.type || r.pitchType) === selectedType) : rawRows),
+    () => (selectedType ? rawRows.filter(r => countN([r], selectedType) > 0) : rawRows),
     [rawRows, selectedType]
   );
 
   // Utility: get canonical type
   const getType = (r) => r.type ?? r.pitchType ?? 'Unknown';
 
-  // Aggregations by pitch type
+  // Aggregations by pitch type (for plots only)
   const byType = useMemo(() => {
     const map = new Map();
     for (const r of rawRows) {
@@ -177,11 +178,10 @@ export default function PitchTypeAnalysisPage() {
     return map;
   }, [rawRows]);
 
-  const totalPitches = rawRows.length || 1; // avoid divide by zero
+  const totalPitches = rawRows.length || 1; // avoid divide by zero for plot-only usage
 
-  // Stats helpers
+  // Plot helpers
   const mean = (arr) => (arr.length ? arr.reduce((a,b)=>a+b,0) / arr.length : 0);
-  const pct = (num, den) => (den ? (num / den) * 100 : 0);
 
   // Color per type (stable palette)
   const TYPE_COLORS = useMemo(() => {
@@ -268,63 +268,20 @@ export default function PitchTypeAnalysisPage() {
     );
   };
 
-  // Card stats per type (from rawRows, unaffected by selectedType; clicking applies filter)
+  // Card stats per type (use shared summarizePitchType; click filters by code)
   const cards = useMemo(() => {
+    const order = ['FF','SI','CT','SL','SW','CB','CH','SPL'];
     const items = [];
-    for (const [t, arr] of byType.entries()) {
-      const pitches = arr.length;
-      const denomWhiff = arr.filter(r => ['Swinging Strike','In Play','Foul'].includes(r.result)).length;
-      const whiffs = arr.filter(r => r.result === 'Swinging Strike').length;
-      const strikes = arr.filter(r => ['Called Strike','Swinging Strike'].includes(r.result)).length;
-      const usage = pct(pitches, totalPitches);
-      items.push({
-        t,
-        usage,
-        veloAvg: mean(arr.map(r=>r.velo)),
-        veloMax: Math.max(...arr.map(r=>r.velo || 0)),
-        ivbAvg: mean(arr.map(r=>r.ivb)),
-        hbAvg: mean(arr.map(r=>r.hb)),
-        spinAvg: mean(arr.map(r=>r.spin)),
-        extAvg: mean(arr.map(r=>r.ext)),
-        whiff: pct(whiffs, denomWhiff),
-        strike: pct(strikes, pitches),
-      });
+    for (const code of order) {
+      const n = countN(rawRows, code);
+      if (!n) continue;
+      const s = summarizePitchType(rawRows, code);
+      items.push({ code, s });
     }
-    // Stable order by usage desc
-    items.sort((a,b)=>b.usage - a.usage);
     return items;
-  }, [byType, totalPitches]);
+  }, [rawRows]);
 
-  // Outcomes table (respect selectedType via filteredRows)
-  const tableRows = useMemo(() => {
-    const groups = new Map();
-    for (const r of filteredRows) {
-      const t = getType(r);
-      if (!groups.has(t)) groups.set(t, []);
-      groups.get(t).push(r);
-    }
-    const out = [];
-    for (const [t, arr] of groups.entries()) {
-      const pitches = arr.length;
-      const denomWhiff = arr.filter(r => ['Swinging Strike','In Play','Foul'].includes(r.result)).length;
-      const whiffs = arr.filter(r => r.result === 'Swinging Strike').length;
-      const strikes = arr.filter(r => ['Called Strike','Swinging Strike'].includes(r.result)).length;
-      out.push({
-        t,
-        pitches,
-        usage: pct(pitches, filteredRows.length || 1),
-        whiff: pct(whiffs, denomWhiff),
-        strike: pct(strikes, pitches),
-        velo: mean(arr.map(r=>r.velo)),
-        ivb: mean(arr.map(r=>r.ivb)),
-        hb: mean(arr.map(r=>r.hb)),
-        spin: mean(arr.map(r=>r.spin)),
-        ext: mean(arr.map(r=>r.ext)),
-      });
-    }
-    out.sort((a,b)=>b.pitches - a.pitches);
-    return out;
-  }, [filteredRows]);
+  // (Table uses shared utilities inline during render)
 
   const toggleType = (t) => setSelectedType(prev => (prev === t ? null : t));
 
@@ -370,25 +327,25 @@ export default function PitchTypeAnalysisPage() {
       {/* 1) Pitch Mix & Snapshot */}
       <section className="dataGridContainer tableShell" style={{ padding: 12, marginBottom: 14 }}>
         <div style={{ display:'flex', flexWrap:'wrap', gap:12 }}>
-          {cards.map(c => (
-            <button key={c.t} onClick={()=>toggleType(c.t)}
+          {cards.map(({ code, s }) => (
+            <button key={code} onClick={()=>toggleType(code)}
               style={{
                 cursor:'pointer',
                 minWidth: 240,
                 borderRadius: 12,
-                border: selectedType===c.t ? '1px solid #F5B301' : '1px solid rgba(255,255,255,0.15)',
+                border: selectedType===code ? '1px solid #F5B301' : '1px solid rgba(255,255,255,0.15)',
                 background: 'rgba(0,0,0,0.25)',
                 padding: '10px 12px',
                 color: '#e9eef7',
                 textAlign: 'left'
               }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline' }}>
-                <div style={{ fontWeight: 800, color: '#F5B301' }}>{c.t}</div>
+                <div style={{ fontWeight: 800, color: '#F5B301' }}>{code}</div>
                 <div style={{ display:'flex', gap:6, alignItems:'center' }}>
                   {FEATURE_BENCHMARK_BADGES && (() => {
-                    const b = getBench(BENCH_LEVEL, c.t);
-                    const dv = b?.p50Velo != null ? delta(c.veloAvg, b.p50Velo) : null;
-                    const di = b?.p50IVB != null ? delta(c.ivbAvg, b.p50IVB) : null;
+                    const b = getBench(BENCH_LEVEL, code);
+                    const dv = b?.p50Velo != null ? delta(s.velo, b.p50Velo) : null;
+                    const di = b?.p50IVB != null ? delta(s.ivb, b.p50IVB) : null;
                     const chipStyle = {
                       fontSize: 10,
                       color: '#cbd5e1',
@@ -400,30 +357,29 @@ export default function PitchTypeAnalysisPage() {
                     return (
                       <>
                         {Number.isFinite(dv) && (
-                          <Tooltip content={`Player: ${fmtMph(c.veloAvg)} mph\n${BENCH_LEVEL} p50: ${b.p50Velo.toFixed?.(1) ?? b.p50Velo} mph\nΔVelo: ${dv >= 0 ? `+${dv.toFixed(1)}` : dv.toFixed(1)}`}>
+                          <Tooltip content={`Player: ${fmtMph(s.velo)} mph\n${BENCH_LEVEL} p50: ${b.p50Velo.toFixed?.(1) ?? b.p50Velo} mph\nΔVelo: ${dv >= 0 ? `+${dv.toFixed(1)}` : dv.toFixed(1)}`}>
                             <span style={chipStyle}>ΔVelo {dv >= 0 ? `+${dv.toFixed(1)}` : dv.toFixed(1)}</span>
                           </Tooltip>
                         )}
                         {Number.isFinite(di) && (
-                          <Tooltip content={`Player: ${fmtIn(c.ivbAvg)} in\n${BENCH_LEVEL} p50: ${b.p50IVB.toFixed?.(1) ?? b.p50IVB} in\nΔIVB: ${di >= 0 ? `+${di.toFixed(1)}` : di.toFixed(1)}`}>
+                          <Tooltip content={`Player: ${fmtIn(s.ivb)} in\n${BENCH_LEVEL} p50: ${b.p50IVB.toFixed?.(1) ?? b.p50IVB} in\nΔIVB: ${di >= 0 ? `+${di.toFixed(1)}` : di.toFixed(1)}`}>
                             <span style={chipStyle}>ΔIVB {di >= 0 ? `+${di.toFixed(1)}` : di.toFixed(1)}</span>
                           </Tooltip>
                         )}
                       </>
                     );
                   })()}
-                  <div style={{ fontSize: 12, opacity: .9 }}>{fmtPct(c.usage)}</div>
+                  <div style={{ fontSize: 12, opacity: .9 }}>{fmtPct(s.usagePct)}</div>
                 </div>
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:6, marginTop:6, fontSize:12 }}>
-                <div>Velo avg {fmtMph(c.veloAvg)}</div>
-                <div>Velo max {Number.isFinite(c.veloMax) ? fmtMph(c.veloMax) : DASH}</div>
-                <div>Spin {fmtRpm(c.spinAvg)}</div>
-                <div>IVB {fmtIn(c.ivbAvg)}</div>
-                <div>HB {fmtIn(c.hbAvg)}</div>
-                <div>Ext {fmtFt(c.extAvg)}</div>
-                <div>Whiff {fmtPct(c.whiff)}</div>
-                <div>Strike {fmtPct(c.strike)}</div>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:6, marginTop:6, fontSize:12 }}>
+                <div>Velo {fmtMph(s.velo)}</div>
+                <div>IVB {fmtIn(s.ivb)}</div>
+                <div>HB {fmtIn(s.hb)}</div>
+                <div>Spin {fmtRpm(s.spin)}</div>
+                <div>Usage {fmtPct(s.usagePct)}</div>
+                <div>Grade {fmtGrade(s.grade)}</div>
+                <div>N {fmtDash(s.n)}</div>
               </div>
             </button>
           ))}
@@ -449,34 +405,42 @@ export default function PitchTypeAnalysisPage() {
         </section>
       )}
 
-      {/* 4) Outcomes Table */}
+      {/* 4) Outcomes Table (shared utils; matches Arsenals & Report) */}
       {rawRows.length > 0 && (
         <section className="dataGridContainer tableShell" style={{ padding: 12, marginBottom: 14 }}>
-          <div style={{ color:'#F5B301', fontWeight:800, margin:'4px 0 8px' }}>Outcomes by Pitch Type</div>
+          <div style={{ color:'#F5B301', fontWeight:800, margin:'4px 0 8px' }}>Pitch Type Summary</div>
           <div style={{ overflowX:'auto' }}>
             <table style={{ width:'100%', borderCollapse:'collapse', color:'#e9eef7' }}>
               <thead>
                 <tr style={{ background:'rgba(255,255,255,0.06)' }}>
-                  {['Pitch Type','Pitches','Usage (%)','Whiff (%)','Strike (%)','Avg Velo (mph)','Avg IVB (in)','Avg HB (in)','Avg Spin (rpm)','Avg Ext (ft)'].map(h => (
+                  {['Pitch','Velo (mph)','IVB (in)','HB (in)','Spin (rpm)','Usage %','Grade (20–80)','N'].map(h => (
                     <th key={h} style={{ textAlign:'left', padding:'8px 10px', fontWeight:700, color:'#F5B301' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {tableRows.map(r => (
-                  <tr key={r.t} style={{ borderTop:'1px solid rgba(255,255,255,0.08)' }}>
-                    <td style={{ padding:'8px 10px', fontWeight:700 }}>{r.t}</td>
-                    <td style={{ padding:'8px 10px' }}>{r.pitches}</td>
-                    <td style={{ padding:'8px 10px' }}>{fmtPct(r.usage)}</td>
-                    <td style={{ padding:'8px 10px' }}>{fmtPct(r.whiff)}</td>
-                    <td style={{ padding:'8px 10px' }}>{fmtPct(r.strike)}</td>
-                    <td style={{ padding:'8px 10px' }}>{fmtMph(r.velo)}</td>
-                    <td style={{ padding:'8px 10px' }}>{fmtIn(r.ivb)}</td>
-                    <td style={{ padding:'8px 10px' }}>{fmtIn(r.hb)}</td>
-                    <td style={{ padding:'8px 10px' }}>{fmtRpm(r.spin)}</td>
-                    <td style={{ padding:'8px 10px' }}>{fmtFt(r.ext)}</td>
-                  </tr>
-                ))}
+                {(() => {
+                  const order = ['FF','SI','CT','SL','SW','CB','CH','SPL'];
+                  const rows = [];
+                  for (const code of order) {
+                    const n = countN(filteredRows, code);
+                    if (!n) continue;
+                    const s = summarizePitchType(filteredRows, code);
+                    rows.push(
+                      <tr key={code} style={{ borderTop:'1px solid rgba(255,255,255,0.08)' }}>
+                        <td style={{ padding:'8px 10px', fontWeight:700 }}>{code}</td>
+                        <td style={{ padding:'8px 10px' }}>{fmtMph(s.velo)}</td>
+                        <td style={{ padding:'8px 10px' }}>{fmtIn(s.ivb)}</td>
+                        <td style={{ padding:'8px 10px' }}>{fmtIn(s.hb)}</td>
+                        <td style={{ padding:'8px 10px' }}>{fmtRpm(s.spin)}</td>
+                        <td style={{ padding:'8px 10px' }}>{fmtPct(s.usagePct)}</td>
+                        <td style={{ padding:'8px 10px' }}>{fmtGrade(s.grade)}</td>
+                        <td style={{ padding:'8px 10px' }}>{fmtDash(s.n)}</td>
+                      </tr>
+                    );
+                  }
+                  return rows;
+                })()}
               </tbody>
             </table>
           </div>
