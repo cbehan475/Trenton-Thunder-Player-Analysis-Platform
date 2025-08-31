@@ -6,6 +6,8 @@ import { getPid } from '../components/PitchersTable';
 import pitcherArsenals from '../data/pitcherArsenals';
 import ALL_PITCH_EVENTS from '../data/logs/pitchingIndex.js';
 import { summarizePitchType, normalizeCode } from '../utils/pitchAggregates.js';
+import { getMergedArsenalForPitcher } from '../utils/arsenalMerge.js';
+import { slugifyId } from '../lib/scoutingReportsStore.js';
 import { getCache, getLatestOuting } from '../lib/reviewCache.js';
 
 export default function ArsenalsPage() {
@@ -17,8 +19,22 @@ export default function ArsenalsPage() {
   // using shared getPid from PitchersTable
 
 
+  // Build overrides map once at module/component scope
+  const OVERRIDES_MAP = useMemo(() => {
+    try {
+      return Object.fromEntries(
+        (Array.isArray(pitcherArsenals) ? pitcherArsenals : []).map((p) => [
+          String(p.playerId ?? slugifyId(p.name)),
+          Array.isArray(p.arsenal) ? p.arsenal : [],
+        ])
+      );
+    } catch {
+      return {};
+    }
+  }, []);
+
   // Merge review cache telemetry into displayed status per precedence
-  // Build rows from the new JSON only (single source of truth)
+  // Base rows from JSON; merged pitches and needsReview injected below
   const baseArsenals = useMemo(() => {
     return (Array.isArray(pitcherArsenals) ? pitcherArsenals : []).map((p) => ({
       playerId: p.playerId,
@@ -30,6 +46,8 @@ export default function ArsenalsPage() {
 
   const rowsForDisplay = useMemo(() => {
     const cache = getCache();
+    // Simple log version for memoization: total entries length
+    const logVersion = Array.isArray(ALL_PITCH_EVENTS) ? ALL_PITCH_EVENTS.length : 0;
     const out = [];
     for (const row of baseArsenals) {
       const latest = getLatestOuting(row?.playerId);
@@ -52,7 +70,18 @@ export default function ArsenalsPage() {
         const hint = latest.notes && latest.notes.length ? latest.notes[0] : 'disagree';
         note = `${md}: ${hint}${pct ? ` ${pct}` : ''}`;
       }
-      out.push({ ...row, status, statusNote: note });
+      // Compute merged arsenal (logs-first with overrides); preserve override order
+      const merged = getMergedArsenalForPitcher(String(row.playerId), ALL_PITCH_EVENTS, OVERRIDES_MAP);
+      out.push({
+        ...row,
+        // Use merged pitches (already normalized codes or normalized via util)
+        pitches: merged?.pitches || [],
+        needsReview: !!merged?.needsReview,
+        mergedDetails: merged?.details || null,
+        status,
+        statusNote: note,
+        _logVersion: logVersion,
+      });
     }
     return out;
   }, [baseArsenals]);

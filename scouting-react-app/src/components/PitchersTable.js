@@ -158,10 +158,11 @@ export default function PitchersTable({
       q:  sp.get('q')  || '',
       hand: (sp.get('hand') || 'all').toLowerCase(),
       has: sp.get('has') === '1',
+      review: sp.get('review') === '1',
     };
   };
   // Initialize from URL via lazy useState; all code that reads table state must come after these declarations.
-  const { sp, sc, sd, q, hand, has } = readParams();
+  const { sp, sc, sd, q, hand, has, review } = readParams();
   const [sortPitch, setSortPitch] = useState(() => sp);
   const [sortColumn, setSortColumn] = useState(() => sc);
   const [sortDirection, setSortDirection] = useState(() => sd);
@@ -171,6 +172,8 @@ export default function PitchersTable({
   const [handFilter, setHandFilter] = useState(() => (hand === 'r' ? 'R' : hand === 'l' ? 'L' : 'all'));
   // Checkbox to keep only pitchers who throw the currently selected sortPitch; persists via ?has=1.
   const [hasSelectedOnly, setHasSelectedOnly] = useState(() => Boolean(has));
+  // Checkbox to keep only pitchers that need review; persists via ?review=1
+  const [needsReviewOnly, setNeedsReviewOnly] = useState(() => Boolean(review));
   const [debouncedSearch, setDebouncedSearch] = useState(searchText);
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(searchText), 200);
@@ -192,12 +195,13 @@ export default function PitchersTable({
       if (qStr) p.set('q', qStr);
       if (handFilter && handFilter !== 'all') p.set('hand', handFilter);
       if (hasSelectedOnly) p.set('has', '1');
+      if (needsReviewOnly) p.set('review', '1');
       const qs = p.toString();
       const url = qs ? `?${qs}` : window.location.pathname;
       window.history.replaceState(null, '', url);
     }, 200);
     return () => clearTimeout(t);
-  }, [mode, sortPitch, sortColumn, sortDirection, searchText, handFilter, hasSelectedOnly]);
+  }, [mode, sortPitch, sortColumn, sortDirection, searchText, handFilter, hasSelectedOnly, needsReviewOnly]);
   // Reset returns Arsenals table to default state (order, sort pitch, search).
   const handleReset = useCallback(() => {
     setSortColumn(null);
@@ -206,6 +210,7 @@ export default function PitchersTable({
     setSearchText('');
     setHandFilter('all');
     setHasSelectedOnly(false);
+    setNeedsReviewOnly(false);
     try { sessionStorage.setItem('arsenalsSearch', ''); } catch {}
     try { window.scrollTo({ top: 0 }); } catch {}
     try { window.history.replaceState(null, '', window.location.pathname); } catch {}
@@ -389,8 +394,12 @@ export default function PitchersTable({
         return hasCode || !!agg;
       });
     }
+    // Apply needs-review-only filter
+    if (needsReviewOnly) {
+      out = out.filter(r => !!r?.needsReview);
+    }
     return out;
-  }, [mode, rows, sortedRows, debouncedSearch, handFilter, hasSelectedOnly, sortPitch, aggregatesByPitcher]);
+  }, [mode, rows, sortedRows, debouncedSearch, handFilter, hasSelectedOnly, needsReviewOnly, sortPitch, aggregatesByPitcher]);
 
   // CSV export mirrors current filtered/sorted view for the selected sortPitch.
   const handleDownloadCsv = useCallback(() => {
@@ -399,6 +408,7 @@ export default function PitchersTable({
       'Pitcher ID',
       'Name',
       'B/T',
+      'Pitches',
       'Selected Pitch',
       'Velo (mph)',
       'IVB (in)',
@@ -407,6 +417,7 @@ export default function PitchersTable({
       'Usage%',
       'Grade (20–80)',
       'N',
+      'NeedsReview',
     ];
     const esc = (v) => {
       const s = v == null ? '' : String(v);
@@ -423,12 +434,15 @@ export default function PitchersTable({
       const pid = getPid(r, 0);
       const name = r?.name ?? '';
       const bt = r?.bt ?? '';
+      const mergedList = Array.isArray(r?.pitches) ? r.pitches : [];
+      const pitchesStr = mergedList.join(' ');
       const selected = sortPitch;
       const agg = aggregatesByPitcher?.[r?.playerId]?.[sortPitch] || {};
       const rowOut = [
         pid,
         name,
         bt,
+        pitchesStr,
         selected,
         to1(agg.avgVelo),
         to1(agg.avgIVB),
@@ -437,6 +451,7 @@ export default function PitchersTable({
         to1(agg.usagePct),
         toInt(agg.grade),
         toInt(agg.sampleCount),
+        r?.needsReview ? '1' : '0',
       ].map(esc);
       lines.push(rowOut.join(','));
     }
@@ -518,12 +533,38 @@ export default function PitchersTable({
             }
             return (
               <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end', width: '100%' }}>
+                {codes.length === 0 && (
+                  <span style={{ color: '#9ca3af' }}>No pitches</span>
+                )}
                 {codes.map(({ code, full, raw }, i) => (
                   <Tooltip key={safeKey(params.row.id, 'pitch', i, code, raw)} title={FULL_LABELS[code] ?? full ?? code} arrow>
                     <Chip label={code} size="small" sx={{ fontWeight: 700, height: 22 }} />
                   </Tooltip>
                 ))}
               </Box>
+            );
+          }
+        },
+        {
+          field: 'review', headerName: 'Review', width: 140, align: 'right', headerAlign: 'right', sortable: false,
+          renderCell: (params) => {
+            const needs = !!params?.row?.needsReview;
+            if (!needs) return <span style={{ color: '#9ca3af' }}>—</span>;
+            const d = params?.row?.mergedDetails || {};
+            const missing = (d.missingInLogs || []).join(', ');
+            const extra = (d.extraInLogs || []).join(', ');
+            const fromOv = (d.fromOverride || []).join(', ');
+            const fromLg = (d.fromLogs || []).join(', ');
+            const tip = [
+              fromOv ? `Override: ${fromOv}` : '',
+              fromLg ? `Logs: ${fromLg}` : '',
+              missing ? `Missing in logs: ${missing}` : '',
+              extra ? `Extra in logs: ${extra}` : '',
+            ].filter(Boolean).join('\n');
+            return (
+              <Tooltip title={<span style={{ whiteSpace: 'pre-line' }}>{tip}</span>} arrow>
+                <Chip label="NEEDS REVIEW" size="small" sx={{ height: 22, bgcolor: 'rgba(239,68,68,0.15)', color: '#DC2626', border: '1px solid rgba(220,38,38,0.35)', fontWeight: 700 }} />
+              </Tooltip>
             );
           }
         },
@@ -728,6 +769,18 @@ export default function PitchersTable({
                 />
               }
               label="Has selected pitch only"
+            />
+            <FormControlLabel
+              sx={{ ml: 0.5 }}
+              control={
+                <Checkbox
+                  size="small"
+                  checked={needsReviewOnly}
+                  onChange={(e) => setNeedsReviewOnly(e.target.checked)}
+                  inputProps={{ 'aria-label': 'Show only pitchers that need review' }}
+                />
+              }
+              label="Needs review only"
             />
             <Button variant="outlined" size="small" onClick={handleDownloadCsv} aria-label="Download current table as CSV" sx={{ textTransform: 'none' }}>
               Download CSV
