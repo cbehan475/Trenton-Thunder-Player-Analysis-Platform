@@ -997,7 +997,7 @@ export default function PitcherReportsPage() {
     });
 
     return { rows, meta: { total } };
-  }, [displayName]);
+  }, [displayName, selected]);
 
   return (
     <div className="pitcher-reports-page" style={{ ...styles.root, minHeight:'100vh', background:'linear-gradient(180deg, var(--bg-top), var(--bg-bottom))' }}>
