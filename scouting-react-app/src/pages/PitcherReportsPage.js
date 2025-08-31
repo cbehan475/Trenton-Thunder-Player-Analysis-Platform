@@ -3,7 +3,6 @@ import React, { useEffect, useMemo, useState, useRef } from 'react';
 import AppSelect from '../components/ui/AppSelect.jsx';
 import { produce } from 'immer';
 import TextareaAutosize from '../components/TextareaAutosize.jsx';
-import ScoutingGradeInput from '../components/ScoutingGradeInput.jsx';
 import FVBadge from '../components/FVBadge.jsx';
 import { loadReport, saveReport, downloadJSON, importJSON, pitchAutoContext, slugifyId } from '../lib/scoutingReportsStore.js';
 import { PITCHERS_SEASON_AGG } from '../data/pitchersSeasonAggregates.js';
@@ -551,6 +550,25 @@ export default function PitcherReportsPage() {
   const displayName = useMemo(() => (pitcherOptions.find(p=>p.id===selected)?.name || selected), [pitcherOptions, selected]);
   const pitcherId = selected;
 
+  // Derive handedness label (RHP/LHP) from pitcherArsenals by playerId or name.
+  // Note: new arsenals JSON may provide bt like "B/T"; fallback to existing handedness key.
+  // TODO: Replace with a centralized player metadata util once available.
+  const handednessLabel = useMemo(() => {
+    try {
+      const byId = Array.isArray(pitcherArsenals)
+        ? pitcherArsenals.find(p => String(p.playerId) === String(pitcherId))
+        : null;
+      const byName = byId ? null : (Array.isArray(pitcherArsenals)
+        ? pitcherArsenals.find(p => String(p.name).trim().toLowerCase() === String(displayName).trim().toLowerCase())
+        : null);
+      const meta = byId || byName || null;
+      const throwSide = meta?.bt?.split('/')?.[1]?.trim() ?? meta?.handedness ?? null; // 'R' or 'L'
+      return throwSide === 'L' ? 'LHP' : (throwSide === 'R' ? 'RHP' : null);
+    } catch (_) {
+      return null;
+    }
+  }, [pitcherId, displayName]);
+
   // Compute a safe empty report up-front to avoid TDZ / undefined on first render
   const emptyReport = useMemo(() => {
     const pitches = {};
@@ -776,13 +794,6 @@ export default function PitcherReportsPage() {
     }));
   };
 
-  const onTool = (toolKey, val) => {
-    setDraft(prev => produce(prev, d => {
-      if (!d.tools) d.tools = {};
-      d.tools[toolKey] = val;
-    }));
-  };
-
   const save = () => {
     const saved = saveReport({ ...(draft||{}), pitcherId: selected });
     setDraft(saved);
@@ -820,7 +831,7 @@ export default function PitcherReportsPage() {
     guide: { color:'var(--muted)', fontSize:12, marginTop:4 },
   }), []);
 
-  // Arsenal Summary (aggregates) — single source of truth shared with ArsenalsPage
+  // Arsenal Summary mirrors Arsenals aggregates; warnings cleared (reviewCache.json present, onTool removed).
   // NOTE: Keep the normalization and grading logic in sync with src/pages/ArsenalsPage.js
   const arsenalSummary = useMemo(() => {
     if (!displayName) return { rows: [], meta: null };
@@ -954,11 +965,19 @@ export default function PitcherReportsPage() {
       if (Number.isFinite(g)) graded[code] = g;
     }
 
-    // Build union list with declared arsenal
-    const declared = (pitcherArsenals.find(p => String(p.name) === String(displayName))?.arsenal || []).map(norm);
-    const uniq = new Set(declared.concat(Object.keys(stats)));
-    uniq.delete('OTH');
-    const rows = Array.from(uniq).map((code) => {
+    // Build rows from declared arsenal for the pitcher ID from URL
+    const declaredCodes = (() => {
+      const byId = Array.isArray(pitcherArsenals)
+        ? pitcherArsenals.find(p => String(p.playerId) === String(selected))
+        : null;
+      const byName = (!byId && Array.isArray(pitcherArsenals))
+        ? pitcherArsenals.find(p => String(p.name) === String(displayName))
+        : null;
+      const arsenalList = (byId?.arsenal || byName?.arsenal || []);
+      return arsenalList.map(norm).filter(c => c && c !== 'OTH');
+    })();
+
+    const rows = declaredCodes.map((code) => {
       const s = stats[code];
       return {
         code,
@@ -967,7 +986,7 @@ export default function PitcherReportsPage() {
         avgIVB: s?.avgIVB ?? null,
         avgHB: s?.avgHB ?? null,
         avgSpin: s?.avgSpin ?? null,
-        usagePct: s?.usagePct ?? (s ? 0 : null),
+        usagePct: s?.usagePct ?? null,
         grade: graded[code] ?? null,
       };
     }).sort((a,b) => {
@@ -1003,7 +1022,8 @@ export default function PitcherReportsPage() {
           <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
             <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
               <h1 style={styles.title}>{pitcherOptions.find(p=>p.id===selected)?.name || selected}</h1>
-              <FVBadge handedness={handedness} fv={suggestedFV ?? null} size="md" />
+              {/* Show handedness badge; FV intentionally blank until model is implemented */}
+              <FVBadge handedness={handednessLabel} size="md" />
             </div>
             <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
               <span style={{ display:'inline-block', padding:'2px 8px', borderRadius:999, background:'rgba(148,163,184,0.15)', color:'#94A3B8', fontWeight:800, fontSize:11 }}>Risk: {draft?.risk || 'Medium'}</span>
@@ -1057,13 +1077,13 @@ export default function PitcherReportsPage() {
             <thead>
               <tr>
                 <th style={styles.th}>Pitch</th>
+                <th style={styles.th}>Velo</th>
+                <th style={styles.th}>IVB</th>
+                <th style={styles.th}>HB</th>
+                <th style={styles.th}>Spin</th>
                 <th style={styles.th}>Usage %</th>
                 <th style={styles.th}>Grade</th>
-                <th style={styles.th}>n</th>
-                <th style={styles.th}>Avg Velo</th>
-                <th style={styles.th}>Avg IVB</th>
-                <th style={styles.th}>Avg HB</th>
-                <th style={styles.th}>Avg Spin</th>
+                <th style={styles.th}>N</th>
               </tr>
             </thead>
             <tbody>
@@ -1077,13 +1097,13 @@ export default function PitcherReportsPage() {
                 return (
                   <tr key={`asum-${r.code}`}>
                     <td style={styles.td}>{pitchLabel}</td>
+                    <td style={styles.td}>{fmt1(r.avgVelo)}</td>
+                    <td style={styles.td}>{fmt1(r.avgIVB)}</td>
+                    <td style={styles.td}>{fmt1(r.avgHB)}</td>
+                    <td style={styles.td}>{fmti(r.avgSpin)}</td>
                     <td style={styles.td}>{fmtPct(r.usagePct)}</td>
                     <td style={styles.td}>{fmti(r.grade)}</td>
-                    <td style={styles.td}>{Number.isFinite(r.n) ? r.n : 0}</td>
-                    <td style={styles.td}>{Number.isFinite(r.avgVelo) ? `${fmt1(r.avgVelo)} mph` : dash}</td>
-                    <td style={styles.td}>{Number.isFinite(r.avgIVB) ? `${fmt1(r.avgIVB)} in` : dash}</td>
-                    <td style={styles.td}>{Number.isFinite(r.avgHB) ? `${fmt1(r.avgHB)} in` : dash}</td>
-                    <td style={styles.td}>{Number.isFinite(r.avgSpin) ? `${fmti(r.avgSpin)} rpm` : dash}</td>
+                    <td style={styles.td}>{fmti(r.n)}</td>
                   </tr>
                 );
               })}
@@ -1131,8 +1151,9 @@ export default function PitcherReportsPage() {
                 <thead>
                   <tr>
                     <th style={styles.th}>Pitch</th>
-                    <th style={styles.th} title={guide}>Present</th>
-                    <th style={styles.th} title={guide}>Future</th>
+                    {/* TODO: add help tooltips when guide utility exists */}
+                    <th style={styles.th}>Present</th>
+                    <th style={styles.th}>Future</th>
                     <th style={styles.th}>Usage %</th>
                     <th style={styles.th}>Notes</th>
                   </tr>
@@ -1146,39 +1167,77 @@ export default function PitcherReportsPage() {
                       const detected = !!(rowsByKey && rowsByKey[k] && rowsByKey[k].length);
                       if (!detected) return false;
                     }
-                    const row = draft?.pitches?.[k] || {};
-                    const hasGrade = (row.present != null) || (row.future != null);
-                    const u = draft?.pitches?.[k]?.usage ?? mergedUsageEffective[k];
-                    return (currentReportCfg?.alwaysInclude?.includes(k)) || (Number(u) > 0) || hasGrade;
+                    return true;
                   }).map((k) => {
                     const row = draft?.pitches?.[k] || {};
-                    const guide = '20–80 even grades, P/F';
+                    const usageEffective = mergedUsageEffective && Number.isFinite(mergedUsageEffective[k])
+                      ? Number(mergedUsageEffective[k])
+                      : null;
                     return (
-                      <tr key={`row-${k}`}>
+                      <tr key={`edit-${k}`}>
                         <td style={styles.td}>{displayNameFor(k)}</td>
                         <td style={styles.td}>
-                          <input type="number" min={20} max={80} step={2} value={row.present ?? ''}
-                            onChange={(e)=>onPitchField(k,'present', e.target.value === '' ? null : Number(e.target.value))}
-                            title={guide}
-                            style={{ width:80, minWidth:80, background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'4px 8px', outlineColor: gold }} />
+                          <input
+                            type="number"
+                            min={20}
+                            max={80}
+                            step={5}
+                            value={row.present ?? ''}
+                            onChange={(e) => onPitchField(k, 'present', e.target.value === '' ? null : Number(e.target.value))}
+                            style={{
+                              width: 72,
+                              background: '#122448',
+                              color: 'white',
+                              border: '1px solid rgba(255,255,255,0.12)',
+                              borderRadius: 8,
+                              padding: '4px 8px',
+                              outlineColor: gold,
+                            }}
+                          />
                         </td>
                         <td style={styles.td}>
-                          <input type="number" min={20} max={80} step={2} value={row.future ?? ''}
-                            onChange={(e)=>onPitchField(k,'future', e.target.value === '' ? null : Number(e.target.value))}
-                            title={guide}
-                            style={{ width:80, minWidth:80, background:'#122448', color:'white', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'4px 8px', outlineColor: gold }} />
-                        </td>
-                        <td style={styles.td}>{ mergedUsage[k] != null ? `${Number(mergedUsage[k]).toFixed(1)}` : '—' }</td>
-                        <td style={styles.td} className="notesCell">
-                          <textarea
-                            value={row.notes || ''}
-                            onChange={(e)=>{
-                              // autosize
-                              const el = e.target;
-                              el.style.height = 'auto';
-                              el.style.height = `${el.scrollHeight}px`;
-                              onPitchField(k,'notes', e.target.value);
+                          <input
+                            type="number"
+                            min={20}
+                            max={80}
+                            step={5}
+                            value={row.future ?? ''}
+                            onChange={(e) => onPitchField(k, 'future', e.target.value === '' ? null : Number(e.target.value))}
+                            style={{
+                              width: 72,
+                              background: '#122448',
+                              color: 'white',
+                              border: '1px solid rgba(255,255,255,0.12)',
+                              borderRadius: 8,
+                              padding: '4px 8px',
+                              outlineColor: gold,
                             }}
+                          />
+                        </td>
+                        <td style={styles.td}>
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={0.1}
+                            value={row.usage ?? ''}
+                            placeholder={usageEffective != null ? usageEffective.toFixed(1) : ''}
+                            onChange={(e) => onPitchField(k, 'usage', e.target.value === '' ? null : Number(e.target.value))}
+                            style={{
+                              width: 96,
+                              background: '#122448',
+                              color: 'white',
+                              border: '1px solid rgba(255,255,255,0.12)',
+                              borderRadius: 8,
+                              padding: '4px 8px',
+                              outlineColor: gold,
+                            }}
+                          />
+                        </td>
+                        <td style={styles.td}>
+                          <TextareaAutosize
+                            value={row.notes || ''}
+                            onChange={(e) => onPitchField(k, 'notes', e.target.value)}
                             rows={1}
                             style={{
                               width:'100%',
@@ -1202,7 +1261,7 @@ export default function PitcherReportsPage() {
                   })}
                 </tbody>
               </table>
-              <div className="no-print" style={styles.guide}>{guide}</div>
+              {/* TODO: Reintroduce bottom-of-table grading guide text when guide utility exists */}
             </div>
 
             {/* Print-only condensed grades */}
