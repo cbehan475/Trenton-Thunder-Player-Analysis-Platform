@@ -11,6 +11,7 @@ import ALL_PITCH_EVENTS, { getAllPitcherNames, getPitchingLogStats } from '../da
 import { fmt } from '../lib/formatters.js';
 import { BENCH_LEVEL, benchP50 } from '../lib/benchmarks.js';
 import '../styles/print-report.css';
+import pitcherArsenals from '../data/pitcherArsenals';
 
 const gold = '#FFD600';
 
@@ -819,40 +820,165 @@ export default function PitcherReportsPage() {
     guide: { color:'var(--muted)', fontSize:12, marginTop:4 },
   }), []);
 
-  const guide = '20 Poor • 30 Well-below • 40 Below • 50 Avg • 60 Above • 70 Plus-plus • 80 Elite';
-
-  // Compute suggested FV from future mix + command/control
-  const suggestedFV = useMemo(() => {
-    const f = (k) => draft?.pitches?.[k]?.future ?? null;
-    const best = (arr) => {
-      const vals = arr.map(f).filter(v => Number.isFinite(v));
-      if (!vals.length) return null;
-      return Math.max(...vals);
+  // Arsenal Summary (aggregates) — single source of truth shared with ArsenalsPage
+  // NOTE: Keep the normalization and grading logic in sync with src/pages/ArsenalsPage.js
+  const arsenalSummary = useMemo(() => {
+    if (!displayName) return { rows: [], meta: null };
+    // Normalization to codes used on Arsenals page
+    const norm = (input) => {
+      if (!input) return 'OTH';
+      const raw = String(input).trim().toLowerCase();
+      const al = [
+        { keys: ['ff','four-seam','four seam','fourseam','4-seam','4 seam','fastball','fb'], out: 'FF' },
+        { keys: ['si','sinker','two-seam','two seam','2-seam','2 seam','2seam','ft'], out: 'SI' },
+        { keys: ['ct','cutter','cut','fc'], out: 'CT' },
+        { keys: ['sl','slider'], out: 'SL' },
+        { keys: ['sw','sweeper','sl-sweeper','sl sweeper','sweeping slider','swp'], out: 'SW' },
+        { keys: ['cb','curve','curveball','knuckle-curve','knuckle curve','kc'], out: 'CB' },
+        { keys: ['ch','change','changeup'], out: 'CH' },
+        { keys: ['spl','splitter','split','fs','forkball'], out: 'SPL' },
+      ];
+      for (const m of al) if (m.keys.includes(raw)) return m.out;
+      const key = raw
+        .replace(/[_\s-]+/g, '')
+        .replace('fourseam','ff').replace('twoseam','si').replace('sinker','si')
+        .replace('cutter','ct').replace('fc','ct').replace('slider','sl').replace('sweeper','sw')
+        .replace('curveball','cb').replace('curve','cb').replace('changeup','ch')
+        .replace('splitter','spl').replace('forkball','spl');
+      if (key.startsWith('ff')) return 'FF';
+      if (key.startsWith('si')) return 'SI';
+      if (key.startsWith('ct')) return 'CT';
+      if (key.startsWith('sl') && !key.startsWith('spl')) return 'SL';
+      if (key.startsWith('sw')) return 'SW';
+      if (key.startsWith('cb') || key.startsWith('kc')) return 'CB';
+      if (key.startsWith('ch')) return 'CH';
+      if (key.startsWith('spl') || key.startsWith('fs')) return 'SPL';
+      return 'OTH';
     };
-    const fb = best(['fourSeam','sinker','cutter']);
-    const brk = best(['slider','curveball','sweeper']);
-    const off = best(['changeup','other']);
-    const cmd = draft?.tools?.command?.future ?? null;
-    const ctl = draft?.tools?.control?.future ?? null;
-    const parts = [];
-    if (Number.isFinite(fb)) parts.push(fb * 0.35);
-    if (Number.isFinite(brk)) parts.push(brk * 0.25);
-    if (Number.isFinite(off)) parts.push(off * 0.15);
-    if (Number.isFinite(cmd)) parts.push(cmd * 0.15);
-    if (Number.isFinite(ctl)) parts.push(ctl * 0.10);
-    if (!parts.length) return null;
-    const raw = parts.reduce((a,b)=>a+b,0);
-    const even = Math.round(raw / 2) * 2;
-    return Math.max(20, Math.min(80, even));
-  }, [draft]);
 
-  const handedness = useMemo(() => {
-    const name = pitcherOptions.find(p=>p.id===selected)?.name || '';
-    const s = String(name).toUpperCase();
-    if (/(\bLHP\b|\(LHP\)|LEFT-HANDED|LEFTY)/.test(s)) return 'LHP';
-    if (/(\bRHP\b|\(RHP\)|RIGHT-HANDED|RIGHTY)/.test(s)) return 'RHP';
-    return 'RHP';
-  }, [selected, pitcherOptions]);
+    // Aggregate sums for this pitcher by normalized code
+    const sums = new Map(); // code -> { n, sv, si, sh, ss }
+    let total = 0;
+    for (const e of (Array.isArray(ALL_PITCH_EVENTS) ? ALL_PITCH_EVENTS : [])) {
+      if (e?.pitcher !== displayName) continue;
+      const code = norm(e?.pitchType || e?.type || e?.pitch || e?.pitch_name || e?.pitchClass || null);
+      if (!code || code === 'OTH') continue;
+      const velo = Number(e?.velo ?? e?.velocity ?? e?.v ?? e?.speed);
+      const ivb  = Number(e?.ivb ?? e?.vert ?? e?.rise);
+      const hb   = Number(e?.hb ?? e?.horz ?? e?.run);
+      const spin = Number(e?.spin ?? e?.rpm);
+      if (!sums.has(code)) sums.set(code, { n: 0, sv: 0, si: 0, sh: 0, ss: 0 });
+      const a = sums.get(code);
+      a.n += 1; total += 1;
+      if (Number.isFinite(velo)) a.sv += velo;
+      if (Number.isFinite(ivb)) a.si += ivb;
+      if (Number.isFinite(hb)) a.sh += hb;
+      if (Number.isFinite(spin)) a.ss += spin;
+    }
+
+    // Compute averages and usage
+    const stats = Object.create(null);
+    for (const [code, a] of sums) {
+      const n = a.n || 1;
+      stats[code] = {
+        code,
+        n,
+        avgVelo: a.sv / n,
+        avgIVB: a.si / n,
+        avgHB: a.sh / n,
+        avgSpin: a.ss / n,
+        usagePct: total ? Number(((n / total) * 100).toFixed(1)) : null,
+      };
+    }
+
+    // Grades per code (mirrors ArsenalsPage gradePitch)
+    function roundTo5(x) { return Math.max(20, Math.min(80, Math.round(x / 5) * 5)); }
+    function baseGradeFF(v) { if (v >= 98) return 80; if (v >= 96) return 70; if (v >= 94) return 60; if (v >= 92) return 50; if (v >= 90) return 40; return 30; }
+    function gradePitch(t, avgVelo, avgIVB, avgHB, avgSpin, ffV) {
+      if (t === 'FF') {
+        let g = baseGradeFF(avgVelo);
+        if (Number.isFinite(avgIVB)) { if (avgIVB >= 17) g += 5; else if (avgIVB <= 12) g -= 5; }
+        return roundTo5(g);
+      }
+      if (t === 'SI') {
+        let g = 30; const hbMag = Number.isFinite(avgHB) ? Math.abs(avgHB) : -Infinity;
+        if (hbMag >= 17) g = 70; else if (hbMag >= 14) g = 60; else if (hbMag >= 11) g = 50; else if (hbMag >= 8) g = 40; else g = 30;
+        if ((Number.isFinite(avgIVB) && avgIVB <= 10) || (Number.isFinite(avgVelo) && avgVelo >= 94)) g += 5;
+        return roundTo5(g);
+      }
+      if (t === 'CT') {
+        let g = 50; const gap = (Number.isFinite(ffV) && Number.isFinite(avgVelo)) ? (ffV - avgVelo) : NaN;
+        const hbAbs = Number.isFinite(avgHB) ? Math.abs(avgHB) : NaN;
+        if (Number.isFinite(gap) && gap >= 2 && gap <= 4 && (Number.isFinite(hbAbs) ? hbAbs <= 5 : true)) g = 60;
+        if ((Number.isFinite(avgVelo) && avgVelo >= 92) || (Number.isFinite(avgIVB) && avgIVB >= 8 && avgIVB <= 12)) g += 5;
+        return roundTo5(g);
+      }
+      if (t === 'SL') {
+        const sweep = Number.isFinite(avgHB) ? Math.abs(avgHB) : -Infinity; let g = 45;
+        if (sweep >= 10) g = 60; else if (sweep >= 7) g = 55; else if (sweep >= 4) g = 50; else g = 45;
+        if ((Number.isFinite(avgSpin) && avgSpin >= 2400) || (Number.isFinite(avgIVB) && avgIVB >= 0 && avgIVB <= 5)) g += 5;
+        return roundTo5(g);
+      }
+      if (t === 'SW') {
+        const sweep = Number.isFinite(avgHB) ? Math.abs(avgHB) : -Infinity; let g = 45;
+        if (sweep >= 14) g = 70; else if (sweep >= 11) g = 60; else if (sweep >= 8) g = 55; else if (sweep >= 6) g = 50; else g = 45;
+        if ((Number.isFinite(avgSpin) && avgSpin >= 2400) && (Number.isFinite(avgIVB) && avgIVB <= 3)) g += 5;
+        return roundTo5(g);
+      }
+      if (t === 'CH') {
+        let g = 50; if (Number.isFinite(avgHB) && avgHB >= 12) g += 5;
+        const sep = Number.isFinite(ffV) && Number.isFinite(avgVelo) ? (ffV - avgVelo) : NaN;
+        if (Number.isFinite(sep) && sep >= 8 && sep <= 12) g += 5; if (Number.isFinite(avgIVB) && avgIVB <= 8) g += 5;
+        return Math.min(70, roundTo5(g));
+      }
+      if (t === 'CB') {
+        const ivb = Number.isFinite(avgIVB) ? avgIVB : Infinity; let g = 45;
+        if (ivb <= -10) g = 60; else if (ivb <= -6) g = 55; else if (ivb <= -3) g = 50; else g = 45;
+        if (Number.isFinite(avgSpin) && avgSpin >= 2600) g += 5;
+        return roundTo5(g);
+      }
+      return 50;
+    }
+
+    // FF avg velo used for CT/CH grading context
+    let ffAvgVelo = null; let fastest = { code: null, avgV: -Infinity };
+    for (const [code, v] of Object.entries(stats)) {
+      const av = v.avgVelo; if (code === 'FF') ffAvgVelo = av;
+      if (Number.isFinite(av) && av > fastest.avgV) fastest = { code, avgV: av };
+    }
+    if (!Number.isFinite(ffAvgVelo)) ffAvgVelo = fastest.avgV;
+
+    const graded = Object.create(null);
+    for (const [code, v] of Object.entries(stats)) {
+      const g = gradePitch(code, v.avgVelo, v.avgIVB, v.avgHB, v.avgSpin, ffAvgVelo);
+      if (Number.isFinite(g)) graded[code] = g;
+    }
+
+    // Build union list with declared arsenal
+    const declared = (pitcherArsenals.find(p => String(p.name) === String(displayName))?.arsenal || []).map(norm);
+    const uniq = new Set(declared.concat(Object.keys(stats)));
+    uniq.delete('OTH');
+    const rows = Array.from(uniq).map((code) => {
+      const s = stats[code];
+      return {
+        code,
+        n: s?.n ?? 0,
+        avgVelo: s?.avgVelo ?? null,
+        avgIVB: s?.avgIVB ?? null,
+        avgHB: s?.avgHB ?? null,
+        avgSpin: s?.avgSpin ?? null,
+        usagePct: s?.usagePct ?? (s ? 0 : null),
+        grade: graded[code] ?? null,
+      };
+    }).sort((a,b) => {
+      const ua = Number.isFinite(a.usagePct) ? a.usagePct : -1;
+      const ub = Number.isFinite(b.usagePct) ? b.usagePct : -1;
+      if (ub !== ua) return ub - ua;
+      return String(a.code).localeCompare(String(b.code));
+    });
+
+    return { rows, meta: { total } };
+  }, [displayName]);
 
   return (
     <div className="pitcher-reports-page" style={{ ...styles.root, minHeight:'100vh', background:'linear-gradient(180deg, var(--bg-top), var(--bg-bottom))' }}>
@@ -922,6 +1048,52 @@ export default function PitcherReportsPage() {
               {lastSavedAt ? `Saved • ${lastSavedAt.toLocaleTimeString()}` : ' '}
             </div>
           </div>
+        </div>
+
+        {/* Arsenal Summary (from Arsenals aggregates) */}
+        <div style={{ ...styles.panel, marginBottom: 10 }} className="section">
+          <div style={styles.h2}>Arsenal Summary</div>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Pitch</th>
+                <th style={styles.th}>Usage %</th>
+                <th style={styles.th}>Grade</th>
+                <th style={styles.th}>n</th>
+                <th style={styles.th}>Avg Velo</th>
+                <th style={styles.th}>Avg IVB</th>
+                <th style={styles.th}>Avg HB</th>
+                <th style={styles.th}>Avg Spin</th>
+              </tr>
+            </thead>
+            <tbody>
+              {arsenalSummary.rows.map((r) => {
+                const labelMap = { FF: 'Four-Seam', SI: 'Sinker', CT: 'Cutter', SL: 'Slider', SW: 'Sweeper', CB: 'Curveball', CH: 'Changeup', SPL: 'Splitter' };
+                const pitchLabel = labelMap[r.code] || r.code;
+                const dash = '—';
+                const fmt1 = (x) => (Number.isFinite(x) ? x.toFixed(1) : dash);
+                const fmti = (x) => (Number.isFinite(x) ? Math.round(x) : dash);
+                const fmtPct = (x) => (Number.isFinite(x) ? x.toFixed(1) : dash);
+                return (
+                  <tr key={`asum-${r.code}`}>
+                    <td style={styles.td}>{pitchLabel}</td>
+                    <td style={styles.td}>{fmtPct(r.usagePct)}</td>
+                    <td style={styles.td}>{fmti(r.grade)}</td>
+                    <td style={styles.td}>{Number.isFinite(r.n) ? r.n : 0}</td>
+                    <td style={styles.td}>{Number.isFinite(r.avgVelo) ? `${fmt1(r.avgVelo)} mph` : dash}</td>
+                    <td style={styles.td}>{Number.isFinite(r.avgIVB) ? `${fmt1(r.avgIVB)} in` : dash}</td>
+                    <td style={styles.td}>{Number.isFinite(r.avgHB) ? `${fmt1(r.avgHB)} in` : dash}</td>
+                    <td style={styles.td}>{Number.isFinite(r.avgSpin) ? `${fmti(r.avgSpin)} rpm` : dash}</td>
+                  </tr>
+                );
+              })}
+              {arsenalSummary.rows.length === 0 && (
+                <tr>
+                  <td style={styles.td} colSpan={8}>No arsenal data available.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
 
         {/* Grid */}
