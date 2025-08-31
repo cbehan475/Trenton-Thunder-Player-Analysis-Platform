@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
-import { FormControl, InputLabel, Select, MenuItem, Box, Card, CardContent, Tooltip, Button, Menu, Chip, TextField } from '@mui/material';
+import { FormControl, InputLabel, Select, MenuItem, Box, Card, CardContent, Tooltip, Button, Menu, Chip, TextField, Checkbox, FormControlLabel } from '@mui/material';
 import { safeKey } from '../lib/safeKey';
 import { useNavigate } from 'react-router-dom';
 
@@ -168,10 +168,11 @@ export default function PitchersTable({
       sd: sp.get('sd') || null,
       q:  sp.get('q')  || '',
       hand: (sp.get('hand') || 'all').toLowerCase(),
+      has: sp.get('has') === '1',
     };
   };
   // Initialize from URL via lazy useState; all code that reads table state must come after these declarations.
-  const { sp, sc, sd, q, hand } = readParams();
+  const { sp, sc, sd, q, hand, has } = readParams();
   const [sortPitch, setSortPitch] = useState(() => sp);
   const [sortColumn, setSortColumn] = useState(() => sc);
   const [sortDirection, setSortDirection] = useState(() => sd);
@@ -179,6 +180,8 @@ export default function PitchersTable({
   const [searchText, setSearchText] = useState(() => q);
   // Hand filter (All/RHP/LHP) applies post-sort and persists via ?hand=.
   const [handFilter, setHandFilter] = useState(() => (hand === 'r' ? 'R' : hand === 'l' ? 'L' : 'all'));
+  // Checkbox to keep only pitchers who throw the currently selected sortPitch; persists via ?has=1.
+  const [hasSelectedOnly, setHasSelectedOnly] = useState(() => Boolean(has));
   const [debouncedSearch, setDebouncedSearch] = useState(searchText);
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(searchText), 200);
@@ -199,12 +202,13 @@ export default function PitchersTable({
       const qStr = (searchText || '').trim();
       if (qStr) p.set('q', qStr);
       if (handFilter && handFilter !== 'all') p.set('hand', handFilter);
+      if (hasSelectedOnly) p.set('has', '1');
       const qs = p.toString();
       const url = qs ? `?${qs}` : window.location.pathname;
       window.history.replaceState(null, '', url);
     }, 200);
     return () => clearTimeout(t);
-  }, [mode, sortPitch, sortColumn, sortDirection, searchText, handFilter]);
+  }, [mode, sortPitch, sortColumn, sortDirection, searchText, handFilter, hasSelectedOnly]);
   // Reset returns Arsenals table to default state (order, sort pitch, search).
   const handleReset = useCallback(() => {
     setSortColumn(null);
@@ -212,6 +216,7 @@ export default function PitchersTable({
     setSortPitch('FF');
     setSearchText('');
     setHandFilter('all');
+    setHasSelectedOnly(false);
     try { sessionStorage.setItem('arsenalsSearch', ''); } catch {}
     try { window.scrollTo({ top: 0 }); } catch {}
     try { window.history.replaceState(null, '', window.location.pathname); } catch {}
@@ -386,8 +391,17 @@ export default function PitchersTable({
         return throwSide === handFilter;
       });
     }
+    // Apply has-selected-pitch-only filter
+    if (hasSelectedOnly) {
+      out = out.filter(r => {
+        const list = Array.isArray(r?.pitches) ? r.pitches : [];
+        const hasCode = list.some((p) => normalizePitchLabel(p).code === sortPitch);
+        const agg = aggregatesByPitcher?.[r?.playerId]?.[sortPitch];
+        return hasCode || !!agg;
+      });
+    }
     return out;
-  }, [mode, rows, sortedRows, debouncedSearch, handFilter]);
+  }, [mode, rows, sortedRows, debouncedSearch, handFilter, hasSelectedOnly, sortPitch, aggregatesByPitcher]);
 
   // CSV export mirrors current filtered/sorted view for the selected sortPitch.
   const handleDownloadCsv = useCallback(() => {
@@ -714,6 +728,18 @@ export default function PitchersTable({
                 ))}
               </Select>
             </FormControl>
+            <FormControlLabel
+              sx={{ ml: 0.5 }}
+              control={
+                <Checkbox
+                  size="small"
+                  checked={hasSelectedOnly}
+                  onChange={(e) => setHasSelectedOnly(e.target.checked)}
+                  inputProps={{ 'aria-label': 'Show only pitchers who throw the selected pitch' }}
+                />
+              }
+              label="Has selected pitch only"
+            />
             <Button variant="outlined" size="small" onClick={handleDownloadCsv} aria-label="Download current table as CSV" sx={{ textTransform: 'none' }}>
               Download CSV
             </Button>
