@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
+import { fmtMph, fmtIn, fmtRpm, fmtPct, DASH } from '../utils/formatters.js';
 import { FormControl, InputLabel, Select, MenuItem, Box, Card, CardContent, Tooltip, Button, Menu, Chip, TextField, Checkbox, FormControlLabel } from '@mui/material';
 import { safeKey } from '../lib/safeKey';
 import { useNavigate } from 'react-router-dom';
@@ -19,19 +20,7 @@ export function getPid(row, i = 0) {
 
 // Removed unused helpers to satisfy no-unused-vars lint (they can be reintroduced if needed)
 
-// --- Simple format helpers for numeric display ---
-function formatMph(v, digits = 1) {
-  return Number.isFinite(v) ? v.toFixed(digits) : null;
-}
-function formatIn(v, digits = 1) {
-  return Number.isFinite(v) ? v.toFixed(digits) : null;
-}
-function formatRpm(v) {
-  return Number.isFinite(v) ? String(Math.round(v)) : null;
-}
-function formatPct(v, digits = 1) {
-  return Number.isFinite(v) ? `${v.toFixed(digits)}%` : null;
-}
+// Formatting moved to shared utils in ../utils/formatters.js
 
 export function PitcherDropdown({ pitchersData, selectedPitcher, onPitcherChange }) {
   const pitcherNames = Object.keys(pitchersData || {});
@@ -539,7 +528,7 @@ export default function PitchersTable({
           }
         },
         {
-          field: 'velo', headerName: `Velo${arrow('velo')}`, width: 90, align: 'right', headerAlign: 'right', sortable: false,
+          field: 'velo', headerName: `Velo (mph)${arrow('velo')}`, width: 110, align: 'right', headerAlign: 'right', sortable: false,
           renderHeader: () => (
             <Box onClick={() => cycleSort('velo')} sx={{ cursor: 'pointer', userSelect: 'none', textAlign: 'right', width: '100%' }}>
               {`Velo${arrow('velo')}`}
@@ -548,12 +537,12 @@ export default function PitchersTable({
           renderCell: (params) => {
             // Numeric cells read aggregates for the selected sortPitch; missing ⇒ em dash.
             const agg = aggregatesByPitcher?.[params?.row?.playerId]?.[sortPitch];
-            const out = agg ? formatMph(agg.avgVelo, 1) : null;
-            return <span>{out ?? <span style={{ color: '#9ca3af' }}>—</span>}</span>;
+            const out = agg ? fmtMph(agg.avgVelo) : DASH;
+            return <span>{out}</span>;
           }
         },
         {
-          field: 'ivb', headerName: `IVB${arrow('ivb')}`, width: 90, align: 'right', headerAlign: 'right', sortable: false,
+          field: 'ivb', headerName: `IVB (in)${arrow('ivb')}`, width: 110, align: 'right', headerAlign: 'right', sortable: false,
           renderHeader: () => (
             <Box onClick={() => cycleSort('ivb')} sx={{ cursor: 'pointer', userSelect: 'none', textAlign: 'right', width: '100%' }}>
               {`IVB${arrow('ivb')}`}
@@ -562,12 +551,12 @@ export default function PitchersTable({
           renderCell: (params) => {
             // Numeric cells read aggregates for the selected sortPitch; missing ⇒ em dash.
             const agg = aggregatesByPitcher?.[params?.row?.playerId]?.[sortPitch];
-            const out = agg ? formatIn(agg.avgIVB, 1) : null;
-            return <span>{out ?? <span style={{ color: '#9ca3af' }}>—</span>}</span>;
+            const out = agg ? fmtIn(agg.avgIVB) : DASH;
+            return <span>{out}</span>;
           }
         },
         {
-          field: 'hb', headerName: `HB${arrow('hb')}`, width: 90, align: 'right', headerAlign: 'right', sortable: false,
+          field: 'hb', headerName: `HB (in)${arrow('hb')}`, width: 110, align: 'right', headerAlign: 'right', sortable: false,
           renderHeader: () => (
             <Box onClick={() => cycleSort('hb')} sx={{ cursor: 'pointer', userSelect: 'none', textAlign: 'right', width: '100%' }}>
               {`HB${arrow('hb')}`}
@@ -576,12 +565,12 @@ export default function PitchersTable({
           renderCell: (params) => {
             // Numeric cells read aggregates for the selected sortPitch; missing ⇒ em dash.
             const agg = aggregatesByPitcher?.[params?.row?.playerId]?.[sortPitch];
-            const out = agg ? formatIn(agg.avgHB, 1) : null;
-            return <span>{out ?? <span style={{ color: '#9ca3af' }}>—</span>}</span>;
+            const out = agg ? fmtIn(agg.avgHB) : DASH;
+            return <span>{out}</span>;
           }
         },
         {
-          field: 'spin', headerName: `Spin${arrow('spin')}`, width: 100, align: 'right', headerAlign: 'right', sortable: false,
+          field: 'spin', headerName: `Spin (rpm)${arrow('spin')}`, width: 120, align: 'right', headerAlign: 'right', sortable: false,
           renderHeader: () => (
             <Box onClick={() => cycleSort('spin')} sx={{ cursor: 'pointer', userSelect: 'none', textAlign: 'right', width: '100%' }}>
               {`Spin${arrow('spin')}`}
@@ -590,12 +579,12 @@ export default function PitchersTable({
           renderCell: (params) => {
             // Numeric cells read aggregates for the selected sortPitch; missing ⇒ em dash.
             const agg = aggregatesByPitcher?.[params?.row?.playerId]?.[sortPitch];
-            const out = agg ? formatRpm(agg.avgSpin) : null;
-            return <span>{out ?? <span style={{ color: '#9ca3af' }}>—</span>}</span>;
+            const out = agg ? fmtRpm(agg.avgSpin) : DASH;
+            return <span>{out}</span>;
           }
         },
         {
-          field: 'usage', headerName: `Usage%${arrow('usage')}`, flex: 1, minWidth: 180, align: 'right', headerAlign: 'right', sortable: false,
+          field: 'usage', headerName: `Usage %${arrow('usage')}`, flex: 1, minWidth: 180, align: 'right', headerAlign: 'right', sortable: false,
           renderHeader: () => (
             <Box onClick={() => cycleSort('usage')} sx={{ cursor: 'pointer', userSelect: 'none', textAlign: 'right', width: '100%' }}>
               {`Usage%${arrow('usage')}`}
@@ -604,8 +593,8 @@ export default function PitchersTable({
           renderCell: (params) => {
             // Numeric cells read aggregates for the selected sortPitch; missing ⇒ em dash.
             const agg = aggregatesByPitcher?.[params?.row?.playerId]?.[sortPitch];
-            const out = agg ? formatPct(agg.usagePct, 1) : null;
-            return <span>{out ?? <span style={{ color: '#9ca3af' }}>—</span>}</span>;
+            const out = agg ? fmtPct(agg.usagePct) : DASH;
+            return <span>{out}</span>;
           }
         },
         {

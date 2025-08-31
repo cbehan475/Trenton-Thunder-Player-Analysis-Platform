@@ -3,6 +3,7 @@ import { seedLogsByDate, getPitchersForDate, getInningsFor, getLogs } from '../d
 import './PitchingLogsPage.css';
 import AppSelect from '../components/ui/AppSelect.jsx';
 import { getBench, delta, BENCH_LEVEL, FEATURE_BENCHMARK_BADGES } from '../lib/benchmarks.js';
+import { fmtMph, fmtRpm, fmtFt, fmtIn, fmtPct, DASH } from '../utils/formatters.js';
 import dataFirstHalf from '../data/arsenals/firstHalf.json';
 import { buildArsenalMap } from '../lib/arsenalMap.js';
 import { mapPitchLabel, normalizePitchLabel } from '../lib/pitchLabel.js';
@@ -564,11 +565,11 @@ export default function PitchingLogsPage() {
                       <div className={`ab-row ab-head ${showExt ? 'with-ext' : 'no-ext'}`}>
                         <div className="col col-idx">#</div>
                         <div className="col col-type">Type</div>
-                        <div className="col col-num">Velo</div>
-                        <div className="col col-num">Spin</div>
-                        {showExt && <div className="col col-num">Ext</div>}
-                        <div className="col col-num">IVB</div>
-                        <div className="col col-num">HB</div>
+                        <div className="col col-num">Velo (mph)</div>
+                        <div className="col col-num">Spin (rpm)</div>
+                        {showExt && <div className="col col-num">Ext (ft)</div>}
+                        <div className="col col-num">IVB (in)</div>
+                        <div className="col col-num">HB (in)</div>
                         <div className="col col-res">Result</div>
                       </div>
                       {(() => {
@@ -632,11 +633,11 @@ export default function PitchingLogsPage() {
                                 </span>
                               </Tooltip>
                             </div>
-                            <div className="col col-num">{Number.isFinite(r.velo) ? r.velo.toFixed(1) : '—'}</div>
-                            <div className="col col-num">{Number.isFinite(r.spin) ? Math.round(r.spin) : '—'}</div>
-                            {showExt && <div className="col col-num">{Number.isFinite(r.ext) ? r.ext.toFixed(1) : '—'}</div>}
-                            <div className="col col-num">{Number.isFinite(r.ivb) ? r.ivb.toFixed(1) : '—'}</div>
-                            <div className="col col-num">{Number.isFinite(r.hb) ? r.hb.toFixed(1) : '—'}</div>
+                            <div className="col col-num">{fmtMph(r.velo)}</div>
+                            <div className="col col-num">{fmtRpm(r.spin)}</div>
+                            {showExt && <div className="col col-num">{fmtFt(r.ext)}</div>}
+                            <div className="col col-num">{fmtIn(r.ivb)}</div>
+                            <div className="col col-num">{fmtIn(r.hb)}</div>
                             <div className="col col-res">
                               <span title={r.result || ''} className="truncate result-bold">{r.result || '—'}</span>
                               {FEATURE_BENCHMARK_BADGES && tipContent && (
@@ -659,9 +660,9 @@ export default function PitchingLogsPage() {
           <div className="gs-sub">Filters: {pitcher || '—'} • {dateStr || '—'} • {inning && inning !== 'All' ? `Inning ${inning}` : 'All'}</div>
           <div className="gs-total">Total Pitches: <strong>{sidebar.total}</strong></div>
           <div className="gs-metrics">
-            <div className="gs-metric"><span>Strike %</span><strong>{Number.isFinite(sidebar.strikePct) ? `${(sidebar.strikePct*100).toFixed(1)}%` : '—'}</strong></div>
-            <div className="gs-metric"><span>Whiff %</span><strong>{Number.isFinite(sidebar.whiffPct) ? `${(sidebar.whiffPct*100).toFixed(1)}%` : '—'}</strong></div>
-            <div className="gs-metric"><span>1st-Pitch Strike %</span><strong>{Number.isFinite(sidebar.fpsPct) ? `${(sidebar.fpsPct*100).toFixed(1)}%` : '—'}</strong></div>
+            <div className="gs-metric"><span>Strike %</span><strong>{Number.isFinite(sidebar.strikePct) ? fmtPct(sidebar.strikePct * 100) : DASH}</strong></div>
+            <div className="gs-metric"><span>Whiff %</span><strong>{Number.isFinite(sidebar.whiffPct) ? fmtPct(sidebar.whiffPct * 100) : DASH}</strong></div>
+            <div className="gs-metric"><span>1st-Pitch Strike %</span><strong>{Number.isFinite(sidebar.fpsPct) ? fmtPct(sidebar.fpsPct * 100) : DASH}</strong></div>
             {sidebar.hardHits != null && (<div className="gs-metric"><span>Hard-hit (95+)</span><strong>{sidebar.hardHits}</strong></div>)}
           </div>
           <div className="gs-list">
@@ -671,7 +672,7 @@ export default function PitchingLogsPage() {
                 <div key={e.t} className="gs-item">
                   <span className="chip" style={chipStyle(fam)} title={e.t}>{useVerified ? e.t : pitchShort(e.t)}</span>
                   <span className="gs-count">{e.c}</span>
-                  <span className="gs-avg">{Number.isFinite(e.avg) ? `${e.avg.toFixed(1)} avg / ${Number.isFinite(e.max)?e.max.toFixed(1):'—'} max` : '—'}</span>
+                  <span className="gs-avg">{Number.isFinite(e.avg) ? `${fmtMph(e.avg)} avg / ${Number.isFinite(e.max) ? fmtMph(e.max) : DASH} max` : DASH}</span>
                 </div>
               );
             })}

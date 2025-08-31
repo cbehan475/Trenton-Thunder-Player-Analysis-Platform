@@ -3,6 +3,7 @@ import AppSelect from '../components/ui/AppSelect.jsx';
 import './PitchingLogsPage.css';
 import { getBench, delta, BENCH_LEVEL, FEATURE_BENCHMARK_BADGES } from '../lib/benchmarks.js';
 import { seedLogsByDate, getPitchersForDate, getInningsFor, getLogs } from '../data/logs/pitchingIndex.js';
+import { fmtMph, fmtIn, fmtRpm, fmtFt, fmtPct, DASH } from '../utils/formatters.js';
 // Import existing date modules to seed logs (keep in sync with PitchingLogsPage)
 import pitching2025_06_04 from '../data/logs/pitching-2025-06-04.js';
 import pitching2025_06_05 from '../data/logs/pitching-2025-06-05.js';
@@ -254,7 +255,7 @@ export default function PitchTypeAnalysisPage() {
         {/* points */}
         {points.map((p, i) => (
           <circle key={i} cx={sx.fn(p.x, width)} cy={height-30 - sy.fn(p.y, height-50)} r={4} fill={TYPE_COLORS.get(p.t) || '#999'}>
-            <title>{`${p.t}\nVelo ${p.v?.toFixed?.(1) ?? ''} | Spin ${p.s ?? ''} | Ext ${p.e ?? ''}\n${xKey}: ${p.x} | ${yKey}: ${p.y}\n${p.res || ''}`}</title>
+            <title>{`${p.t}\nVelo ${fmtMph(p.v)} | Spin ${fmtRpm(p.s)} | Ext ${fmtFt(p.e)}\n${xKey}: ${p.x} | ${yKey}: ${p.y}\n${p.res || ''}`}</title>
           </circle>
         ))}
         {/* centroids */}
@@ -399,30 +400,30 @@ export default function PitchTypeAnalysisPage() {
                     return (
                       <>
                         {Number.isFinite(dv) && (
-                          <Tooltip content={`Player: ${c.veloAvg.toFixed(1)} mph\n${BENCH_LEVEL} p50: ${b.p50Velo.toFixed?.(1) ?? b.p50Velo} mph\nΔVelo: ${dv >= 0 ? `+${dv.toFixed(1)}` : dv.toFixed(1)}`}>
+                          <Tooltip content={`Player: ${fmtMph(c.veloAvg)} mph\n${BENCH_LEVEL} p50: ${b.p50Velo.toFixed?.(1) ?? b.p50Velo} mph\nΔVelo: ${dv >= 0 ? `+${dv.toFixed(1)}` : dv.toFixed(1)}`}>
                             <span style={chipStyle}>ΔVelo {dv >= 0 ? `+${dv.toFixed(1)}` : dv.toFixed(1)}</span>
                           </Tooltip>
                         )}
                         {Number.isFinite(di) && (
-                          <Tooltip content={`Player: ${c.ivbAvg.toFixed(1)} in\n${BENCH_LEVEL} p50: ${b.p50IVB.toFixed?.(1) ?? b.p50IVB} in\nΔIVB: ${di >= 0 ? `+${di.toFixed(1)}` : di.toFixed(1)}`}>
+                          <Tooltip content={`Player: ${fmtIn(c.ivbAvg)} in\n${BENCH_LEVEL} p50: ${b.p50IVB.toFixed?.(1) ?? b.p50IVB} in\nΔIVB: ${di >= 0 ? `+${di.toFixed(1)}` : di.toFixed(1)}`}>
                             <span style={chipStyle}>ΔIVB {di >= 0 ? `+${di.toFixed(1)}` : di.toFixed(1)}</span>
                           </Tooltip>
                         )}
                       </>
                     );
                   })()}
-                  <div style={{ fontSize: 12, opacity: .9 }}>{c.usage.toFixed(1)}%</div>
+                  <div style={{ fontSize: 12, opacity: .9 }}>{fmtPct(c.usage)}</div>
                 </div>
               </div>
               <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:6, marginTop:6, fontSize:12 }}>
-                <div>Velo avg {c.veloAvg.toFixed(1)}</div>
-                <div>Velo max {isFinite(c.veloMax) ? c.veloMax.toFixed(1) : '—'}</div>
-                <div>Spin {c.spinAvg.toFixed(0)}</div>
-                <div>IVB {c.ivbAvg.toFixed(1)}</div>
-                <div>HB {c.hbAvg.toFixed(1)}</div>
-                <div>Ext {c.extAvg.toFixed(1)}</div>
-                <div>Whiff {c.whiff.toFixed(1)}%</div>
-                <div>Strike {c.strike.toFixed(1)}%</div>
+                <div>Velo avg {fmtMph(c.veloAvg)}</div>
+                <div>Velo max {Number.isFinite(c.veloMax) ? fmtMph(c.veloMax) : DASH}</div>
+                <div>Spin {fmtRpm(c.spinAvg)}</div>
+                <div>IVB {fmtIn(c.ivbAvg)}</div>
+                <div>HB {fmtIn(c.hbAvg)}</div>
+                <div>Ext {fmtFt(c.extAvg)}</div>
+                <div>Whiff {fmtPct(c.whiff)}</div>
+                <div>Strike {fmtPct(c.strike)}</div>
               </div>
             </button>
           ))}
@@ -436,7 +437,7 @@ export default function PitchTypeAnalysisPage() {
       {rawRows.length > 0 && (
         <section className="dataGridContainer tableShell" style={{ padding: 12, marginBottom: 14 }}>
           <div style={{ color:'#F5B301', fontWeight:800, margin:'4px 0 8px' }}>Movement Map (HB vs IVB)</div>
-          <Plot width={720} height={360} points={movementPoints} centroids={centroidsMovement} xLabel="HB" yLabel="IVB" xKey="HB" yKey="IVB" />
+          <Plot width={720} height={360} points={movementPoints} centroids={centroidsMovement} xLabel="HB (in)" yLabel="IVB (in)" xKey="HB (in)" yKey="IVB (in)" />
         </section>
       )}
 
@@ -444,7 +445,7 @@ export default function PitchTypeAnalysisPage() {
       {rawRows.length > 0 && (
         <section className="dataGridContainer tableShell" style={{ padding: 12, marginBottom: 14 }}>
           <div style={{ color:'#F5B301', fontWeight:800, margin:'4px 0 8px' }}>Velo vs Spin</div>
-          <Plot width={720} height={360} points={veloSpinPoints} centroids={centroidsVeloSpin} xLabel="Velo" yLabel="Spin" xKey="Velo" yKey="Spin" />
+          <Plot width={720} height={360} points={veloSpinPoints} centroids={centroidsVeloSpin} xLabel="Velo (mph)" yLabel="Spin (rpm)" xKey="Velo (mph)" yKey="Spin (rpm)" />
         </section>
       )}
 
@@ -456,7 +457,7 @@ export default function PitchTypeAnalysisPage() {
             <table style={{ width:'100%', borderCollapse:'collapse', color:'#e9eef7' }}>
               <thead>
                 <tr style={{ background:'rgba(255,255,255,0.06)' }}>
-                  {['Pitch Type','Pitches','Usage%','Whiff%','Strike%','Avg Velo','Avg IVB','Avg HB','Avg Spin','Avg Ext'].map(h => (
+                  {['Pitch Type','Pitches','Usage (%)','Whiff (%)','Strike (%)','Avg Velo (mph)','Avg IVB (in)','Avg HB (in)','Avg Spin (rpm)','Avg Ext (ft)'].map(h => (
                     <th key={h} style={{ textAlign:'left', padding:'8px 10px', fontWeight:700, color:'#F5B301' }}>{h}</th>
                   ))}
                 </tr>
@@ -466,14 +467,14 @@ export default function PitchTypeAnalysisPage() {
                   <tr key={r.t} style={{ borderTop:'1px solid rgba(255,255,255,0.08)' }}>
                     <td style={{ padding:'8px 10px', fontWeight:700 }}>{r.t}</td>
                     <td style={{ padding:'8px 10px' }}>{r.pitches}</td>
-                    <td style={{ padding:'8px 10px' }}>{r.usage.toFixed(1)}%</td>
-                    <td style={{ padding:'8px 10px' }}>{r.whiff.toFixed(1)}%</td>
-                    <td style={{ padding:'8px 10px' }}>{r.strike.toFixed(1)}%</td>
-                    <td style={{ padding:'8px 10px' }}>{r.velo.toFixed(1)}</td>
-                    <td style={{ padding:'8px 10px' }}>{r.ivb.toFixed(1)}</td>
-                    <td style={{ padding:'8px 10px' }}>{r.hb.toFixed(1)}</td>
-                    <td style={{ padding:'8px 10px' }}>{r.spin.toFixed(0)}</td>
-                    <td style={{ padding:'8px 10px' }}>{r.ext.toFixed(1)}</td>
+                    <td style={{ padding:'8px 10px' }}>{fmtPct(r.usage)}</td>
+                    <td style={{ padding:'8px 10px' }}>{fmtPct(r.whiff)}</td>
+                    <td style={{ padding:'8px 10px' }}>{fmtPct(r.strike)}</td>
+                    <td style={{ padding:'8px 10px' }}>{fmtMph(r.velo)}</td>
+                    <td style={{ padding:'8px 10px' }}>{fmtIn(r.ivb)}</td>
+                    <td style={{ padding:'8px 10px' }}>{fmtIn(r.hb)}</td>
+                    <td style={{ padding:'8px 10px' }}>{fmtRpm(r.spin)}</td>
+                    <td style={{ padding:'8px 10px' }}>{fmtFt(r.ext)}</td>
                   </tr>
                 ))}
               </tbody>
