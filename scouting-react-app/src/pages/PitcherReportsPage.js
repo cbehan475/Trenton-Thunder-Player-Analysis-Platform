@@ -924,7 +924,7 @@ export default function PitcherReportsPage() {
                       fmtRpm(r.avgSpin),
                       fmtPct(r.usagePct),
                       fmtGrade(r.grade),
-                      fmtGrade(r.n),
+                      (Number.isFinite(r.n) ? String(r.n) : String(DASH)),
                     ];
                     lines.push(row.join(','));
                   }
@@ -997,7 +997,7 @@ export default function PitcherReportsPage() {
                     <td style={styles.td}>{fmtRpm(r.avgSpin)}</td>
                     <td style={styles.td}>{fmtPct(r.usagePct)}</td>
                     <td style={styles.td}>{fmtGrade(r.grade)}</td>
-                    <td style={styles.td}>{fmtGrade(r.n)}</td>
+                    <td style={styles.td}>{Number.isFinite(r.n) ? r.n : DASH}</td>
                   </tr>
                 );
               })}

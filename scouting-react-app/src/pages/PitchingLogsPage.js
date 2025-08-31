@@ -669,12 +669,12 @@ export default function PitchingLogsPage() {
           <div className="gs-list">
             <div className="gs-headrow">
               <span className="gs-col gs-col-pitch">Pitch</span>
-              <span className="gs-col">Velo</span>
-              <span className="gs-col">IVB</span>
-              <span className="gs-col">HB</span>
-              <span className="gs-col">Spin</span>
-              <span className="gs-col">Usage%</span>
-              <span className="gs-col">Grade</span>
+              <span className="gs-col">Velo (mph)</span>
+              <span className="gs-col">IVB (in)</span>
+              <span className="gs-col">HB (in)</span>
+              <span className="gs-col">Spin (rpm)</span>
+              <span className="gs-col">Usage %</span>
+              <span className="gs-col">Grade (20–80)</span>
               <span className="gs-col">N</span>
             </div>
             {sidebar.entries.map((e) => {
