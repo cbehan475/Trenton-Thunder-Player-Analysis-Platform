@@ -29,14 +29,19 @@
     "dev-api": "node scripts/dev-api.js",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:watch": "react-scripts test --watch",
     "eject": "react-scripts eject",
     "gen:logs": "node scripts/genPitchingManifest.mjs",
     "gen:hlogs": "node scripts/genHittingManifest.mjs",
-    "gen:agg": "node scripts/genPitchingAggregates.mjs"
+    "gen:agg": "node scripts/genPitchingAggregates.mjs",
+    "cypress:open": "concurrently -k -s first \"cross-env PORT=3002 react-scripts start\" \"wait-on http://localhost:3002 && cypress open\"",
+    "cypress:run": "concurrently -k -s first \"cross-env PORT=3002 react-scripts start\" \"wait-on http://localhost:3002 && cypress run\""
   },
   "devDependencies": {
     "concurrently": "^9.1.0",
-    "cross-env": "^7.0.3"
+    "cross-env": "^7.0.3",
+    "cypress": "^13.14.2",
+    "wait-on": "^7.2.0"
   },
   "eslintConfig": {
     "extends": [
