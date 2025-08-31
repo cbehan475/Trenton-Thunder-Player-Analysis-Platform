@@ -3,7 +3,8 @@ import { seedLogsByDate, getPitchersForDate, getInningsFor, getLogs } from '../d
 import './PitchingLogsPage.css';
 import AppSelect from '../components/ui/AppSelect.jsx';
 import { getBench, delta, BENCH_LEVEL, FEATURE_BENCHMARK_BADGES } from '../lib/benchmarks.js';
-import { fmtMph, fmtRpm, fmtFt, fmtIn, fmtPct, DASH } from '../utils/formatters.js';
+import { fmtMph, fmtRpm, fmtFt, fmtIn, fmtPct, fmtGrade, DASH } from '../utils/formatters.js';
+import { summarizePitchType, normalizeCode } from '../utils/pitchAggregates.js';
 import dataFirstHalf from '../data/arsenals/firstHalf.json';
 import { buildArsenalMap } from '../lib/arsenalMap.js';
 import { mapPitchLabel, normalizePitchLabel } from '../lib/pitchLabel.js';
@@ -360,16 +361,9 @@ export default function PitchingLogsPage() {
     return out;
   }, [pitcher]);
 
-  // Sidebar summary (filtered rows only)
+  // Sidebar summary (filtered rows only) — use shared pitchAggregates + formatters
   const sidebar = useMemo(() => {
-    const counts = new Map();
-    const veloList = new Map();
-    let strikes = 0; // called + fouls (treating fouls as strikes)
-    let swings = 0; let whiffs = 0; let fouls = 0; let inPlay = 0;
-    let firstPitches = 0; let firstPitchStrikes = 0;
-    let hardHits = 0; let anyEV = false;
-
-    // helper to classify result strings
+    // Helpers to classify plate appearance outcomes
     const isStrike = (res) => {
       const s = String(res || '').toLowerCase();
       return s.includes('strike') || s.includes('foul');
@@ -378,60 +372,67 @@ export default function PitchingLogsPage() {
       const s = String(res || '').toLowerCase();
       return s.includes('swinging strike') || s.includes('whiff');
     };
-    const isFoul = (res) => String(res || '').toLowerCase().includes('foul');
     const isInPlay = (res) => {
       const s = String(res || '').toLowerCase();
       return s.includes('in play') || s.includes('put in play') || s.includes('ball in play') || s.includes('bip');
     };
 
-    // per type aggregation
-    for (const r of rawRows) {
+    // Map rawRows -> normalized pitch events with the rollup code influenced by the verified toggle
+    const events = rawRows.map((r) => {
       const rawT = r.type ?? r.pitchType ?? r.pitch ?? '—';
-      const mapped = useVerified ? mapPitchLabel(rawT, selectedPitcherId, arsenalMap) : { code: rawT, inArsenal: true };
-      let t = mapped.code;
-      // If using verified labels, prefer constrained classifier suggestion for roll-up
-      if (useVerified && selectedPitcherId) {
-        const allowed = arsenalMap[selectedPitcherId]?.allowed || null;
-        const suggested = constrainedSuggest({ velo: r.velo, ivb: r.ivb, hb: r.hb, spin: r.spin, fbVeloAvg, allowed });
-        if (suggested) t = suggested;
+      let code = rawT;
+      if (useVerified) {
+        const mapped = mapPitchLabel(rawT, selectedPitcherId, arsenalMap);
+        code = mapped?.code || rawT;
+        if (selectedPitcherId) {
+          const allowed = arsenalMap[selectedPitcherId]?.allowed || null;
+          const suggested = constrainedSuggest({ velo: r.velo, ivb: r.ivb, hb: r.hb, spin: r.spin, fbVeloAvg, allowed });
+          if (suggested) code = suggested;
+        }
       }
-      counts.set(t, (counts.get(t) || 0) + 1);
-      if (Number.isFinite(r.velo)) {
-        if (!veloList.has(t)) veloList.set(t, []);
-        veloList.get(t).push(r.velo);
-      }
-      if (isStrike(r.result)) strikes++;
-      if (isFoul(r.result)) { fouls++; swings++; }
-      if (isInPlay(r.result)) { inPlay++; swings++; }
-      if (isSwingingStrike(r.result)) { whiffs++; swings++; }
-      if (Number.isFinite(r.ev)) { anyEV = true; if (r.ev >= 95) hardHits++; }
-    }
+      return { pitchType: code, velo: r.velo, ivb: r.ivb, hb: r.hb, spin: r.spin, result: r.result, ev: r.ev };
+    });
 
-    // first-pitch strike from AB groups
+    // Compute swing/strike/whiff and FPS from current groups
+    let strikes = 0, swings = 0, whiffs = 0, firstPitches = 0, firstPitchStrikes = 0, hardHits = 0, anyEV = false;
+    for (const e of events) {
+      if (isStrike(e.result)) strikes++;
+      if (isInPlay(e.result)) swings++;
+      if (isSwingingStrike(e.result)) { swings++; whiffs++; }
+      if (Number.isFinite(e.ev)) { anyEV = true; if (e.ev >= 95) hardHits++; }
+    }
     for (const g of abGroups) {
       if (!g.rows.length) continue;
       firstPitches++;
       if (isStrike(g.rows[0].result)) firstPitchStrikes++;
     }
 
-    const entries = Array.from(counts.entries()).sort((a,b)=>{
-      const af = pitchFamily(a[0]) === 'fastball' ? 0 : 1;
-      const bf = pitchFamily(b[0]) === 'fastball' ? 0 : 1;
-      if (af !== bf) return af - bf;
-      return b[1] - a[1];
-    }).map(([t, c]) => {
-      const v = veloList.get(t) || [];
-      const avg = v.length ? (v.reduce((s,n)=>s+n,0)/v.length) : null;
-      const max = v.length ? Math.max(...v) : null;
-      return { t, c, avg, max };
-    });
-    const total = rawRows.length;
+    const total = events.length;
     const strikePct = total ? (strikes / total) : null;
     const whiffPct = swings ? (whiffs / swings) : null;
     const fpsPct = firstPitches ? (firstPitchStrikes / firstPitches) : null;
 
-    return { entries, total, strikePct, whiffPct, fpsPct, swings, firstPitches, hardHits: anyEV ? hardHits : null };
-  }, [rawRows, abGroups, useVerified, selectedPitcherId, arsenalMap]);
+    // Determine unique pitch codes present, normalize to shared codes and order
+    const present = new Set(events.map(e => normalizeCode(e.pitchType)));
+    const order = ['FF','SI','CT','SL','SW','CB','CH','SPL'];
+    const entries = [];
+    for (const code of order) {
+      if (!present.has(code)) continue;
+      const s = summarizePitchType(events, code);
+      entries.push({
+        code,
+        velo: s.velo,
+        ivb: s.ivb,
+        hb: s.hb,
+        spin: s.spin,
+        usagePct: s.usagePct,
+        grade: s.grade,
+        n: s.n,
+      });
+    }
+
+    return { entries, total, strikePct, whiffPct, fpsPct, hardHits: anyEV ? hardHits : null };
+  }, [rawRows, abGroups, useVerified, selectedPitcherId, arsenalMap, fbVeloAvg]);
 
   // Outing-level review telemetry (disagreement metrics)
   const outingReview = useMemo(() => {
@@ -666,13 +667,28 @@ export default function PitchingLogsPage() {
             {sidebar.hardHits != null && (<div className="gs-metric"><span>Hard-hit (95+)</span><strong>{sidebar.hardHits}</strong></div>)}
           </div>
           <div className="gs-list">
+            <div className="gs-headrow">
+              <span className="gs-col gs-col-pitch">Pitch</span>
+              <span className="gs-col">Velo</span>
+              <span className="gs-col">IVB</span>
+              <span className="gs-col">HB</span>
+              <span className="gs-col">Spin</span>
+              <span className="gs-col">Usage%</span>
+              <span className="gs-col">Grade</span>
+              <span className="gs-col">N</span>
+            </div>
             {sidebar.entries.map((e) => {
-              const fam = pitchFamily(e.t);
+              const fam = pitchFamily(e.code);
               return (
-                <div key={e.t} className="gs-item">
-                  <span className="chip" style={chipStyle(fam)} title={e.t}>{useVerified ? e.t : pitchShort(e.t)}</span>
-                  <span className="gs-count">{e.c}</span>
-                  <span className="gs-avg">{Number.isFinite(e.avg) ? `${fmtMph(e.avg)} avg / ${Number.isFinite(e.max) ? fmtMph(e.max) : DASH} max` : DASH}</span>
+                <div key={e.code} className="gs-item">
+                  <span className="chip" style={chipStyle(fam)} title={e.code}>{e.code}</span>
+                  <span className="gs-col">{fmtMph(e.velo)}</span>
+                  <span className="gs-col">{fmtIn(e.ivb)}</span>
+                  <span className="gs-col">{fmtIn(e.hb)}</span>
+                  <span className="gs-col">{fmtRpm(e.spin)}</span>
+                  <span className="gs-col">{fmtPct(e.usagePct)}</span>
+                  <span className="gs-col">{fmtGrade(e.grade)}</span>
+                  <span className="gs-col">{Number.isFinite(e.n) ? e.n : DASH}</span>
                 </div>
               );
             })}
