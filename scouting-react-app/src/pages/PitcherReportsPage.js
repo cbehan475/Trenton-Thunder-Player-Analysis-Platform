@@ -8,6 +8,8 @@ import { loadReport, saveReport, downloadJSON, importJSON, pitchAutoContext, slu
 import { PITCHERS_SEASON_AGG } from '../data/pitchersSeasonAggregates.js';
 import ALL_PITCH_EVENTS, { getAllPitcherNames, getPitchingLogStats } from '../data/logs/pitchingIndex.js';
 import { fmt } from '../lib/formatters.js';
+import { fmtMph, fmtIn as fmtInches, fmtRpm, fmtPct, fmtGrade, DASH } from '../utils/formatters.js';
+import { summarizePitchType, normalizeCode } from '../utils/pitchAggregates.js';
 import { BENCH_LEVEL, benchP50 } from '../lib/benchmarks.js';
 import '../styles/print-report.css';
 import pitcherArsenals from '../data/pitcherArsenals';
@@ -832,140 +834,12 @@ export default function PitcherReportsPage() {
   }), []);
 
   // Arsenal Summary mirrors Arsenals aggregates; warnings cleared (reviewCache.json present, onTool removed).
-  // NOTE: Keep the normalization and grading logic in sync with src/pages/ArsenalsPage.js
+  // Centralized via utils: src/utils/pitchAggregates.js and src/utils/formatters.js
   const arsenalSummary = useMemo(() => {
     if (!displayName) return { rows: [], meta: null };
-    // Normalization to codes used on Arsenals page
-    const norm = (input) => {
-      if (!input) return 'OTH';
-      const raw = String(input).trim().toLowerCase();
-      const al = [
-        { keys: ['ff','four-seam','four seam','fourseam','4-seam','4 seam','fastball','fb'], out: 'FF' },
-        { keys: ['si','sinker','two-seam','two seam','2-seam','2 seam','2seam','ft'], out: 'SI' },
-        { keys: ['ct','cutter','cut','fc'], out: 'CT' },
-        { keys: ['sl','slider'], out: 'SL' },
-        { keys: ['sw','sweeper','sl-sweeper','sl sweeper','sweeping slider','swp'], out: 'SW' },
-        { keys: ['cb','curve','curveball','knuckle-curve','knuckle curve','kc'], out: 'CB' },
-        { keys: ['ch','change','changeup'], out: 'CH' },
-        { keys: ['spl','splitter','split','fs','forkball'], out: 'SPL' },
-      ];
-      for (const m of al) if (m.keys.includes(raw)) return m.out;
-      const key = raw
-        .replace(/[_\s-]+/g, '')
-        .replace('fourseam','ff').replace('twoseam','si').replace('sinker','si')
-        .replace('cutter','ct').replace('fc','ct').replace('slider','sl').replace('sweeper','sw')
-        .replace('curveball','cb').replace('curve','cb').replace('changeup','ch')
-        .replace('splitter','spl').replace('forkball','spl');
-      if (key.startsWith('ff')) return 'FF';
-      if (key.startsWith('si')) return 'SI';
-      if (key.startsWith('ct')) return 'CT';
-      if (key.startsWith('sl') && !key.startsWith('spl')) return 'SL';
-      if (key.startsWith('sw')) return 'SW';
-      if (key.startsWith('cb') || key.startsWith('kc')) return 'CB';
-      if (key.startsWith('ch')) return 'CH';
-      if (key.startsWith('spl') || key.startsWith('fs')) return 'SPL';
-      return 'OTH';
-    };
-
-    // Aggregate sums for this pitcher by normalized code
-    const sums = new Map(); // code -> { n, sv, si, sh, ss }
-    let total = 0;
-    for (const e of (Array.isArray(ALL_PITCH_EVENTS) ? ALL_PITCH_EVENTS : [])) {
-      if (e?.pitcher !== displayName) continue;
-      const code = norm(e?.pitchType || e?.type || e?.pitch || e?.pitch_name || e?.pitchClass || null);
-      if (!code || code === 'OTH') continue;
-      const velo = Number(e?.velo ?? e?.velocity ?? e?.v ?? e?.speed);
-      const ivb  = Number(e?.ivb ?? e?.vert ?? e?.rise);
-      const hb   = Number(e?.hb ?? e?.horz ?? e?.run);
-      const spin = Number(e?.spin ?? e?.rpm);
-      if (!sums.has(code)) sums.set(code, { n: 0, sv: 0, si: 0, sh: 0, ss: 0 });
-      const a = sums.get(code);
-      a.n += 1; total += 1;
-      if (Number.isFinite(velo)) a.sv += velo;
-      if (Number.isFinite(ivb)) a.si += ivb;
-      if (Number.isFinite(hb)) a.sh += hb;
-      if (Number.isFinite(spin)) a.ss += spin;
-    }
-
-    // Compute averages and usage
-    const stats = Object.create(null);
-    for (const [code, a] of sums) {
-      const n = a.n || 1;
-      stats[code] = {
-        code,
-        n,
-        avgVelo: a.sv / n,
-        avgIVB: a.si / n,
-        avgHB: a.sh / n,
-        avgSpin: a.ss / n,
-        usagePct: total ? Number(((n / total) * 100).toFixed(1)) : null,
-      };
-    }
-
-    // Grades per code (mirrors ArsenalsPage gradePitch)
-    function roundTo5(x) { return Math.max(20, Math.min(80, Math.round(x / 5) * 5)); }
-    function baseGradeFF(v) { if (v >= 98) return 80; if (v >= 96) return 70; if (v >= 94) return 60; if (v >= 92) return 50; if (v >= 90) return 40; return 30; }
-    function gradePitch(t, avgVelo, avgIVB, avgHB, avgSpin, ffV) {
-      if (t === 'FF') {
-        let g = baseGradeFF(avgVelo);
-        if (Number.isFinite(avgIVB)) { if (avgIVB >= 17) g += 5; else if (avgIVB <= 12) g -= 5; }
-        return roundTo5(g);
-      }
-      if (t === 'SI') {
-        let g = 30; const hbMag = Number.isFinite(avgHB) ? Math.abs(avgHB) : -Infinity;
-        if (hbMag >= 17) g = 70; else if (hbMag >= 14) g = 60; else if (hbMag >= 11) g = 50; else if (hbMag >= 8) g = 40; else g = 30;
-        if ((Number.isFinite(avgIVB) && avgIVB <= 10) || (Number.isFinite(avgVelo) && avgVelo >= 94)) g += 5;
-        return roundTo5(g);
-      }
-      if (t === 'CT') {
-        let g = 50; const gap = (Number.isFinite(ffV) && Number.isFinite(avgVelo)) ? (ffV - avgVelo) : NaN;
-        const hbAbs = Number.isFinite(avgHB) ? Math.abs(avgHB) : NaN;
-        if (Number.isFinite(gap) && gap >= 2 && gap <= 4 && (Number.isFinite(hbAbs) ? hbAbs <= 5 : true)) g = 60;
-        if ((Number.isFinite(avgVelo) && avgVelo >= 92) || (Number.isFinite(avgIVB) && avgIVB >= 8 && avgIVB <= 12)) g += 5;
-        return roundTo5(g);
-      }
-      if (t === 'SL') {
-        const sweep = Number.isFinite(avgHB) ? Math.abs(avgHB) : -Infinity; let g = 45;
-        if (sweep >= 10) g = 60; else if (sweep >= 7) g = 55; else if (sweep >= 4) g = 50; else g = 45;
-        if ((Number.isFinite(avgSpin) && avgSpin >= 2400) || (Number.isFinite(avgIVB) && avgIVB >= 0 && avgIVB <= 5)) g += 5;
-        return roundTo5(g);
-      }
-      if (t === 'SW') {
-        const sweep = Number.isFinite(avgHB) ? Math.abs(avgHB) : -Infinity; let g = 45;
-        if (sweep >= 14) g = 70; else if (sweep >= 11) g = 60; else if (sweep >= 8) g = 55; else if (sweep >= 6) g = 50; else g = 45;
-        if ((Number.isFinite(avgSpin) && avgSpin >= 2400) && (Number.isFinite(avgIVB) && avgIVB <= 3)) g += 5;
-        return roundTo5(g);
-      }
-      if (t === 'CH') {
-        let g = 50; if (Number.isFinite(avgHB) && avgHB >= 12) g += 5;
-        const sep = Number.isFinite(ffV) && Number.isFinite(avgVelo) ? (ffV - avgVelo) : NaN;
-        if (Number.isFinite(sep) && sep >= 8 && sep <= 12) g += 5; if (Number.isFinite(avgIVB) && avgIVB <= 8) g += 5;
-        return Math.min(70, roundTo5(g));
-      }
-      if (t === 'CB') {
-        const ivb = Number.isFinite(avgIVB) ? avgIVB : Infinity; let g = 45;
-        if (ivb <= -10) g = 60; else if (ivb <= -6) g = 55; else if (ivb <= -3) g = 50; else g = 45;
-        if (Number.isFinite(avgSpin) && avgSpin >= 2600) g += 5;
-        return roundTo5(g);
-      }
-      return 50;
-    }
-
-    // FF avg velo used for CT/CH grading context
-    let ffAvgVelo = null; let fastest = { code: null, avgV: -Infinity };
-    for (const [code, v] of Object.entries(stats)) {
-      const av = v.avgVelo; if (code === 'FF') ffAvgVelo = av;
-      if (Number.isFinite(av) && av > fastest.avgV) fastest = { code, avgV: av };
-    }
-    if (!Number.isFinite(ffAvgVelo)) ffAvgVelo = fastest.avgV;
-
-    const graded = Object.create(null);
-    for (const [code, v] of Object.entries(stats)) {
-      const g = gradePitch(code, v.avgVelo, v.avgIVB, v.avgHB, v.avgSpin, ffAvgVelo);
-      if (Number.isFinite(g)) graded[code] = g;
-    }
-
-    // Build rows from declared arsenal for the pitcher ID from URL
+    // Collect all pitch events for this pitcher
+    const pitches = (Array.isArray(ALL_PITCH_EVENTS) ? ALL_PITCH_EVENTS : []).filter(e => String(e?.pitcher) === String(displayName));
+    // Declared arsenal codes from JSON by pid (fallback to name)
     const declaredCodes = (() => {
       const byId = Array.isArray(pitcherArsenals)
         ? pitcherArsenals.find(p => String(p.playerId) === String(selected))
@@ -974,29 +848,19 @@ export default function PitcherReportsPage() {
         ? pitcherArsenals.find(p => String(p.name) === String(displayName))
         : null;
       const arsenalList = (byId?.arsenal || byName?.arsenal || []);
-      return arsenalList.map(norm).filter(c => c && c !== 'OTH');
+      return arsenalList.map(normalizeCode).filter(c => c && c !== 'OTH');
     })();
-
+    // Produce standardized rows
     const rows = declaredCodes.map((code) => {
-      const s = stats[code];
-      return {
-        code,
-        n: s?.n ?? 0,
-        avgVelo: s?.avgVelo ?? null,
-        avgIVB: s?.avgIVB ?? null,
-        avgHB: s?.avgHB ?? null,
-        avgSpin: s?.avgSpin ?? null,
-        usagePct: s?.usagePct ?? null,
-        grade: graded[code] ?? null,
-      };
-    }).sort((a,b) => {
+      const s = summarizePitchType(pitches, code);
+      return { code, n: s.n ?? 0, avgVelo: s.velo ?? null, avgIVB: s.ivb ?? null, avgHB: s.hb ?? null, avgSpin: s.spin ?? null, usagePct: s.usagePct ?? null, grade: s.grade ?? null };
+    }).sort((a, b) => {
       const ua = Number.isFinite(a.usagePct) ? a.usagePct : -1;
       const ub = Number.isFinite(b.usagePct) ? b.usagePct : -1;
       if (ub !== ua) return ub - ua;
       return String(a.code).localeCompare(String(b.code));
     });
-
-    return { rows, meta: { total } };
+    return { rows, meta: { total: pitches.length } };
   }, [displayName, selected]);
 
   return (
@@ -1025,6 +889,9 @@ export default function PitcherReportsPage() {
               {/* Show handedness badge; FV intentionally blank until model is implemented */}
               <FVBadge handedness={handednessLabel} size="md" />
             </div>
+            <div className="no-print" style={{ fontSize:12 }}>
+              <a href="/pitching/arsenals" style={{ color:'#9CA3AF', textDecoration:'none' }}>← Back to Arsenals</a>
+            </div>
             <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
               <span style={{ display:'inline-block', padding:'2px 8px', borderRadius:999, background:'rgba(148,163,184,0.15)', color:'#94A3B8', fontWeight:800, fontSize:11 }}>Risk: {draft?.risk || 'Medium'}</span>
               <span style={{ display:'inline-block', padding:'2px 8px', borderRadius:999, background:'rgba(148,163,184,0.15)', color:'#94A3B8', fontWeight:800, fontSize:11 }}>Role: {draft?.roleProjection || '—'}</span>
@@ -1042,6 +909,37 @@ export default function PitcherReportsPage() {
               />
               <button type="button" style={styles.btn} onClick={save}>Save</button>
               <button type="button" style={styles.btn} onClick={exportJSON}>Download JSON</button>
+              <button type="button" style={styles.btn} onClick={()=>{
+                try{
+                  const headers = ['Pitch','Velo (mph)','IVB (in)','HB (in)','Spin (rpm)','Usage %','Grade (20–80)','N'];
+                  const labelMap = { FF: 'Four-Seam', SI: 'Sinker', CT: 'Cutter', SL: 'Slider', SW: 'Sweeper', CB: 'Curveball', CH: 'Changeup', SPL: 'Splitter' };
+                  const lines = [headers.join(',')];
+                  for (const r of (arsenalSummary?.rows||[])){
+                    const pitch = labelMap[r.code] || r.code;
+                    const row = [
+                      pitch,
+                      fmtMph(r.avgVelo),
+                      fmtInches(r.avgIVB),
+                      fmtInches(r.avgHB),
+                      fmtRpm(r.avgSpin),
+                      fmtPct(r.usagePct),
+                      fmtGrade(r.grade),
+                      fmtGrade(r.n),
+                    ];
+                    lines.push(row.join(','));
+                  }
+                  const csv = lines.join('\n');
+                  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `reports_arsenal_summary_${selected}.csv`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                }catch(err){ alert('CSV export failed'); }
+              }}>Export CSV</button>
               <label className="no-print" style={{ ...styles.btn, display:'inline-flex', alignItems:'center', cursor:'pointer' }}>
                 Import JSON
                 <input type="file" accept="application/json" style={{ display:'none' }}
@@ -1077,12 +975,12 @@ export default function PitcherReportsPage() {
             <thead>
               <tr>
                 <th style={styles.th}>Pitch</th>
-                <th style={styles.th}>Velo</th>
-                <th style={styles.th}>IVB</th>
-                <th style={styles.th}>HB</th>
-                <th style={styles.th}>Spin</th>
+                <th style={styles.th}>Velo (mph)</th>
+                <th style={styles.th}>IVB (in)</th>
+                <th style={styles.th}>HB (in)</th>
+                <th style={styles.th}>Spin (rpm)</th>
                 <th style={styles.th}>Usage %</th>
-                <th style={styles.th}>Grade</th>
+                <th style={styles.th}>Grade (20–80)</th>
                 <th style={styles.th}>N</th>
               </tr>
             </thead>
@@ -1090,20 +988,16 @@ export default function PitcherReportsPage() {
               {arsenalSummary.rows.map((r) => {
                 const labelMap = { FF: 'Four-Seam', SI: 'Sinker', CT: 'Cutter', SL: 'Slider', SW: 'Sweeper', CB: 'Curveball', CH: 'Changeup', SPL: 'Splitter' };
                 const pitchLabel = labelMap[r.code] || r.code;
-                const dash = '—';
-                const fmt1 = (x) => (Number.isFinite(x) ? x.toFixed(1) : dash);
-                const fmti = (x) => (Number.isFinite(x) ? Math.round(x) : dash);
-                const fmtPct = (x) => (Number.isFinite(x) ? x.toFixed(1) : dash);
                 return (
                   <tr key={`asum-${r.code}`}>
                     <td style={styles.td}>{pitchLabel}</td>
-                    <td style={styles.td}>{fmt1(r.avgVelo)}</td>
-                    <td style={styles.td}>{fmt1(r.avgIVB)}</td>
-                    <td style={styles.td}>{fmt1(r.avgHB)}</td>
-                    <td style={styles.td}>{fmti(r.avgSpin)}</td>
+                    <td style={styles.td}>{fmtMph(r.avgVelo)}</td>
+                    <td style={styles.td}>{fmtInches(r.avgIVB)}</td>
+                    <td style={styles.td}>{fmtInches(r.avgHB)}</td>
+                    <td style={styles.td}>{fmtRpm(r.avgSpin)}</td>
                     <td style={styles.td}>{fmtPct(r.usagePct)}</td>
-                    <td style={styles.td}>{fmti(r.grade)}</td>
-                    <td style={styles.td}>{fmti(r.n)}</td>
+                    <td style={styles.td}>{fmtGrade(r.grade)}</td>
+                    <td style={styles.td}>{fmtGrade(r.n)}</td>
                   </tr>
                 );
               })}
