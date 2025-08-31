@@ -2,7 +2,7 @@ import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { FormControl, InputLabel, Select, MenuItem, Box, Card, CardContent, Tooltip, Button, Menu, Chip, TextField } from '@mui/material';
 import { safeKey } from '../lib/safeKey';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 // --- ID + field normalization helpers ---
 export function getPid(row, i = 0) {
@@ -155,6 +155,7 @@ export default function PitchersTable({
   selectedPlayerId,
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [anchorEl, setAnchorEl] = useState(null);
   const menuOpen = Boolean(anchorEl);
   const handleMenuOpen = (e) => setAnchorEl(e.currentTarget);
@@ -171,6 +172,40 @@ export default function PitchersTable({
   useEffect(() => {
     try { sessionStorage.setItem('arsenalsSearch', debouncedSearch); } catch {}
   }, [debouncedSearch]);
+  // Sync Arsenals table state <-> URL (query params) for reload/share persistence.
+  // Initialize state from URL on mount
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(location.search);
+      const sp = params.get('sp');
+      const sc = params.get('sc');
+      const sd = params.get('sd');
+      const q = params.get('q');
+      if (sp) setSortPitch(sp);
+      if (sc) setSortColumn(sc);
+      if (sd === 'asc' || sd === 'desc') setSortDirection(sd);
+      if (q != null) setSearchText(q);
+    } catch {}
+    // run only on first mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Debounced URL updates when state changes (only include non-defaults)
+  useEffect(() => {
+    if (mode !== 'arsenals') return;
+    const t = setTimeout(() => {
+      const params = new URLSearchParams();
+      if (sortPitch && sortPitch !== 'FF') params.set('sp', sortPitch);
+      if (sortColumn) params.set('sc', String(sortColumn));
+      if (sortDirection) params.set('sd', String(sortDirection));
+      const q = (debouncedSearch || '').trim();
+      if (q) params.set('q', q);
+      const qs = params.toString();
+      const next = qs ? `${location.pathname}?${qs}` : `${location.pathname}`;
+      navigate(next, { replace: true });
+    }, 200);
+    return () => clearTimeout(t);
+  }, [mode, sortPitch, sortColumn, sortDirection, debouncedSearch, location.pathname, navigate]);
   // Reset returns Arsenals table to default state (order, sort pitch, search).
   const handleReset = useCallback(() => {
     setSortColumn(null);
@@ -179,7 +214,8 @@ export default function PitchersTable({
     setSearchText('');
     try { sessionStorage.setItem('arsenalsSearch', ''); } catch {}
     try { window.scrollTo({ top: 0 }); } catch {}
-  }, []);
+    try { navigate(location.pathname, { replace: true }); } catch {}
+  }, [navigate, location.pathname]);
   // Stable wrapper for double-click handler (passes through to prop if provided)
   const handleRowDouble = useCallback((params) => {
     if (typeof onRowDoubleClick === 'function') onRowDoubleClick(params);
