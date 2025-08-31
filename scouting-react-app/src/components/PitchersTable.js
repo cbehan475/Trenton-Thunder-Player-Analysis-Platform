@@ -389,6 +389,73 @@ export default function PitchersTable({
     return out;
   }, [mode, rows, sortedRows, debouncedSearch, handFilter]);
 
+  // CSV export mirrors current filtered/sorted view for the selected sortPitch.
+  const handleDownloadCsv = useCallback(() => {
+    if (mode !== 'arsenals') return;
+    const headers = [
+      'Pitcher ID',
+      'Name',
+      'B/T',
+      'Selected Pitch',
+      'Velo (mph)',
+      'IVB (in)',
+      'HB (in)',
+      'Spin (rpm)',
+      'Usage%',
+      'Grade (20–80)',
+      'N',
+    ];
+    const esc = (v) => {
+      const s = v == null ? '' : String(v);
+      // Quote if contains comma, quote, or newline
+      if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    };
+    const to1 = (v) => (Number.isFinite(v) ? v.toFixed(1) : '');
+    const toInt = (v) => (Number.isFinite(v) ? String(Math.round(v)) : '');
+
+    const lines = [];
+    lines.push(headers.join(','));
+    for (const r of filteredRows) {
+      const pid = getPid(r, 0);
+      const name = r?.name ?? '';
+      const bt = r?.bt ?? '';
+      const selected = sortPitch;
+      const agg = aggregatesByPitcher?.[r?.playerId]?.[sortPitch] || {};
+      const rowOut = [
+        pid,
+        name,
+        bt,
+        selected,
+        to1(agg.avgVelo),
+        to1(agg.avgIVB),
+        to1(agg.avgHB),
+        toInt(agg.avgSpin),
+        to1(agg.usagePct),
+        toInt(agg.grade),
+        toInt(agg.sampleCount),
+      ].map(esc);
+      lines.push(rowOut.join(','));
+    }
+    const csv = lines.join('\n');
+
+    const pad = (n) => String(n).padStart(2, '0');
+    const d = new Date();
+    const ts = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}`;
+    const hand = handFilter; // all|R|L
+    const fname = `pitcher-arsenals_${sortPitch}_${hand}_${ts}.csv`;
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fname;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [mode, filteredRows, sortPitch, handFilter, aggregatesByPitcher]);
+
   // Dependencies reflect all values read inside this memo; keep in sync when logic changes.
   const columns = useMemo(() => {
     if (mode === 'arsenals') {
@@ -647,6 +714,9 @@ export default function PitchersTable({
                 ))}
               </Select>
             </FormControl>
+            <Button variant="outlined" size="small" onClick={handleDownloadCsv} aria-label="Download current table as CSV" sx={{ textTransform: 'none' }}>
+              Download CSV
+            </Button>
             <Button variant="text" size="small" onClick={handleReset} aria-label="Reset table state" sx={{ textTransform: 'none', cursor: 'pointer' }}>
               Reset
             </Button>
