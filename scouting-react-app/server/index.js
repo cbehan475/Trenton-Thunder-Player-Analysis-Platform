@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const fs = require('fs');
 const path = require('path');
 const { runBatch } = require('../scripts/batchArsenalNormalize');
+const os = require('os');
 
 const PORT = process.env.PORT || 5001;
 const app = express();
@@ -13,6 +14,7 @@ const fhPath = path.join(__dirname, '..', 'src', 'data', 'arsenals', 'firstHalf.
 const overridesPath = path.join(__dirname, '..', 'src', 'data', 'arsenals', 'overrides.json');
 const proposalsPath = path.join(__dirname, '..', 'src', 'data', 'arsenals', 'proposals.json');
 const patchesDir = path.join(__dirname, '..', 'src', 'data', 'arsenals', 'patches');
+const pitcherArsenalsJs = path.join(__dirname, '..', 'src', 'data', 'pitcherArsenals.js');
 
 function readJson(p, fallback) {
   try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch { return fallback; }
@@ -32,11 +34,92 @@ function safeWriteJson(target, data) {
   fs.renameSync(tmp, target);
 }
 
+/** Safe write text file with fsync+rename */
+function safeWriteText(target, text) {
+  const dir = path.dirname(target);
+  fs.mkdirSync(dir, { recursive: true });
+  const tmp = target + '.tmp';
+  const fd = fs.openSync(tmp, 'w');
+  try {
+    fs.writeFileSync(fd, text, 'utf8');
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+  fs.renameSync(tmp, target);
+}
+
 function timestamp() {
   const d = new Date();
   const pad = (n)=>String(n).padStart(2,'0');
   return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
 }
+
+function isoDate() {
+  const d = new Date();
+  const pad = (n)=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
+function slugifyId(s) {
+  return String(s || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+/**
+ * Update pitcherArsenals.js in-place:
+ * - Find line with matching playerId
+ * - Replace arsenal array with provided normalized codes
+ * - Append inline comment with date and optional note
+ */
+function updatePitcherArsenalsJs({ key, pitches, sourceNote }) {
+  const raw = fs.readFileSync(pitcherArsenalsJs, 'utf8');
+  const lines = raw.split(/\r?\n/);
+  const isNumericKey = /^\d+$/.test(String(key));
+  let idx = -1;
+  if (isNumericKey) {
+    const needle = `playerId: ${String(key)}`;
+    idx = lines.findIndex((ln) => ln.includes(needle));
+  } else {
+    // fallback: match by slug(name)
+    idx = lines.findIndex((ln) => {
+      const m = ln.match(/name:\s*"([^"]+)"/);
+      if (!m) return false;
+      return slugifyId(m[1]) === String(key);
+    });
+  }
+  if (idx < 0) {
+    throw new Error(`Entry not found in pitcherArsenals.js for key=${key}`);
+  }
+  const line = lines[idx];
+  // Build new arsenal literal, e.g., ["FF", "SL"]
+  const arr = `[${pitches.map((p) => JSON.stringify(String(p).toUpperCase())).join(', ')}]`;
+  const dateStr = isoDate();
+  const note = sourceNote ? ` — ${String(sourceNote).replace(/\n/g, ' ').slice(0, 140)}` : '';
+  // Replace the arsenal array content preserving other fields; assume single-line object format in file
+  const newLine = line.replace(/arsenal:\s*\[[^\]]*\]/, `arsenal: ${arr}`) + ` // updated via review on ${dateStr}${note}`;
+  lines[idx] = newLine;
+  const out = lines.join(os.EOL);
+  safeWriteText(pitcherArsenalsJs, out);
+  return { index: idx, previousLine: line, newLine };
+}
+
+// Persist override pitches for a pitcher into src/data/pitcherArsenals.js
+app.post('/api/arsenals/writeOverride', (req, res) => {
+  try {
+    const { key, pitches, sourceNote, reviewAction } = req.body || {};
+    if (!key || !Array.isArray(pitches)) {
+      return res.status(400).json({ error: 'key and pitches[] required' });
+    }
+    const result = updatePitcherArsenalsJs({ key, pitches, sourceNote });
+    res.json({ ok: true, keyUsed: key, writtenPath: pitcherArsenalsJs, reviewAction: reviewAction || null, ...result });
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
 
 function applyOne(playerId, payload) {
   const firstHalf = readJson(fhPath, []);

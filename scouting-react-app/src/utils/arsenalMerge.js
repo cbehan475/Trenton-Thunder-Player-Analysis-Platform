@@ -2,7 +2,14 @@
 // Logs-first arsenal merge with optional verified overrides and needsReview flag.
 
 import { normalizeCode } from './pitchAggregates.js';
-import { slugifyId } from '../lib/scoutingReportsStore.js';
+// Local slugify to avoid cross-imports from store in CLI/server contexts
+function slugifyId(s) {
+  return String(s || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
 
 /**
  * @typedef {Object} MergedArsenal

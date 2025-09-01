@@ -35,7 +35,8 @@
     "gen:hlogs": "node scripts/genHittingManifest.mjs",
     "gen:agg": "node scripts/genPitchingAggregates.mjs",
     "cypress:open": "concurrently -k -s first \"cross-env PORT=3002 react-scripts start\" \"wait-on http://localhost:3002 && cypress open\"",
-    "cypress:run": "concurrently -k -s first \"cross-env PORT=3002 react-scripts start\" \"wait-on http://localhost:3002 && cypress run\""
+    "cypress:run": "concurrently -k -s first \"cross-env PORT=3002 react-scripts start\" \"wait-on http://localhost:3002 && cypress run\"",
+    "audit:arsenals": "node scripts/auditArsenals.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.0",
