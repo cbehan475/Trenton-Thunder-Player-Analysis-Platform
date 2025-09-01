@@ -79,6 +79,7 @@ export default function ArsenalsPage() {
         pitches: merged?.pitches || [],
         needsReview: !!merged?.needsReview,
         mergedDetails: merged?.details || null,
+        mergedPitches: Array.isArray(merged?.pitches) ? merged.pitches : [],
         overridePitches: Array.isArray(OVERRIDES_MAP[pid]) ? OVERRIDES_MAP[pid] : [],
         status,
         statusNote: note,

@@ -96,7 +96,7 @@ function updatePitcherArsenalsJs({ key, pitches, sourceNote }) {
   }
   const line = lines[idx];
   // Build new arsenal literal, e.g., ["FF", "SL"]
-  const arr = `[${pitches.map((p) => JSON.stringify(String(p).toUpperCase())).join(', ')}]`;
+  const arr = `[${pitches.map((p) => JSON.stringify(String(p))).join(', ')}]`;
   const dateStr = isoDate();
   const note = sourceNote ? ` — ${String(sourceNote).replace(/\n/g, ' ').slice(0, 140)}` : '';
   // Replace the arsenal array content preserving other fields; assume single-line object format in file

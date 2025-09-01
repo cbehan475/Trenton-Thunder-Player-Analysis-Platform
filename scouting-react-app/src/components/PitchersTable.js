@@ -254,6 +254,9 @@ export default function PitchersTable({
           mergedDetails: row.mergedDetails || null,
           reviewAction: t.reviewAction || row.reviewAction || null,
           reviewDate: t.reviewDate || row.reviewDate || null,
+          // pass-through explicit lists for actions
+          mergedPitches: row.mergedPitches || null,
+          overridePitches: row.overridePitches || null,
         });
       });
     }
@@ -901,34 +904,72 @@ export default function PitchersTable({
     const row = rowMenu.row;
     const pid = getPid(row, 0);
     const name = row?.name ?? '';
-    const pitches = Array.isArray(row.pitches) ? row.pitches : [];
-    const reviewAction = row.reviewAction || 'None';
-    const reviewDate = row.reviewDate || '';
-    const note = readLocalNote(pid);
+    const prevPitches = Array.isArray(row.pitches) ? [...row.pitches] : [];
+    const prevReviewAction = row.reviewAction || 'None';
+    const prevReviewDate = row.reviewDate || '';
+    const prevNeedsReview = !!row.needsReview;
+    // prefer stable string key of playerId, else slug(name)
+    const key = pid && !String(pid).startsWith('row-') ? String(pid) : slugifyIdLocal(name);
+    const note = readLocalNote(key);
+
+    let targetPitches = [];
+    let reviewAction = 'None';
+    if (action === 'approveMerged') {
+      targetPitches = Array.isArray(row.mergedPitches) && row.mergedPitches.length ? row.mergedPitches : (Array.isArray(row.pitches) ? row.pitches : []);
+      reviewAction = 'ApprovedMerged';
+    } else if (action === 'keepOverride') {
+      targetPitches = Array.isArray(row.overridePitches) ? row.overridePitches : [];
+      reviewAction = 'KeptOverride';
+    } else {
+      console.error(`Unknown row action: ${action}`);
+      return;
+    }
+
+    // normalize to MLB codes (FF, SI, SL, CH, etc.)
+    const codes = normalizeCodes(targetPitches);
+
     const doWrite = async () => {
       try {
-        const res = await writePitcherOverride({ key: pid, pitches, sourceNote: note, reviewAction });
+        const res = await writePitcherOverride({ key, pitches: codes, sourceNote: note || '', reviewAction });
         const today = new Date().toISOString().split('T')[0];
         setTransientByPid((m) => ({
           ...m,
-          [String(pid)]: { pitches, needsReview: false, reviewAction, reviewDate: today },
+          [String(pid)]: { pitches: codes, needsReview: false, reviewAction, reviewDate: today },
         }));
-        setSnack({ open: true, message: 'Saved', undo: null });
+        // compute prevPitches from file line if available, else fallback to captured prevPitches
+        const filePrev = parseArsenalFromLine(res.previousLine || '')
+          .map(String);
+        const snapshotPrev = filePrev.length ? filePrev : normalizeCodes(prevPitches);
+        setSnack({
+          open: true,
+          message: 'Saved — Undo',
+          undo: {
+            key,
+            pid: String(pid),
+            name,
+            prevPitches: snapshotPrev,
+            prevAction: prevReviewAction,
+            prevDate: prevReviewDate,
+            prevNeedsReview,
+            prevNote: note || '',
+          },
+        });
       } catch (e) {
         setSnack({ open: true, message: 'Save failed', undo: null });
       }
     };
-    switch (action) {
-      case 'approveMerged':
-        doWrite();
-        break;
-      case 'keepOverride':
-        doWrite();
-        break;
-      default:
-        console.error(`Unknown row action: ${action}`);
-    }
+
+    doWrite();
   };
+
+  // Row actions menu
+  const handleMenuClose = () => setRowMenu({ anchorEl: null, row: null });
+
+  // Row actions menu
+  const menuOpen = Boolean(rowMenu.anchorEl);
+
+  // Row actions menu
+  const handleMenuOpen = (e, row) => setRowMenu({ anchorEl: e.currentTarget, row });
 
   return (
     <Card elevation={3} sx={{ mb: 4, borderRadius: 3 }}>
@@ -980,10 +1021,22 @@ export default function PitchersTable({
           onClose={() => setSnack(s => ({ ...s, open:false }))}
           message={snack.message}
           action={
-            <Button color="secondary" size="small" onClick={() => {
+            <Button color="secondary" size="small" onClick={async () => {
               const u = snack.undo; if (!u) return;
-              // doWrite(u.pid, u.name, u.prevPitches, u.prevAction, u.prevNote, { isUndo:true });
-              setSnack(s => ({ ...s, open:false }));
+              try {
+                // restore note
+                if (u.prevNote != null) saveLocalNote(u.key, u.prevNote);
+                // write previous pitches back with reviewAction None
+                await writePitcherOverride({ key: u.key, pitches: normalizeCodes(u.prevPitches), sourceNote: u.prevNote || '', reviewAction: 'None' });
+                // restore UI state
+                setTransientByPid((m) => ({
+                  ...m,
+                  [String(u.pid)]: { pitches: normalizeCodes(u.prevPitches), needsReview: u.prevNeedsReview, reviewAction: u.prevAction || 'None', reviewDate: u.prevDate || '' },
+                }));
+                setSnack(s => ({ ...s, open:false, undo: null, message: 'Reverted' }));
+              } catch (e) {
+                setSnack(s => ({ ...s, open:true, message: 'Undo failed', undo: null }));
+              }
             }}>Undo</Button>
           }
         />
@@ -1059,8 +1112,3 @@ function useRowActionsAPI(ctx) {
 
   return { doWrite };
 }
-
-// Wire handlers onto component via prototype to share with JSX above
-PitchersTable.prototype.handleRowAction = function(action) {
-  const row = this?.state?.rowMenu?.row; // not accessible in this pattern; left for TS hint
-};
