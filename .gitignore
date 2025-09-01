@@ -1,1 +1,22 @@
 scouting-react-app/src/pages/BattedBallProfilePage.backup.js
+
+# deps
+node_modules/
+**/node_modules/
+
+# builds
+build/
+dist/
+.next/
+.turbo/
+.cache/
+parcel-cache/
+
+# tests/coverage
+coverage/
+cypress/screenshots/
+cypress/videos/
+
+# env & misc
+.env*
+.DS_Store
