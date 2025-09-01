@@ -6,7 +6,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import NoteAltIcon from '@mui/icons-material/NoteAlt';
 import { safeKey } from '../lib/safeKey';
 import { useNavigate } from 'react-router-dom';
-import { writePitcherOverride, saveLocalNote, readLocalNote } from '../utils/arsenalWrite.js';
+import { writePitcherOverride, saveLocalNote, readLocalNote, fixOverrideKey } from '../utils/arsenalWrite.js';
 
 // --- ID + field normalization helpers ---
 export function getPid(row, i = 0) {
@@ -919,6 +919,19 @@ export default function PitchersTable({
     } else if (action === 'keepOverride') {
       targetPitches = Array.isArray(row.overridePitches) ? row.overridePitches : [];
       reviewAction = 'KeptOverride';
+    } else if (action === 'fixKey') {
+      const toKey = window.prompt('Enter the correct playerId (or slug) to assign to this row:', String(pid));
+      if (!toKey) { return; }
+      (async () => {
+        try {
+          await fixOverrideKey({ fromKey: key, toKey: String(toKey) });
+          setSnack({ open: true, message: 'Key fixed — please refresh to see changes', undo: null });
+          handleMenuClose();
+        } catch (e) {
+          setSnack({ open: true, message: 'Fix key failed', undo: null });
+        }
+      })();
+      return;
     } else {
       console.error(`Unknown row action: ${action}`);
       return;
@@ -988,6 +1001,7 @@ export default function PitchersTable({
         <Menu anchorEl={rowMenu.anchorEl} open={menuOpen} onClose={handleMenuClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}>
           <MuiMenuItem onClick={() => handleRowAction('approveMerged')}>Approve merged list</MuiMenuItem>
           <MuiMenuItem onClick={() => handleRowAction('keepOverride')}>Mark as intentional (keep overrides)</MuiMenuItem>
+          <MuiMenuItem onClick={() => handleRowAction('fixKey')}>Fix name/key…</MuiMenuItem>
         </Menu>
         {/* Note editor dialog */}
         <Dialog open={noteDlg.open} onClose={() => setNoteDlg(s => ({ ...s, open:false }))} maxWidth="sm" fullWidth>

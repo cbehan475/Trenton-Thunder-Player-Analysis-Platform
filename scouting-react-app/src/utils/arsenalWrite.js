@@ -20,6 +20,20 @@ export async function writePitcherOverride({ key, pitches, sourceNote, reviewAct
   return data; // { ok, playerId, keyUsed, writtenPath, previousEntry }
 }
 
+export async function fixOverrideKey({ fromKey, toKey }) {
+  if (!fromKey || !toKey) throw new Error('fromKey and toKey required');
+  const res = await fetch('/api/arsenals/fixOverrideKey', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fromKey: String(fromKey), toKey: String(toKey) }),
+  });
+  if (!res.ok) {
+    const msg = await res.text().catch(()=>res.statusText);
+    throw new Error(`fixOverrideKey failed: ${res.status} ${msg}`);
+  }
+  return await res.json();
+}
+
 export function getNoteKeyFor(pidOrName) {
   const s = String(pidOrName || '').trim();
   return 'arsenalNote:' + s.toLowerCase().replace(/\s+/g, '-');
