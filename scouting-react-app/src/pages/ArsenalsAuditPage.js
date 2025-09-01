@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback, useState } from 'react';
-import { Box, Container, Typography, Alert, Button, Stack, Snackbar } from '@mui/material';
+import { Container, Typography, Alert, Button, Stack, Snackbar } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import PitchersTable, { getPid } from '../components/PitchersTable';
 import pitcherArsenals from '../data/pitcherArsenals';
@@ -7,33 +7,23 @@ import ALL_PITCH_EVENTS from '../data/logs/pitchingIndex.js';
 import { summarizePitchType, normalizeCode } from '../utils/pitchAggregates.js';
 import { getMergedArsenalForPitcher } from '../utils/arsenalMerge.js';
 import { slugifyId } from '../lib/scoutingReportsStore.js';
-import { getCache, getLatestOuting } from '../lib/reviewCache.js';
+import { getLatestOuting } from '../lib/reviewCache.js';
 
 export default function ArsenalsAuditPage() {
   const isProd = process.env.NODE_ENV === 'production';
   const navigate = useNavigate();
   const [snack, setSnack] = useState({ open: false, message: '' });
 
+  // Always call hooks; guard within callbacks to avoid conditional hooks
   const banner = useMemo(() => (
     <Alert severity={isProd ? 'error' : 'info'} sx={{ mb: 2 }}>
       {isProd ? 'This page is disabled in production.' : 'Development-only: Arsenal Audit tools are available here.'}
     </Alert>
   ), [isProd]);
 
-  if (isProd) {
-    return (
-      <Container maxWidth="lg" sx={{ py: 2 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-          <Typography variant="h5" sx={{ fontWeight: 800 }}>Arsenal Audit (Dev)</Typography>
-          <Button component={RouterLink} to="/pitching/arsenals" variant="outlined">Back to Arsenals</Button>
-        </Stack>
-        {banner}
-      </Container>
-    );
-  }
-
-  // Build overrides map once
+  // Build overrides map once; if prod, return empty to avoid extra work
   const OVERRIDES_MAP = useMemo(() => {
+    if (isProd) return {};
     try {
       return Object.fromEntries(
         (Array.isArray(pitcherArsenals) ? pitcherArsenals : []).map((p) => [
@@ -44,9 +34,9 @@ export default function ArsenalsAuditPage() {
     } catch {
       return {};
     }
-  }, []);
+  }, [isProd]);
 
-  // Base rows from JSON; merged pitches and needsReview injected below
+  // Base rows from JSON; static transform is ok in prod too
   const baseArsenals = useMemo(() => {
     return (Array.isArray(pitcherArsenals) ? pitcherArsenals : []).map((p) => ({
       playerId: p.playerId,
@@ -56,9 +46,9 @@ export default function ArsenalsAuditPage() {
     }));
   }, []);
 
-  // Merge telemetry + compute merged arsenal details for audit
+  // Merge telemetry + compute merged arsenal details for audit; if prod, return empty
   const rowsForDisplay = useMemo(() => {
-    const cache = getCache();
+    if (isProd) return [];
     const logVersion = Array.isArray(ALL_PITCH_EVENTS) ? ALL_PITCH_EVENTS.length : 0;
     const out = [];
     for (const row of baseArsenals) {
@@ -96,15 +86,16 @@ export default function ArsenalsAuditPage() {
       });
     }
     return out;
-  }, [baseArsenals]);
+  }, [isProd, baseArsenals, OVERRIDES_MAP]);
 
-  // Build maps for ALL pitchers used by PitchersTable aggregates
+  // Build maps for ALL pitchers used by PitchersTable aggregates; if prod, return empties
   const { statsByCodeAll, usageByCodeAll, gradesByCodeAll } = useMemo(() => {
+    if (isProd) return { statsByCodeAll: {}, usageByCodeAll: {}, gradesByCodeAll: {} };
+
     const statsByCodeAll = Object.create(null);
     const usageByCodeAll = Object.create(null);
     const gradesByCodeAll = Object.create(null);
 
-    // Group pitch events by pitcher name for quick filtering
     const pitchesByName = new Map();
     for (const e of (Array.isArray(ALL_PITCH_EVENTS) ? ALL_PITCH_EVENTS : [])) {
       const name = e?.pitcher ? String(e.pitcher) : '';
@@ -140,7 +131,7 @@ export default function ArsenalsAuditPage() {
     }
 
     return { statsByCodeAll, usageByCodeAll, gradesByCodeAll };
-  }, []);
+  }, [isProd]);
 
   const handleRowDoubleClick = useCallback((paramsOrRow) => {
     const row = paramsOrRow?.row ?? paramsOrRow;
@@ -149,6 +140,7 @@ export default function ArsenalsAuditPage() {
     navigate(`/pitching/reports?pid=${encodeURIComponent(pid)}`);
   }, [navigate]);
 
+  // Single return; conditionally render content
   return (
     <Container maxWidth="xl" sx={{ py: 2 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
@@ -159,15 +151,17 @@ export default function ArsenalsAuditPage() {
       </Stack>
       {banner}
 
-      <PitchersTable
-        mode="arsenals"
-        arsenals={rowsForDisplay}
-        onRowDoubleClick={handleRowDoubleClick}
-        usageByCode={usageByCodeAll}
-        gradesByCode={gradesByCodeAll}
-        statsByCode={statsByCodeAll}
-        selectedPlayerId={''}
-      />
+      {!isProd && (
+        <PitchersTable
+          mode="arsenals"
+          arsenals={rowsForDisplay}
+          onRowDoubleClick={handleRowDoubleClick}
+          usageByCode={usageByCodeAll}
+          gradesByCode={gradesByCodeAll}
+          statsByCode={statsByCodeAll}
+          selectedPlayerId={''}
+        />
+      )}
 
       <Snackbar open={snack.open} autoHideDuration={3000} onClose={()=>setSnack(s=>({ ...s, open:false }))} message={snack.message} />
     </Container>
