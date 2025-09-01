@@ -1,0 +1,16 @@
+{
+  "name": "trenton-thunder-player-analysis-platform",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start:api": "node scouting-react-app/server/index.js",
+    "start:web": "cross-env PORT=3002 npm --prefix scouting-react-app start",
+    "start:all": "concurrently -n API,WEB -c green,cyan \"npm run start:api\" \"npm run start:web\"",
+    "open:arsenals": "node scripts/open-arsenals.cjs",
+    "dev:qa": "npm run start:all & npm run open:arsenals"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "cross-env": "^7.0.3"
+  }
+}
