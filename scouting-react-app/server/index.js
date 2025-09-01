@@ -109,6 +109,10 @@ function updatePitcherArsenalsJs({ key, pitches, sourceNote }) {
 
 // Persist override pitches for a pitcher into src/data/pitcherArsenals.js
 app.post('/api/arsenals/writeOverride', (req, res) => {
+  // Dev-only safeguard: block writes in production
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'Writes are disabled in production' });
+  }
   try {
     const { key, pitches, sourceNote, reviewAction } = req.body || {};
     if (!key || !Array.isArray(pitches)) {

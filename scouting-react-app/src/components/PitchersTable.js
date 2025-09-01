@@ -1,9 +1,12 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { fmtMph, fmtIn, fmtRpm, fmtPct, DASH } from '../utils/formatters.js';
-import { FormControl, InputLabel, Select, MenuItem, Box, Card, CardContent, Tooltip, Button, Menu, Chip, TextField, Checkbox, FormControlLabel } from '@mui/material';
+import { FormControl, InputLabel, Select, MenuItem, Box, Card, CardContent, Tooltip, Button, Menu, MenuItem as MuiMenuItem, Chip, TextField, Checkbox, FormControlLabel, IconButton, Snackbar, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import NoteAltIcon from '@mui/icons-material/NoteAlt';
 import { safeKey } from '../lib/safeKey';
 import { useNavigate } from 'react-router-dom';
+import { writePitcherOverride, saveLocalNote, readLocalNote } from '../utils/arsenalWrite.js';
 
 // --- ID + field normalization helpers ---
 export function getPid(row, i = 0) {
@@ -144,10 +147,21 @@ export default function PitchersTable({
   selectedPlayerId,
 }) {
   const navigate = useNavigate();
-  const [anchorEl, setAnchorEl] = useState(null);
-  const menuOpen = Boolean(anchorEl);
-  const handleMenuOpen = (e) => setAnchorEl(e.currentTarget);
-  const handleMenuClose = () => setAnchorEl(null);
+  // Per-row action menu
+  const [rowMenu, setRowMenu] = useState({ anchorEl: null, row: null });
+  const menuOpen = Boolean(rowMenu.anchorEl);
+  const handleMenuOpen = (e, row) => setRowMenu({ anchorEl: e.currentTarget, row });
+  const handleMenuClose = () => setRowMenu({ anchorEl: null, row: null });
+
+  // Local transient overrides for immediate UI reflect (by playerId)
+  const [transientByPid, setTransientByPid] = useState({});
+
+  // Snackbar for Undo
+  const [snack, setSnack] = useState({ open: false, message: '', undo: null });
+
+  // Note editor dialog
+  const [noteDlg, setNoteDlg] = useState({ open: false, pid: '', name: '', text: '' });
+
   // Helper to read URL params once (lazy init)
   const readParams = () => {
     const sp = new URLSearchParams(window.location.search);
@@ -225,15 +239,23 @@ export default function PitchersTable({
   const rows = useMemo(() => {
     if (mode === 'arsenals') {
       const list = Array.isArray(arsenals) ? arsenals : [];
-      return list.map((row, idx) => ({
-        id: row.playerId ?? row.id ?? idx,
-        playerId: row.playerId ?? row.id ?? idx,
-        name: row.name ?? '-',
-        bt: row.bt ?? '-',
-        pitches: Array.isArray(row.pitches) ? row.pitches : [],
-        status: row.status ?? null,
-        statusNote: row.statusNote ?? null,
-      }));
+      return list.map((row, idx) => {
+        const pid = row.playerId ?? row.id ?? idx;
+        const t = transientByPid[String(pid)] || {};
+        return ({
+          id: row.playerId ?? row.id ?? idx,
+          playerId: row.playerId ?? row.id ?? idx,
+          name: row.name ?? '-',
+          bt: row.bt ?? '-',
+          pitches: Array.isArray(t.pitches) ? t.pitches : (Array.isArray(row.pitches) ? row.pitches : []),
+          status: row.status ?? null,
+          statusNote: row.statusNote ?? null,
+          needsReview: typeof t.needsReview === 'boolean' ? t.needsReview : row.needsReview,
+          mergedDetails: row.mergedDetails || null,
+          reviewAction: t.reviewAction || row.reviewAction || null,
+          reviewDate: t.reviewDate || row.reviewDate || null,
+        });
+      });
     }
     // logs mode (unchanged here)
     const data = Array.isArray(pitchersData) ? pitchersData : [];
@@ -418,6 +440,9 @@ export default function PitchersTable({
       'Grade (20–80)',
       'N',
       'NeedsReview',
+      'ReviewAction',
+      'ReviewDate',
+      'HasNote',
     ];
     const esc = (v) => {
       const s = v == null ? '' : String(v);
@@ -438,6 +463,9 @@ export default function PitchersTable({
       const pitchesStr = mergedList.join(' ');
       const selected = sortPitch;
       const agg = aggregatesByPitcher?.[r?.playerId]?.[sortPitch] || {};
+      const reviewAction = r?.reviewAction || 'None';
+      const reviewDate = r?.reviewDate || '';
+      const hasNote = readLocalNote(pid) ? '1' : '0';
       const rowOut = [
         pid,
         name,
@@ -452,6 +480,9 @@ export default function PitchersTable({
         toInt(agg.grade),
         toInt(agg.sampleCount),
         r?.needsReview ? '1' : '0',
+        reviewAction,
+        reviewDate,
+        hasNote,
       ].map(esc);
       lines.push(rowOut.join(','));
     }
@@ -549,7 +580,20 @@ export default function PitchersTable({
           field: 'review', headerName: 'Review', width: 140, align: 'right', headerAlign: 'right', sortable: false,
           renderCell: (params) => {
             const needs = !!params?.row?.needsReview;
-            if (!needs) return <span style={{ color: '#9ca3af' }}>—</span>;
+            const pid = getPid(params.row, 0);
+            const note = readLocalNote(pid);
+            if (!needs) {
+              return (
+                <Box sx={{ display:'flex', alignItems:'center', gap:0.5, justifyContent:'flex-end', width:'100%' }}>
+                  {note && (
+                    <Tooltip title={note.slice(0,200)} arrow>
+                      <NoteAltIcon fontSize="small" sx={{ color:'#6b7280' }} />
+                    </Tooltip>
+                  )}
+                  <span style={{ color: '#9ca3af' }}>—</span>
+                </Box>
+              );
+            }
             const d = params?.row?.mergedDetails || {};
             const missing = (d.missingInLogs || []).join(', ');
             const extra = (d.extraInLogs || []).join(', ');
@@ -562,9 +606,16 @@ export default function PitchersTable({
               extra ? `Extra in logs: ${extra}` : '',
             ].filter(Boolean).join('\n');
             return (
-              <Tooltip title={<span style={{ whiteSpace: 'pre-line' }}>{tip}</span>} arrow>
-                <Chip label="NEEDS REVIEW" size="small" sx={{ height: 22, bgcolor: 'rgba(239,68,68,0.15)', color: '#DC2626', border: '1px solid rgba(220,38,38,0.35)', fontWeight: 700 }} />
-              </Tooltip>
+              <Box sx={{ display:'flex', alignItems:'center', gap:0.5, justifyContent:'flex-end', width:'100%' }}>
+                {note && (
+                  <Tooltip title={note.slice(0,200)} arrow>
+                    <NoteAltIcon fontSize="small" sx={{ color:'#6b7280' }} />
+                  </Tooltip>
+                )}
+                <Tooltip title={<span style={{ whiteSpace: 'pre-line' }}>{tip}</span>} arrow>
+                  <Chip label="NEEDS REVIEW" size="small" sx={{ height: 22, bgcolor: 'rgba(239,68,68,0.15)', color: '#DC2626', border: '1px solid rgba(220,38,38,0.35)', fontWeight: 700 }} />
+                </Tooltip>
+              </Box>
             );
           }
         },
@@ -681,6 +732,29 @@ export default function PitchersTable({
             const label = note && s !== 'VERIFIED' ? `${s} — ${note}` : s;
             return (
               <Chip label={label} size="small" sx={{ height: 22, bgcolor: style.bg, color: style.color, border: style.border, fontWeight: 700 }} />
+            );
+          }
+        },
+        {
+          field: 'actions', headerName: 'Actions', width: 120, align: 'right', headerAlign: 'right', sortable: false,
+          renderCell: (params) => {
+            const onClickMenu = (e) => { e.stopPropagation(); handleMenuOpen(e, params.row); };
+            const onEditNote = (e) => {
+              e.stopPropagation();
+              const pid = getPid(params.row, 0);
+              setNoteDlg({ open: true, pid, name: params.row?.name ?? '', text: readLocalNote(pid) });
+            };
+            return (
+              <Box sx={{ display:'flex', justifyContent:'flex-end', width:'100%', gap:0.5 }}>
+                <Tooltip title="Edit note" arrow>
+                  <IconButton size="small" onClick={onEditNote}>
+                    <NoteAltIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                <IconButton size="small" onClick={onClickMenu} aria-label="Row actions">
+                  <MoreVertIcon fontSize="small" />
+                </IconButton>
+              </Box>
             );
           }
         },
@@ -822,6 +896,40 @@ export default function PitchersTable({
     </>
   );
 
+  // Row actions menu
+  const handleRowAction = (action) => {
+    const row = rowMenu.row;
+    const pid = getPid(row, 0);
+    const name = row?.name ?? '';
+    const pitches = Array.isArray(row.pitches) ? row.pitches : [];
+    const reviewAction = row.reviewAction || 'None';
+    const reviewDate = row.reviewDate || '';
+    const note = readLocalNote(pid);
+    const doWrite = async () => {
+      try {
+        const res = await writePitcherOverride({ key: pid, pitches, sourceNote: note, reviewAction });
+        const today = new Date().toISOString().split('T')[0];
+        setTransientByPid((m) => ({
+          ...m,
+          [String(pid)]: { pitches, needsReview: false, reviewAction, reviewDate: today },
+        }));
+        setSnack({ open: true, message: 'Saved', undo: null });
+      } catch (e) {
+        setSnack({ open: true, message: 'Save failed', undo: null });
+      }
+    };
+    switch (action) {
+      case 'approveMerged':
+        doWrite();
+        break;
+      case 'keepOverride':
+        doWrite();
+        break;
+      default:
+        console.error(`Unknown row action: ${action}`);
+    }
+  };
+
   return (
     <Card elevation={3} sx={{ mb: 4, borderRadius: 3 }}>
       <CardContent>
@@ -831,17 +939,7 @@ export default function PitchersTable({
               <PitcherDropdown pitchersData={pitchersData} selectedPitcher={selectedPitcher} onPitcherChange={onPitcherChange} />
               <InningDropdown pitchersData={pitchersData} selectedPitcher={selectedPitcher} selectedInning={selectedInning} onInningChange={onInningChange} />
             </Box>
-            <Box>
-              <Button variant="outlined" size="small" onClick={handleMenuOpen} sx={{ textTransform: 'none' }}>
-                Batch Fix
-              </Button>
-              <Menu anchorEl={anchorEl} open={menuOpen} onClose={handleMenuClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}>
-                <MenuItem onClick={handleMenuClose}>Remap 2-Seam → SI</MenuItem>
-                <MenuItem onClick={handleMenuClose}>Merge SL/SW → SW</MenuItem>
-                <MenuItem onClick={handleMenuClose}>Normalize FF/FT → FF</MenuItem>
-                <MenuItem onClick={handleMenuClose}>Collapse misc. → OTH</MenuItem>
-              </Menu>
-            </Box>
+            <Box />
           </Box>
         )}
         {/* Empty state vs table separated with logical && to avoid ternary parse issues */}
@@ -852,7 +950,117 @@ export default function PitchersTable({
 
         {/* Otherwise render the tableContent */}
         {!(mode === 'arsenals' && rows.length === 0) && <>{tableContent}</>}
+        {/* Row actions menu */}
+        <Menu anchorEl={rowMenu.anchorEl} open={menuOpen} onClose={handleMenuClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}>
+          <MuiMenuItem onClick={() => handleRowAction('approveMerged')}>Approve merged list</MuiMenuItem>
+          <MuiMenuItem onClick={() => handleRowAction('keepOverride')}>Mark as intentional (keep overrides)</MuiMenuItem>
+        </Menu>
+        {/* Note editor dialog */}
+        <Dialog open={noteDlg.open} onClose={() => setNoteDlg(s => ({ ...s, open:false }))} maxWidth="sm" fullWidth>
+          <DialogTitle>Edit note — {noteDlg.name}</DialogTitle>
+          <DialogContent>
+            <TextField
+              multiline minRows={4} fullWidth autoFocus
+              value={noteDlg.text}
+              onChange={(e) => setNoteDlg(s => ({ ...s, text: e.target.value }))}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setNoteDlg(s => ({ ...s, open:false }))}>Cancel</Button>
+            <Button onClick={() => {
+              saveLocalNote(noteDlg.pid, noteDlg.text);
+              setNoteDlg(s => ({ ...s, open:false }));
+            }} variant="contained">Save</Button>
+          </DialogActions>
+        </Dialog>
+        {/* Snackbar with Undo */}
+        <Snackbar
+          open={snack.open}
+          autoHideDuration={10000}
+          onClose={() => setSnack(s => ({ ...s, open:false }))}
+          message={snack.message}
+          action={
+            <Button color="secondary" size="small" onClick={() => {
+              const u = snack.undo; if (!u) return;
+              // doWrite(u.pid, u.name, u.prevPitches, u.prevAction, u.prevNote, { isUndo:true });
+              setSnack(s => ({ ...s, open:false }));
+            }}>Undo</Button>
+          }
+        />
       </CardContent>
     </Card>
   );
 }
+
+// --- Helpers & actions ---
+function normalizeCodes(list) {
+  const out = [];
+  const seen = new Set();
+  for (const p of (Array.isArray(list) ? list : [])) {
+    const code = normalizePitchLabel(p).code;
+    if (!seen.has(code)) { seen.add(code); out.push(code); }
+  }
+  return out;
+}
+
+function slugifyIdLocal(s) {
+  return String(s || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
+function parseArsenalFromLine(line) {
+  try {
+    const m = line.match(/arsenal:\s*\[([^\]]*)\]/);
+    if (!m) return [];
+    const arr = m[1]
+      .split(',')
+      .map(t => t.trim())
+      .filter(Boolean)
+      .map(t => t.replace(/^"|"$/g, ''));
+    return normalizeCodes(arr);
+  } catch { return []; }
+}
+
+// Attach below component to access hooks' closures
+// eslint-disable-next-line no-unused-vars
+function useRowActionsAPI(ctx) {
+  const { setTransientByPid, setSnack } = ctx;
+  const iso = () => {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  };
+
+  const doWrite = async (pid, name, pitches, reviewAction, noteText, opts={}) => {
+    const key = pid && !String(pid).startsWith('row-') ? String(pid) : slugifyIdLocal(name);
+    const codes = normalizeCodes(pitches);
+    const prevNote = readLocalNote(key);
+    if (noteText != null) saveLocalNote(key, noteText);
+    try {
+      const res = await writePitcherOverride({ key, pitches: codes, sourceNote: noteText || '', reviewAction });
+      const today = iso();
+      setTransientByPid((m) => ({
+        ...m,
+        [String(pid)]: { pitches: codes, needsReview: false, reviewAction, reviewDate: today },
+      }));
+      if (!opts.isUndo) {
+        const prevPitches = parseArsenalFromLine(res.previousLine || '');
+        setSnack({
+          open: true,
+          message: 'Saved — Undo',
+          undo: { pid: String(pid), name, prevPitches, prevAction: 'None', prevNote },
+        });
+      }
+    } catch (e) {
+      setSnack({ open: true, message: 'Save failed', undo: null });
+      // Revert note if we set it and failed
+      if (noteText != null) saveLocalNote(key, prevNote);
+    }
+  };
+
+  return { doWrite };
+}
+
+// Wire handlers onto component via prototype to share with JSX above
+PitchersTable.prototype.handleRowAction = function(action) {
+  const row = this?.state?.rowMenu?.row; // not accessible in this pattern; left for TS hint
+};

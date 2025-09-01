@@ -19,6 +19,7 @@ import PitchTypeAnalysisPage from './pages/PitchTypeAnalysisPage';
 import PitchingMLBBenchmarks from './pages/PitchingMLBBenchmarks';
 import PitcherReportsPage from './pages/PitcherReportsPage';
 import ArsenalsPage from './pages/ArsenalsPage';
+import ArsenalsAuditPage from './pages/ArsenalsAuditPage';
 import HittingPerformancePage from './pages/HittingPerformancePage';
 import HitterReportsPage from './pages/HitterReportsPage';
 import BattedBallProfilePage from './pages/BattedBallProfilePage';
@@ -196,7 +197,10 @@ export default function App() {
         {/* Pitching */}
         <Route path="/pitching/logs" element={<PitchingLogsPage />} />
         <Route path="/pitching/arsenals" element={<ArsenalsPage />} />
-                <Route path="/pitching/types" element={<PitchTypeAnalysisPage />} />
+        {process.env.NODE_ENV !== 'production' && (
+          <Route path="/arsenals/audit" element={<ArsenalsAuditPage />} />
+        )}
+        <Route path="/pitching/types" element={<PitchTypeAnalysisPage />} />
         {/* Redirect old Pitch Control & Movement link to MLB Benchmarks */}
         <Route path="/pitching/pitch-control-movement" element={<Navigate to="/pitching/mlb-benchmarks" replace />} />
         <Route path="/pitching/mlb-benchmarks" element={<PitchingMLBBenchmarks />} />

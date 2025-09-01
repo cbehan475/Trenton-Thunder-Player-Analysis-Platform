@@ -71,13 +71,15 @@ export default function ArsenalsPage() {
         note = `${md}: ${hint}${pct ? ` ${pct}` : ''}`;
       }
       // Compute merged arsenal (logs-first with overrides); preserve override order
-      const merged = getMergedArsenalForPitcher(String(row.playerId), ALL_PITCH_EVENTS, OVERRIDES_MAP);
+      const pid = String(row.playerId);
+      const merged = getMergedArsenalForPitcher(pid, ALL_PITCH_EVENTS, OVERRIDES_MAP);
       out.push({
         ...row,
         // Use merged pitches (already normalized codes or normalized via util)
         pitches: merged?.pitches || [],
         needsReview: !!merged?.needsReview,
         mergedDetails: merged?.details || null,
+        overridePitches: Array.isArray(OVERRIDES_MAP[pid]) ? OVERRIDES_MAP[pid] : [],
         status,
         statusNote: note,
         _logVersion: logVersion,
