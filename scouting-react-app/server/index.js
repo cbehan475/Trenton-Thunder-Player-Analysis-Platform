@@ -107,6 +107,49 @@ function updatePitcherArsenalsJs({ key, pitches, sourceNote }) {
   return { index: idx, previousLine: line, newLine };
 }
 
+/**
+ * Update a pitcher key (playerId) in pitcherArsenals.js.
+ * Changes the playerId value from fromKey -> toKey on the matching object line and appends an inline comment.
+ */
+function updatePitcherArsenalsKey({ fromKey, toKey }) {
+  const raw = fs.readFileSync(pitcherArsenalsJs, 'utf8');
+  const lines = raw.split(/\r?\n/);
+  const fromStr = String(fromKey);
+  const toStr = String(toKey);
+  const isNumericFrom = /^\d+$/.test(fromStr);
+  let idx = -1;
+  if (isNumericFrom) {
+    const needle = `playerId: ${fromStr}`;
+    idx = lines.findIndex((ln) => ln.includes(needle));
+  } else {
+    // If fromKey is a slug, try to match by name slug first
+    idx = lines.findIndex((ln) => {
+      const m = ln.match(/name:\s*"([^"]+)"/);
+      if (!m) return false;
+      return slugifyId(m[1]) === fromStr;
+    });
+  }
+  if (idx < 0) throw new Error(`Entry not found for fromKey=${fromKey}`);
+
+  const line = lines[idx];
+  const dateStr = isoDate();
+  let newLine = line;
+  // Replace numeric or string playerId consistently
+  if (/playerId:\s*\d+/.test(newLine)) {
+    newLine = newLine.replace(/playerId:\s*\d+/, `playerId: ${toStr}`);
+  } else if (/playerId:\s*"[^"]+"/.test(newLine)) {
+    newLine = newLine.replace(/playerId:\s*"[^"]+"/, `playerId: ${JSON.stringify(toStr)}`);
+  } else {
+    // If playerId field missing, append it (unlikely given file format)
+    newLine = newLine.replace(/\{/, `{ playerId: ${toStr},`);
+  }
+  newLine = newLine + ` // key fixed on ${dateStr}`;
+  lines[idx] = newLine;
+  const out = lines.join(os.EOL);
+  safeWriteText(pitcherArsenalsJs, out);
+  return { index: idx, previousLine: line, newLine };
+}
+
 // Persist override pitches for a pitcher into src/data/pitcherArsenals.js
 app.post('/api/arsenals/writeOverride', (req, res) => {
   // Dev-only safeguard: block writes in production
@@ -120,6 +163,21 @@ app.post('/api/arsenals/writeOverride', (req, res) => {
     }
     const result = updatePitcherArsenalsJs({ key, pitches, sourceNote });
     res.json({ ok: true, keyUsed: key, writtenPath: pitcherArsenalsJs, reviewAction: reviewAction || null, ...result });
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+// Dev-only: fix override key (playerId) in pitcherArsenals.js
+app.post('/api/arsenals/fixOverrideKey', (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'Writes are disabled in production' });
+  }
+  try {
+    const { fromKey, toKey } = req.body || {};
+    if (!fromKey || !toKey) return res.status(400).json({ error: 'fromKey and toKey required' });
+    const result = updatePitcherArsenalsKey({ fromKey, toKey });
+    res.json({ ok: true, ...result, writtenPath: pitcherArsenalsJs });
   } catch (e) {
     res.status(500).json({ error: String(e) });
   }
