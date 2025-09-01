@@ -149,7 +149,6 @@ export default function PitchersTable({
   const navigate = useNavigate();
   // Per-row action menu
   const [rowMenu, setRowMenu] = useState({ anchorEl: null, row: null });
-  const menuOpen = Boolean(rowMenu.anchorEl);
   const handleMenuOpen = (e, row) => setRowMenu({ anchorEl: e.currentTarget, row });
   const handleMenuClose = () => setRowMenu({ anchorEl: null, row: null });
 
@@ -926,7 +925,7 @@ export default function PitchersTable({
     }
 
     // normalize to MLB codes (FF, SI, SL, CH, etc.)
-    const codes = normalizeCodes(targetPitches);
+    const codes = (targetPitches || []).map(x => normalizePitchLabel(x).code);
 
     const doWrite = async () => {
       try {
@@ -939,7 +938,7 @@ export default function PitchersTable({
         // compute prevPitches from file line if available, else fallback to captured prevPitches
         const filePrev = parseArsenalFromLine(res.previousLine || '')
           .map(String);
-        const snapshotPrev = filePrev.length ? filePrev : normalizeCodes(prevPitches);
+        const snapshotPrev = filePrev.length ? filePrev : (prevPitches || []).map(x => normalizePitchLabel(x).code);
         setSnack({
           open: true,
           message: 'Saved — Undo',
@@ -963,13 +962,7 @@ export default function PitchersTable({
   };
 
   // Row actions menu
-  const handleMenuClose = () => setRowMenu({ anchorEl: null, row: null });
-
-  // Row actions menu
   const menuOpen = Boolean(rowMenu.anchorEl);
-
-  // Row actions menu
-  const handleMenuOpen = (e, row) => setRowMenu({ anchorEl: e.currentTarget, row });
 
   return (
     <Card elevation={3} sx={{ mb: 4, borderRadius: 3 }}>
@@ -1027,11 +1020,11 @@ export default function PitchersTable({
                 // restore note
                 if (u.prevNote != null) saveLocalNote(u.key, u.prevNote);
                 // write previous pitches back with reviewAction None
-                await writePitcherOverride({ key: u.key, pitches: normalizeCodes(u.prevPitches), sourceNote: u.prevNote || '', reviewAction: 'None' });
+                await writePitcherOverride({ key: u.key, pitches: (u.prevPitches || []).map(x => normalizePitchLabel(x).code), sourceNote: u.prevNote || '', reviewAction: 'None' });
                 // restore UI state
                 setTransientByPid((m) => ({
                   ...m,
-                  [String(u.pid)]: { pitches: normalizeCodes(u.prevPitches), needsReview: u.prevNeedsReview, reviewAction: u.prevAction || 'None', reviewDate: u.prevDate || '' },
+                  [String(u.pid)]: { pitches: (u.prevPitches || []).map(x => normalizePitchLabel(x).code), needsReview: u.prevNeedsReview, reviewAction: u.prevAction || 'None', reviewDate: u.prevDate || '' },
                 }));
                 setSnack(s => ({ ...s, open:false, undo: null, message: 'Reverted' }));
               } catch (e) {
@@ -1085,7 +1078,7 @@ function useRowActionsAPI(ctx) {
 
   const doWrite = async (pid, name, pitches, reviewAction, noteText, opts={}) => {
     const key = pid && !String(pid).startsWith('row-') ? String(pid) : slugifyIdLocal(name);
-    const codes = normalizeCodes(pitches);
+    const codes = (pitches || []).map(x => normalizePitchLabel(x).code);
     const prevNote = readLocalNote(key);
     if (noteText != null) saveLocalNote(key, noteText);
     try {
