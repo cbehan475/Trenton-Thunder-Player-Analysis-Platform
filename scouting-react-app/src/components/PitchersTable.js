@@ -145,13 +145,15 @@ export default function PitchersTable({
   gradesByCode,
   statsByCode,
   selectedPlayerId,
+  csvFileName,
 }) {
   const navigate = useNavigate();
   // Per-row action menu
   const [rowMenu, setRowMenu] = useState({ anchorEl: null, row: null });
   const handleMenuOpen = (e, row) => setRowMenu({ anchorEl: e.currentTarget, row });
   const handleMenuClose = () => setRowMenu({ anchorEl: null, row: null });
-
+  // Selection for bulk actions (arsenals mode only)
+  const [selectedIds, setSelectedIds] = useState([]);
   // Local transient overrides for immediate UI reflect (by playerId)
   const [transientByPid, setTransientByPid] = useState({});
 
@@ -494,7 +496,8 @@ export default function PitchersTable({
     const d = new Date();
     const ts = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}`;
     const hand = handFilter; // all|R|L
-    const fname = `pitcher-arsenals_${sortPitch}_${hand}_${ts}.csv`;
+    const base = csvFileName ? csvFileName.replace(/\.csv$/i, '') : 'pitcher-arsenals';
+    const fname = `${base}_${sortPitch}_${hand}_${ts}.csv`;
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -505,7 +508,7 @@ export default function PitchersTable({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, [mode, filteredRows, sortPitch, handFilter, aggregatesByPitcher]);
+  }, [mode, filteredRows, sortPitch, handFilter, aggregatesByPitcher, csvFileName]);
 
   // Dependencies reflect all values read inside this memo; keep in sync when logic changes.
   const columns = useMemo(() => {
@@ -746,8 +749,14 @@ export default function PitchersTable({
               const pid = getPid(params.row, 0);
               setNoteDlg({ open: true, pid, name: params.row?.name ?? '', text: readLocalNote(pid) });
             };
+            const onApprove = (e) => { e.stopPropagation(); setRowMenu({ anchorEl: null, row: params.row }); handleRowAction('approveMerged'); };
+            const onKeep = (e) => { e.stopPropagation(); setRowMenu({ anchorEl: null, row: params.row }); handleRowAction('keepOverride'); };
+            const onFix = (e) => { e.stopPropagation(); setRowMenu({ anchorEl: null, row: params.row }); handleRowAction('fixKey'); };
             return (
-              <Box sx={{ display:'flex', justifyContent:'flex-end', width:'100%', gap:0.5 }}>
+              <Box sx={{ display:'flex', justifyContent:'flex-end', width:'100%', gap:0.5, flexWrap:'wrap' }}>
+                <Button size="small" variant="outlined" onClick={onApprove}>Approve</Button>
+                <Button size="small" variant="outlined" onClick={onKeep}>Keep</Button>
+                <Button size="small" variant="outlined" onClick={onFix}>Fix</Button>
                 <Tooltip title="Edit note" arrow>
                   <IconButton size="small" onClick={onEditNote}>
                     <NoteAltIcon fontSize="small" />
@@ -864,6 +873,12 @@ export default function PitchersTable({
             <Button variant="text" size="small" onClick={handleReset} aria-label="Reset table state" sx={{ textTransform: 'none', cursor: 'pointer' }}>
               Reset
             </Button>
+            <Button variant="outlined" size="small" onClick={handleBulkApprove} disabled={!selectedIds.length} sx={{ textTransform: 'none' }}>
+              Bulk Approve Merged
+            </Button>
+            <Button variant="outlined" size="small" onClick={handleBulkKeep} disabled={!selectedIds.length} sx={{ textTransform: 'none' }}>
+              Bulk Keep Overrides
+            </Button>
           </Box>
         </Box>
       )}
@@ -871,6 +886,9 @@ export default function PitchersTable({
         autoHeight
         rows={mode === 'arsenals' ? filteredRows : rows}
         getRowId={(row) => row.id}
+        checkboxSelection={mode === 'arsenals'}
+        onRowSelectionModelChange={(m) => setSelectedIds(m)}
+        rowSelectionModel={selectedIds}
         columns={columns}
         pageSize={mode === 'arsenals' ? 25 : 10}
         rowsPerPageOptions={mode === 'arsenals' ? [25, 50, 100] : [10, 25, 50]}
@@ -973,6 +991,53 @@ export default function PitchersTable({
 
     doWrite();
   };
+
+  // Bulk actions for arsenals mode
+  const handleBulkApprove = useCallback(async () => {
+    if (mode !== 'arsenals' || !selectedIds?.length) return;
+    const sel = new Set(selectedIds);
+    const targets = filteredRows.filter(r => sel.has(r.id));
+    let ok = 0, fail = 0;
+    for (const r of targets) {
+      const pid = getPid(r, 0);
+      const name = r?.name ?? '';
+      const list = (Array.isArray(r.mergedPitches) && r.mergedPitches.length) ? r.mergedPitches : (Array.isArray(r.pitches) ? r.pitches : []);
+      const key = pid && !String(pid).startsWith('row-') ? String(pid) : slugifyIdLocal(name);
+      const codes = (list || []).map(x => normalizePitchLabel(x).code);
+      try {
+        const res = await writePitcherOverride({ key, pitches: codes, sourceNote: readLocalNote(key) || '', reviewAction: 'ApprovedMerged' });
+        const today = new Date().toISOString().split('T')[0];
+        setTransientByPid((m) => ({ ...m, [String(pid)]: { pitches: codes, needsReview: false, reviewAction: 'ApprovedMerged', reviewDate: today } }));
+        ok++;
+      } catch (_) {
+        fail++;
+      }
+    }
+    setSnack({ open: true, message: `Bulk approve: ${ok} succeeded${fail ? `, ${fail} failed` : ''}`, undo: null });
+  }, [mode, selectedIds, filteredRows]);
+
+  const handleBulkKeep = useCallback(async () => {
+    if (mode !== 'arsenals' || !selectedIds?.length) return;
+    const sel = new Set(selectedIds);
+    const targets = filteredRows.filter(r => sel.has(r.id));
+    let ok = 0, fail = 0;
+    for (const r of targets) {
+      const pid = getPid(r, 0);
+      const name = r?.name ?? '';
+      const list = Array.isArray(r.overridePitches) ? r.overridePitches : [];
+      const key = pid && !String(pid).startsWith('row-') ? String(pid) : slugifyIdLocal(name);
+      const codes = (list || []).map(x => normalizePitchLabel(x).code);
+      try {
+        const res = await writePitcherOverride({ key, pitches: codes, sourceNote: readLocalNote(key) || '', reviewAction: 'KeptOverride' });
+        const today = new Date().toISOString().split('T')[0];
+        setTransientByPid((m) => ({ ...m, [String(pid)]: { pitches: codes, needsReview: false, reviewAction: 'KeptOverride', reviewDate: today } }));
+        ok++;
+      } catch (_) {
+        fail++;
+      }
+    }
+    setSnack({ open: true, message: `Bulk keep overrides: ${ok} succeeded${fail ? `, ${fail} failed` : ''}`, undo: null });
+  }, [mode, selectedIds, filteredRows]);
 
   // Row actions menu
   const menuOpen = Boolean(rowMenu.anchorEl);

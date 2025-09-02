@@ -160,6 +160,7 @@ export default function ArsenalsAuditPage() {
           gradesByCode={gradesByCodeAll}
           statsByCode={statsByCodeAll}
           selectedPlayerId={''}
+          csvFileName="arsenals-audit"
         />
       )}
 
