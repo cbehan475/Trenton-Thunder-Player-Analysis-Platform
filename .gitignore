@@ -1,1 +1,7 @@
 scouting-react-app/src/pages/BattedBallProfilePage.backup.js
+node_modules/
+scouting-react-app/node_modules/
+scouting-react-app/build/
+dist/
+coverage/
+.env
