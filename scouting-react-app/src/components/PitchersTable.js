@@ -510,6 +510,53 @@ export default function PitchersTable({
     URL.revokeObjectURL(url);
   }, [mode, filteredRows, sortPitch, handFilter, aggregatesByPitcher, csvFileName]);
 
+  // Bulk actions for arsenals mode
+  const handleBulkApprove = useCallback(async () => {
+    if (mode !== 'arsenals' || !selectedIds?.length) return;
+    const sel = new Set(selectedIds);
+    const targets = filteredRows.filter(r => sel.has(r.id));
+    let ok = 0, fail = 0;
+    for (const r of targets) {
+      const pid = getPid(r, 0);
+      const name = r?.name ?? '';
+      const list = (Array.isArray(r.mergedPitches) && r.mergedPitches.length) ? r.mergedPitches : (Array.isArray(r.pitches) ? r.pitches : []);
+      const key = pid && !String(pid).startsWith('row-') ? String(pid) : slugifyIdLocal(name);
+      const codes = (list || []).map(x => normalizePitchLabel(x).code);
+      try {
+        const res = await writePitcherOverride({ key, pitches: codes, sourceNote: readLocalNote(key) || '', reviewAction: 'ApprovedMerged' });
+        const today = new Date().toISOString().split('T')[0];
+        setTransientByPid((m) => ({ ...m, [String(pid)]: { pitches: codes, needsReview: false, reviewAction: 'ApprovedMerged', reviewDate: today } }));
+        ok++;
+      } catch (_) {
+        fail++;
+      }
+    }
+    setSnack({ open: true, message: `Bulk approve: ${ok} succeeded${fail ? `, ${fail} failed` : ''}`, undo: null });
+  }, [mode, selectedIds, filteredRows]);
+
+  const handleBulkKeep = useCallback(async () => {
+    if (mode !== 'arsenals' || !selectedIds?.length) return;
+    const sel = new Set(selectedIds);
+    const targets = filteredRows.filter(r => sel.has(r.id));
+    let ok = 0, fail = 0;
+    for (const r of targets) {
+      const pid = getPid(r, 0);
+      const name = r?.name ?? '';
+      const list = Array.isArray(r.overridePitches) ? r.overridePitches : [];
+      const key = pid && !String(pid).startsWith('row-') ? String(pid) : slugifyIdLocal(name);
+      const codes = (list || []).map(x => normalizePitchLabel(x).code);
+      try {
+        const res = await writePitcherOverride({ key, pitches: codes, sourceNote: readLocalNote(key) || '', reviewAction: 'KeptOverride' });
+        const today = new Date().toISOString().split('T')[0];
+        setTransientByPid((m) => ({ ...m, [String(pid)]: { pitches: codes, needsReview: false, reviewAction: 'KeptOverride', reviewDate: today } }));
+        ok++;
+      } catch (_) {
+        fail++;
+      }
+    }
+    setSnack({ open: true, message: `Bulk keep overrides: ${ok} succeeded${fail ? `, ${fail} failed` : ''}`, undo: null });
+  }, [mode, selectedIds, filteredRows]);
+
   // Dependencies reflect all values read inside this memo; keep in sync when logic changes.
   const columns = useMemo(() => {
     if (mode === 'arsenals') {
@@ -991,53 +1038,6 @@ export default function PitchersTable({
 
     doWrite();
   };
-
-  // Bulk actions for arsenals mode
-  const handleBulkApprove = useCallback(async () => {
-    if (mode !== 'arsenals' || !selectedIds?.length) return;
-    const sel = new Set(selectedIds);
-    const targets = filteredRows.filter(r => sel.has(r.id));
-    let ok = 0, fail = 0;
-    for (const r of targets) {
-      const pid = getPid(r, 0);
-      const name = r?.name ?? '';
-      const list = (Array.isArray(r.mergedPitches) && r.mergedPitches.length) ? r.mergedPitches : (Array.isArray(r.pitches) ? r.pitches : []);
-      const key = pid && !String(pid).startsWith('row-') ? String(pid) : slugifyIdLocal(name);
-      const codes = (list || []).map(x => normalizePitchLabel(x).code);
-      try {
-        const res = await writePitcherOverride({ key, pitches: codes, sourceNote: readLocalNote(key) || '', reviewAction: 'ApprovedMerged' });
-        const today = new Date().toISOString().split('T')[0];
-        setTransientByPid((m) => ({ ...m, [String(pid)]: { pitches: codes, needsReview: false, reviewAction: 'ApprovedMerged', reviewDate: today } }));
-        ok++;
-      } catch (_) {
-        fail++;
-      }
-    }
-    setSnack({ open: true, message: `Bulk approve: ${ok} succeeded${fail ? `, ${fail} failed` : ''}`, undo: null });
-  }, [mode, selectedIds, filteredRows]);
-
-  const handleBulkKeep = useCallback(async () => {
-    if (mode !== 'arsenals' || !selectedIds?.length) return;
-    const sel = new Set(selectedIds);
-    const targets = filteredRows.filter(r => sel.has(r.id));
-    let ok = 0, fail = 0;
-    for (const r of targets) {
-      const pid = getPid(r, 0);
-      const name = r?.name ?? '';
-      const list = Array.isArray(r.overridePitches) ? r.overridePitches : [];
-      const key = pid && !String(pid).startsWith('row-') ? String(pid) : slugifyIdLocal(name);
-      const codes = (list || []).map(x => normalizePitchLabel(x).code);
-      try {
-        const res = await writePitcherOverride({ key, pitches: codes, sourceNote: readLocalNote(key) || '', reviewAction: 'KeptOverride' });
-        const today = new Date().toISOString().split('T')[0];
-        setTransientByPid((m) => ({ ...m, [String(pid)]: { pitches: codes, needsReview: false, reviewAction: 'KeptOverride', reviewDate: today } }));
-        ok++;
-      } catch (_) {
-        fail++;
-      }
-    }
-    setSnack({ open: true, message: `Bulk keep overrides: ${ok} succeeded${fail ? `, ${fail} failed` : ''}`, undo: null });
-  }, [mode, selectedIds, filteredRows]);
 
   // Row actions menu
   const menuOpen = Boolean(rowMenu.anchorEl);
