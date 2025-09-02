@@ -70,7 +70,7 @@ export function getMergedArsenalForPitcher(pitcherId, logs, overrides) {
   const fromLogs = getPitchTypesFromLogs(pitcherId, logs);
 
   // Prepare override list if provided; normalize to codes and de-dupe, preserve order.
-  const rawOv = overrides && (overrides[pitcherId] || overrides[slugifyId(pitcherId)]) || undefined;
+  const rawOv = (overrides && (overrides[pitcherId] || overrides[slugifyId(pitcherId)])) || undefined;
   const fromOverride = Array.isArray(rawOv)
     ? rawOv.reduce((acc, item) => {
         const code = normalizeCode(item);

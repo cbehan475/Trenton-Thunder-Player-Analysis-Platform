@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Box, Typography, Card, CardContent, Grid, Divider, List, ListItem, ListItemIcon, ListItemText, MenuItem, FormControl, Select, InputLabel } from '@mui/material';
+import { Box, Typography, Card, CardContent, Divider, List, ListItem, ListItemIcon, ListItemText, MenuItem, FormControl, Select, InputLabel } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import BuildIcon from '@mui/icons-material/Build';
@@ -30,7 +31,7 @@ export default function DevelopmentPage() {
         </Select>
       </FormControl>
       <Grid container justifyContent="center">
-        <Grid item xs={12} md={8} lg={6}>
+        <Grid xs={12} md={8} lg={6}>
           <Card sx={{ borderRadius: 4, boxShadow: 6, mb: 4 }}>
             <CardContent>
               <Typography variant="h5" sx={{ fontWeight: 700, color: '#102542', mb: 1 }}>
@@ -95,4 +96,3 @@ export default function DevelopmentPage() {
     </Box>
   );
 }
-

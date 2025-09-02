@@ -223,12 +223,12 @@ export default function ArsenalsPage() {
             ) : (
               <PitchersTable
                 mode="arsenals"
-                arsenals={rowsForDisplay}
-                onRowDoubleClick={handleRowDoubleClick}
-                usageByCode={usageByCodeAll}
-                gradesByCode={gradesByCodeAll}
-                statsByCode={statsByCodeAll}
-                selectedPlayerId={selectedPlayerId}
+                arsenals={Array.isArray(rowsForDisplay) ? rowsForDisplay : []}
+                statsByCode={typeof statsByCodeAll === 'object' ? statsByCodeAll : {}}
+                usageByCode={typeof usageByCodeAll === 'object' ? usageByCodeAll : {}}
+                gradesByCode={typeof gradesByCodeAll === 'object' ? gradesByCodeAll : {}}
+                selectedPlayerId={selectedPlayerId || null}
+                csvFileName="pitcher-arsenals.csv"
               />
             )}
           </>

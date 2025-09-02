@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useCallback, useEffect } from 'react';
-import { DataGrid } from '@mui/x-data-grid';
+ import React, { useMemo, useState, useCallback, useEffect } from 'react';
+import { DataGrid, GridFooterContainer, GridPagination } from '@mui/x-data-grid';
 import { fmtMph, fmtIn, fmtRpm, fmtPct, DASH } from '../utils/formatters.js';
 import { FormControl, InputLabel, Select, MenuItem, Box, Card, CardContent, Tooltip, Button, Menu, MenuItem as MuiMenuItem, Chip, TextField, Checkbox, FormControlLabel, IconButton, Snackbar, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -102,6 +102,24 @@ const FULL_LABELS = {
   OTH: 'Other',
 };
 
+// Simple error boundary to avoid whole-page crash if the grid throws
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(err, info) {
+    try { console.error('DataGrid crashed', err, info); } catch {}
+  }
+  render() {
+    if (this.state.hasError) {
+      return <div style={{ padding: 12, color: '#b91c1c' }}>Table failed to render. Please reload the page.</div>;
+    }
+    return this.props.children;
+  }
+}
+
 // Minimal empty state component (requested for no-data rendering)
 function EmptyState({ message }) {
   return <div style={{ padding: 16, opacity: 0.8 }}>{message}</div>;
@@ -146,6 +164,7 @@ export default function PitchersTable({
   statsByCode,
   selectedPlayerId,
   csvFileName,
+  onReset,
 }) {
   const navigate = useNavigate();
   // Per-row action menu
@@ -154,6 +173,8 @@ export default function PitchersTable({
   const handleMenuClose = () => setRowMenu({ anchorEl: null, row: null });
   // Selection for bulk actions (arsenals mode only)
   const [selectedIds, setSelectedIds] = useState([]);
+  // Controlled column visibility model for stability with MUI DataGrid
+  const [columnVisibilityModel, setColumnVisibilityModel] = useState({});
   // Local transient overrides for immediate UI reflect (by playerId)
   const [transientByPid, setTransientByPid] = useState({});
 
@@ -226,9 +247,12 @@ export default function PitchersTable({
     setHandFilter('all');
     setHasSelectedOnly(false);
     setNeedsReviewOnly(false);
+    // Also clear selection to keep selection model controlled and defined
+    setSelectedIds([]);
     try { sessionStorage.setItem('arsenalsSearch', ''); } catch {}
     try { window.scrollTo({ top: 0 }); } catch {}
     try { window.history.replaceState(null, '', window.location.pathname); } catch {}
+    if (typeof onReset === 'function') onReset();
   }, []);
   // Stable wrapper for double-click handler (passes through to prop if provided)
   const handleRowDouble = useCallback((params) => {
@@ -241,11 +265,12 @@ export default function PitchersTable({
     if (mode === 'arsenals') {
       const list = Array.isArray(arsenals) ? arsenals : [];
       return list.map((row, idx) => {
-        const pid = row.playerId ?? row.id ?? idx;
+        const pidRaw = row.playerId ?? row.id ?? idx;
+        const pid = String(pidRaw);
         const t = transientByPid[String(pid)] || {};
         return ({
-          id: row.playerId ?? row.id ?? idx,
-          playerId: row.playerId ?? row.id ?? idx,
+          id: pid,
+          playerId: pid,
           name: row.name ?? '-',
           bt: row.bt ?? '-',
           pitches: Array.isArray(t.pitches) ? t.pitches : (Array.isArray(row.pitches) ? row.pitches : []),
@@ -426,6 +451,40 @@ export default function PitchersTable({
     }
     return out;
   }, [mode, rows, sortedRows, debouncedSearch, handFilter, hasSelectedOnly, needsReviewOnly, sortPitch, aggregatesByPitcher]);
+
+  // Debug logging to ensure controlled models are safe (helps diagnose MUI crashes)
+  useEffect(() => {
+    try {
+      const currentRowsLen = mode === 'arsenals'
+        ? (Array.isArray(filteredRows) ? filteredRows.length : 0)
+        : (Array.isArray(rows) ? rows.length : 0);
+      // eslint-disable-next-line no-console
+      console.debug('models', {
+        rowSelType: typeof selectedIds,
+        isArray: Array.isArray(selectedIds),
+        colVisModelKeys: Object.keys(columnVisibilityModel || {}).length,
+        rowsLen: currentRowsLen,
+      });
+    } catch {}
+  }, [selectedIds, columnVisibilityModel, filteredRows, rows, mode]);
+
+  // Ensure selection model only contains IDs that exist in the current view (prevents MUI internal errors)
+  useEffect(() => {
+    if (mode !== 'arsenals') return;
+    const visibleIds = new Set((Array.isArray(filteredRows) ? filteredRows : []).map(r => r.id));
+    setSelectedIds(prev => Array.isArray(prev) ? prev.filter(id => visibleIds.has(id)) : []);
+  }, [mode, filteredRows]);
+
+  // Guard selection props when there are no rows to avoid MUI selection manager crash
+  const rowsToRender = mode === 'arsenals'
+    ? (Array.isArray(filteredRows) ? filteredRows : [])
+    : (Array.isArray(rows) ? rows : []);
+  const hasRows = rowsToRender.length > 0;
+
+  // Safer row id fallback to avoid undefined ids in any path
+  const getSafeRowId = (r) => (
+    r?.id ?? r?.playerId ?? r?.pid ?? r?._id ?? `${r?.pitcherId ?? 'p'}-${r?.gameId ?? 'g'}-${r?.pitch ?? 'x'}`
+  );
 
   // CSV export mirrors current filtered/sorted view for the selected sortPitch.
   const handleDownloadCsv = useCallback(() => {
@@ -929,40 +988,63 @@ export default function PitchersTable({
           </Box>
         </Box>
       )}
-      <DataGrid
-        autoHeight
-        rows={mode === 'arsenals' ? filteredRows : rows}
-        getRowId={(row) => row.id}
-        checkboxSelection={mode === 'arsenals'}
-        onRowSelectionModelChange={(m) => setSelectedIds(m)}
-        rowSelectionModel={selectedIds}
-        columns={columns}
-        pagination
-        pageSizeOptions={mode === 'arsenals' ? [25, 50, 100] : [10, 25, 50]}
-        initialState={{ pagination: { paginationModel: { pageSize: (mode === 'arsenals' ? 25 : 10), page: 0 } } }}
-        disableRowSelectionOnClick
-        density="compact"
-        rowHeight={34}
-        columnHeaderHeight={38}
-        onRowDoubleClick={handleRowDouble}
-        sx={{
-          background: '#fff',
-          borderRadius: 2,
-          '& .MuiDataGrid-columnHeaders': {
-            position: 'sticky',
-            top: 0,
-            backgroundColor: 'background.paper',
-            zIndex: 1,
-          },
-          '& .MuiDataGrid-row:hover': { backgroundColor: 'rgba(25, 118, 210, 0.08)' },
-          '& .MuiDataGrid-row:nth-of-type(odd)': { backgroundColor: '#f9fafb' },
-          '& .MuiDataGrid-cell': { fontSize: 13, py: 0.25 },
-          '& .MuiDataGrid-columnHeadersInner': { fontSize: 12, fontWeight: 700 },
-          '& .MuiDataGrid-root': { overflowX: 'auto' },
-        }}
-      />
+      <ErrorBoundary>
+        {hasRows && (
+          <DataGrid
+            key={`dg-${mode}-${selectedPlayerId || 'none'}`}
+            autoHeight
+            rows={rowsToRender}
+            getRowId={getSafeRowId}
+            // Strictly controlled selection model; always an array
+            checkboxSelection={mode === 'arsenals'}
+            onRowSelectionModelChange={mode === 'arsenals' ? (m) => setSelectedIds(Array.isArray(m) ? m : []) : undefined}
+            rowSelectionModel={mode === 'arsenals' ? (Array.isArray(selectedIds) ? selectedIds : []) : []}
+            keepNonExistentRowsSelected={false}
+            // HOTFIX: avoid VirtualScroller code path that crashes on 0 rows + selection
+            disableVirtualization
+            columnVisibilityModel={columnVisibilityModel}
+            onColumnVisibilityModelChange={(m) => setColumnVisibilityModel(m ?? {})}
+            columns={columns}
+            pagination
+            pageSizeOptions={mode === 'arsenals' ? [25, 50, 100] : [10, 25, 50]}
+            initialState={{ pagination: { paginationModel: { pageSize: (mode === 'arsenals' ? 25 : 10), page: 0 } } }}
+            disableRowSelectionOnClick
+            density="compact"
+            rowHeight={34}
+            columnHeaderHeight={38}
+            onRowDoubleClick={handleRowDouble}
+            slots={{ footer: CustomFooter }}
+            sx={{
+              background: '#fff',
+              borderRadius: 2,
+              '& .MuiDataGrid-columnHeaders': {
+                position: 'sticky',
+                top: 0,
+                backgroundColor: 'background.paper',
+                zIndex: 1,
+              },
+              '& .MuiDataGrid-row:hover': { backgroundColor: 'rgba(25, 118, 210, 0.08)' },
+              '& .MuiDataGrid-row:nth-of-type(odd)': { backgroundColor: '#f9fafb' },
+              '& .MuiDataGrid-cell': { fontSize: 13, py: 0.25 },
+              '& .MuiDataGrid-columnHeadersInner': { fontSize: 12, fontWeight: 700 },
+              '& .MuiDataGrid-root': { overflowX: 'auto' },
+            }}
+          />
+        )}
+      </ErrorBoundary>
     </>
   );
+
+  // Custom footer to ensure we don't depend on internal GridFooter implementation
+  function CustomFooter() {
+    return (
+      <GridFooterContainer>
+        <GridPagination />
+      </GridFooterContainer>
+    );
+  }
+
+  
 
   // Row actions menu
   const handleRowAction = (action) => {
@@ -1055,14 +1137,13 @@ export default function PitchersTable({
             <Box />
           </Box>
         )}
-        {/* Empty state vs table separated with logical && to avoid ternary parse issues */}
-        {/* Show EmptyState only when in arsenals mode AND there are zero rows */}
-        {mode === 'arsenals' && rows.length === 0 && (
-          <EmptyState message="No arsenals loaded yet." />
+        {/* Empty state vs table: show when in arsenals mode and filtered view is empty */}
+        {mode === 'arsenals' && !hasRows && (
+          <EmptyState message="No rows to render. Adjust filters or click Reset." />
         )}
 
-        {/* Otherwise render the tableContent */}
-        {!(mode === 'arsenals' && rows.length === 0) && <>{tableContent}</>}
+        {/* Otherwise render the tableContent (which mounts DataGrid only when hasRows) */}
+        {!(mode === 'arsenals' && !hasRows) && <>{tableContent}</>}
         {/* Row actions menu */}
         <Menu anchorEl={rowMenu.anchorEl} open={menuOpen} onClose={handleMenuClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}>
           <MuiMenuItem onClick={() => handleRowAction('approveMerged')}>Approve merged list</MuiMenuItem>

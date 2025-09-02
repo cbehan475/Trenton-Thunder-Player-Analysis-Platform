@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState } from 'react';
+ import React, { useMemo, useCallback, useState } from 'react';
 import { Container, Typography, Alert, Button, Stack, Snackbar } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import PitchersTable, { getPid } from '../components/PitchersTable';
@@ -133,12 +133,25 @@ export default function ArsenalsAuditPage() {
     return { statsByCodeAll, usageByCodeAll, gradesByCodeAll };
   }, [isProd]);
 
+  // Hardened filteredRows builder (always returns an array)
+  const filteredRows = useMemo(() => {
+    const base = Array.isArray(rowsForDisplay) ? rowsForDisplay : [];
+    // No external filters here yet; return base, but ensure array type
+    return Array.isArray(base) ? base : [];
+  }, [rowsForDisplay]);
+
   const handleRowDoubleClick = useCallback((paramsOrRow) => {
     const row = paramsOrRow?.row ?? paramsOrRow;
     const pid = row?.pid || getPid(row, row?._i ?? 0);
     if (!pid || String(pid).startsWith('row-')) return;
     navigate(`/pitching/reports?pid=${encodeURIComponent(pid)}`);
   }, [navigate]);
+
+  // Parent-level reset hook: currently no external filters on this page,
+  // but we surface a callback to satisfy PitchersTable's contract and UX.
+  const handleResetFromTable = useCallback(() => {
+    setSnack({ open: true, message: 'Table reset' });
+  }, []);
 
   // Single return; conditionally render content
   return (
@@ -154,13 +167,13 @@ export default function ArsenalsAuditPage() {
       {!isProd && (
         <PitchersTable
           mode="arsenals"
-          arsenals={rowsForDisplay}
-          onRowDoubleClick={handleRowDoubleClick}
-          usageByCode={usageByCodeAll}
-          gradesByCode={gradesByCodeAll}
-          statsByCode={statsByCodeAll}
-          selectedPlayerId={''}
-          csvFileName="arsenals-audit"
+          arsenals={Array.isArray(filteredRows) ? filteredRows : []}
+          statsByCode={typeof statsByCodeAll === 'object' ? statsByCodeAll : {}}
+          usageByCode={typeof usageByCodeAll === 'object' ? usageByCodeAll : {}}
+          gradesByCode={typeof gradesByCodeAll === 'object' ? gradesByCodeAll : {}}
+          selectedPlayerId={null}
+          csvFileName="arsenals-audit.csv"
+          onReset={handleResetFromTable}
         />
       )}
 

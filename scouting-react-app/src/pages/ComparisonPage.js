@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Box, Typography, MenuItem, Select, FormControl, InputLabel, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Grid, Tooltip, Switch, FormControlLabel } from '@mui/material';
+import { Box, Typography, MenuItem, Select, FormControl, InputLabel, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Tooltip, Switch, FormControlLabel } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer, Legend, LabelList } from 'recharts';
 import hittersData from '../data/logs/hittersDataAllFirstHalf';
 
@@ -93,7 +94,7 @@ export default function ComparisonPage() {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#102542', py: 4 }}>
       <Grid container spacing={2} justifyContent="center" alignItems="center" sx={{ mb: 1 }}>
-        <Grid item xs={12} sm={5} md={4}>
+        <Grid xs={12} sm={5} md={4}>
           <Typography variant="subtitle2" sx={{ color: '#FFD600', fontWeight: 700, mb: 0.5 }}>Select Player</Typography>
           <FormControl fullWidth variant="outlined" size="small">
             <InputLabel sx={{ color: '#FFD600' }}>Player</InputLabel>
@@ -108,7 +109,7 @@ export default function ComparisonPage() {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={5} md={4}>
+        <Grid xs={12} sm={5} md={4}>
           <Typography variant="subtitle2" sx={{ color: '#FFD600', fontWeight: 700, mb: 0.5 }}>Select Comparison Level</Typography>
           <FormControl fullWidth variant="outlined" size="small">
             <InputLabel sx={{ color: '#FFD600' }}>Comparison Level</InputLabel>
@@ -123,7 +124,7 @@ export default function ComparisonPage() {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={2} md={2} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Grid xs={12} sm={2} md={2} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <FormControlLabel
             control={<Switch checked={showChart} onChange={e => setShowChart(e.target.checked)} sx={{ color: '#FFD600' }} />}
             label={<Typography sx={{ color: '#FFD600', fontWeight: 600, fontSize: 13 }}>Show Metrics Chart</Typography>}

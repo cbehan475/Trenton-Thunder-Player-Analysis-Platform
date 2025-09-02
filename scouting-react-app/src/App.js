@@ -20,6 +20,7 @@ import PitchingMLBBenchmarks from './pages/PitchingMLBBenchmarks';
 import PitcherReportsPage from './pages/PitcherReportsPage';
 import ArsenalsPage from './pages/ArsenalsPage';
 import ArsenalsAuditPage from './pages/ArsenalsAuditPage';
+import ArsenalsSmokeTestPage from './pages/ArsenalsSmokeTestPage';
 import HittingPerformancePage from './pages/HittingPerformancePage';
 import HitterReportsPage from './pages/HitterReportsPage';
 import BattedBallProfilePage from './pages/BattedBallProfilePage';
@@ -197,6 +198,7 @@ export default function App() {
         {/* Pitching */}
         <Route path="/pitching/logs" element={<PitchingLogsPage />} />
         <Route path="/pitching/arsenals" element={<ArsenalsPage />} />
+        <Route path="/pitching/arsenals-smoke" element={<ArsenalsSmokeTestPage />} />
         {process.env.NODE_ENV !== 'production' && (
           <Route path="/arsenals/audit" element={<ArsenalsAuditPage />} />
         )}

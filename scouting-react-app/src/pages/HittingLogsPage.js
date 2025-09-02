@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Box, Typography, Grid, useMediaQuery, TextField, Button, Tooltip, Drawer, IconButton, Divider } from '@mui/material';
+import { Box, Typography, useMediaQuery, TextField, Button, Tooltip, Drawer, IconButton, Divider } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import CloseIcon from '@mui/icons-material/Close';
 import HittersTable from '../components/HittersTable';
 import { filterRows, quickStats, resultClass } from '../lib/hitLogUtils';
@@ -232,7 +233,7 @@ export default function HittingLogsPage() {
       >
         {/* Date pills removed in favor of top-left selector for consistency */}
         {selectedDate && (
-          <Grid item xs={12}>
+          <Grid xs={12}>
             <Box className="stats-ribbon">
               <span className="stats-pill"><span className="dot" /><span className="label">PA</span><span className="value">{stats.pa}</span></span>
               <span className="stats-pill"><span className="dot" /><span className="label">Contact%</span><span className="value">{stats.contactPct}</span></span>
