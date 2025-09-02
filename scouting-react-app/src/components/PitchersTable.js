@@ -937,9 +937,10 @@ export default function PitchersTable({
         onRowSelectionModelChange={(m) => setSelectedIds(m)}
         rowSelectionModel={selectedIds}
         columns={columns}
-        pageSize={mode === 'arsenals' ? 25 : 10}
-        rowsPerPageOptions={mode === 'arsenals' ? [25, 50, 100] : [10, 25, 50]}
-        disableSelectionOnClick
+        pagination
+        pageSizeOptions={mode === 'arsenals' ? [25, 50, 100] : [10, 25, 50]}
+        initialState={{ pagination: { paginationModel: { pageSize: (mode === 'arsenals' ? 25 : 10), page: 0 } } }}
+        disableRowSelectionOnClick
         density="compact"
         rowHeight={34}
         columnHeaderHeight={38}
