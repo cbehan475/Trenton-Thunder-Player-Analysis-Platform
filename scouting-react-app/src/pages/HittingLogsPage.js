@@ -5,6 +5,7 @@ import HittersTable from '../components/HittersTable';
 import { filterRows, quickStats, resultClass } from '../lib/hitLogUtils';
 import './HittingLogsPage.css';
 import AppSelect from '../components/ui/AppSelect.jsx';
+import EVLAScatter from "../components/charts/EVLAScatter";
 
 const GAME_DATES = [
   '2025-06-04',
@@ -83,6 +84,7 @@ export default function HittingLogsPage() {
   const rows = useMemo(() => filterRows(allRows, { hitter: selectedHitter, inning: selectedInning, q: query }), [allRows, selectedHitter, selectedInning, query]);
   const stats = useMemo(() => quickStats(rows), [rows]);
   const filterBarRef = useRef(null);
+  const tableRows = rows;
 
   // Map result string to v2 chip class
   const chipClassFor = (res = '') => {
@@ -257,6 +259,10 @@ export default function HittingLogsPage() {
           minHeight: 300,
         }}
       >
+        {/* EV/LA scatter — uses the SAME rows as the table */}
+        <div style={{ marginTop: 16, marginBottom: 24 }}>
+          <EVLAScatter rows={tableRows} showFouls={true} title="EV vs LA (Sweet Spot ≥95 mph, 8–32°)" />
+        </div>
         {hittersData && <HittersTable rows={rows} onRowClick={handleRowClick} selectedRowId={selectedRow?.id || null} />}
       </Box>
 
