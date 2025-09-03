@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Box, Typography, Grid, useMediaQuery, TextField, Button, Tooltip, Drawer, IconButton, Divider } from '@mui/material';
+import { Box, Typography, Grid, useMediaQuery, TextField, Button, Tooltip, Drawer, IconButton, Divider, Paper, Chip, FormControlLabel, Switch } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import HittersTable from '../components/HittersTable';
 import { filterRows, quickStats, resultClass } from '../lib/hitLogUtils';
@@ -52,6 +52,7 @@ export default function HittingLogsPage() {
   const [selectedRow, setSelectedRow] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useMediaQuery('(max-width:600px)');
+  const [showFouls, setShowFouls] = useState(true);
 
   React.useEffect(() => {
     async function loadData() {
@@ -260,14 +261,30 @@ export default function HittingLogsPage() {
           minHeight: 300,
         }}
       >
-        {/* EV/LA scatter — uses the SAME rows as the table */}
-        <div style={{ marginTop: 16, marginBottom: 24 }}>
-          <EVLAScatter rows={tableRows} showFouls={true} title="EV vs LA (Sweet Spot ≥95 mph, 8–32°)" />
-        </div>
-        {/* Hard-Hit% by inning bar chart — filters apply to the same tableRows */}
-        <div style={{ marginBottom: 24 }}>
+        {/* Info row: scope + fouls toggle */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2, mt: 1, flexWrap: 'wrap' }}>
+          <Chip size="small" label="Data scope: Fouls + Balls in Play; EV/LA metrics use BIP only" />
+          <FormControlLabel
+            control={<Switch checked={showFouls} onChange={(e) => setShowFouls(e.target.checked)} />}
+            label="Show fouls on scatter"
+          />
+        </Box>
+
+        {/* EV/LA scatter — wrapped in Paper */}
+        <Paper sx={{ p: 2, mb: 2 }}>
+          <Typography variant="h6" sx={{ mb: 1, fontWeight: 700 }}>
+            EV vs LA (Sweet Spot ≥95 mph, 8–32°)
+          </Typography>
+          <EVLAScatter rows={tableRows} showFouls={showFouls} />
+        </Paper>
+
+        {/* Hard-Hit% by inning bar chart — wrapped in Paper */}
+        <Paper sx={{ p: 2, mb: 3 }}>
+          <Typography variant="h6" sx={{ mb: 1, fontWeight: 700 }}>
+            Hard-Hit% by Inning
+          </Typography>
           <HardHitByInningBar rows={tableRows} />
-        </div>
+        </Paper>
         {hittersData && <HittersTable rows={rows} onRowClick={handleRowClick} selectedRowId={selectedRow?.id || null} />}
       </Box>
 
