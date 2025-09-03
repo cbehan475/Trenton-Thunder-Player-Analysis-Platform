@@ -6,6 +6,7 @@ import { filterRows, quickStats, resultClass } from '../lib/hitLogUtils';
 import './HittingLogsPage.css';
 import AppSelect from '../components/ui/AppSelect.jsx';
 import EVLAScatter from "../components/charts/EVLAScatter";
+import HardHitByInningBar from "../components/charts/HardHitByInningBar";
 
 const GAME_DATES = [
   '2025-06-04',
@@ -262,6 +263,10 @@ export default function HittingLogsPage() {
         {/* EV/LA scatter — uses the SAME rows as the table */}
         <div style={{ marginTop: 16, marginBottom: 24 }}>
           <EVLAScatter rows={tableRows} showFouls={true} title="EV vs LA (Sweet Spot ≥95 mph, 8–32°)" />
+        </div>
+        {/* Hard-Hit% by inning bar chart — filters apply to the same tableRows */}
+        <div style={{ marginBottom: 24 }}>
+          <HardHitByInningBar rows={tableRows} />
         </div>
         {hittersData && <HittersTable rows={rows} onRowClick={handleRowClick} selectedRowId={selectedRow?.id || null} />}
       </Box>
