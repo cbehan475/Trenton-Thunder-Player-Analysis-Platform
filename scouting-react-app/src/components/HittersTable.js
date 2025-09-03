@@ -1,6 +1,6 @@
 import React from 'react';
 import { DataGrid } from '@mui/x-data-grid';
-import { Card, CardContent } from '@mui/material';
+import { Card, CardContent, Box, Chip } from '@mui/material';
 import { fmt } from '../lib/formatters';
 
 export default function HittersTable({ rows, onRowClick, selectedRowId }) {
@@ -18,6 +18,10 @@ export default function HittersTable({ rows, onRowClick, selectedRowId }) {
     if (/out|fly|ground|pop|line/.test(r)) return 'chip-neutral';
     return 'chip-neutral';
   };
+
+  // Hard-hit helpers
+  const HARD_HIT_EV = 95;
+  const isHardHit = (ev) => Number(ev) >= HARD_HIT_EV;
   const columns = [
     {
       field: 'hitter',
@@ -42,7 +46,33 @@ export default function HittersTable({ rows, onRowClick, selectedRowId }) {
     { field: 'inning', headerName: 'Inning', width: 70, sortable: true, headerAlign: 'center', align: 'center', headerClassName: 'hl-col-inning', cellClassName: 'hl-col-inning', renderCell: (p) => show(p.row.inning) },
     { field: 'pitchType', headerName: 'Pitch Type', width: 160, sortable: true, headerAlign: 'left', align: 'left', headerClassName: 'hl-col-pitch', cellClassName: 'hl-col-pitch', renderCell: (p) => show(p.row.pitchType) },
     { field: 'spinRate', headerName: 'Spin Rate', width: 90, sortable: true, headerAlign: 'right', align: 'right', headerClassName: 'hl-col-spin', cellClassName: 'hl-col-spin', renderCell: (p) => show0(p.row.spinRate) },
-    { field: 'ev', headerName: 'EV', width: 80, sortable: true, headerAlign: 'right', align: 'right', headerClassName: 'hl-col-ev', cellClassName: 'hl-col-ev', renderCell: (p) => show1(p.row.ev) },
+    {
+      field: 'ev',
+      headerName: 'EV',
+      width: 100,
+      sortable: true,
+      headerAlign: 'right',
+      align: 'right',
+      headerClassName: 'hl-col-ev',
+      cellClassName: 'hl-col-ev',
+      renderCell: (p) => {
+        const ev = p.row.ev;
+        const hard = isHardHit(ev);
+        return (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', width: '100%' }}>
+            <span>{show1(ev)}</span>
+            {hard && (
+              <Chip
+                size="small"
+                label="HH"
+                variant="outlined"
+                sx={{ ml: 1, height: 20, fontSize: '0.7rem', borderColor: '#00d47e', color: '#00d47e' }}
+              />
+            )}
+          </Box>
+        );
+      },
+    },
     { field: 'la', headerName: 'LA', width: 80, sortable: true, headerAlign: 'right', align: 'right', headerClassName: 'hl-col-la', cellClassName: 'hl-col-la', renderCell: (p) => show0(p.row.la) },
     { field: 'pitchHeight', headerName: 'Pitch Height', width: 100, sortable: true, headerAlign: 'right', align: 'right', headerClassName: 'hl-col-height', cellClassName: 'hl-col-height', renderCell: (p) => show1(p.row.pitchHeight) },
     {
@@ -82,7 +112,9 @@ export default function HittersTable({ rows, onRowClick, selectedRowId }) {
           getRowClassName={(params) => {
             const byHitter = `hitter-${params.row.hitter.replace(/\s+/g, '-')}`;
             const isSel = selectedRowId && params.id === selectedRowId ? 'row-selected' : '';
-            return `${byHitter} ${isSel}`.trim();
+            const hard = isHardHit(params.row.ev);
+            const hardCls = hard ? 'row-hard-hit' : '';
+            return `${byHitter} ${isSel} ${hardCls}`.trim();
           }}
           sx={{
             color: 'var(--hl-text)',
@@ -112,6 +144,12 @@ export default function HittersTable({ rows, onRowClick, selectedRowId }) {
             },
             '& .MuiDataGrid-row:hover': {
               bgcolor: 'rgba(255,176,0,0.10)',
+            },
+            // Hard-hit row styling
+            '& .MuiDataGrid-row.row-hard-hit': {
+              backgroundColor: 'rgba(0, 212, 126, 0.08)',
+              borderLeft: '3px solid #00d47e',
+              transition: 'background-color 120ms ease',
             },
             '& .MuiTablePagination-root': {
               color: 'var(--hl-text-dim)',

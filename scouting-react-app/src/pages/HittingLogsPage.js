@@ -264,6 +264,7 @@ export default function HittingLogsPage() {
         {/* Info row: scope + fouls toggle */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2, mt: 1, flexWrap: 'wrap' }}>
           <Chip size="small" label="Data scope: Fouls + Balls in Play; EV/LA metrics use BIP only" />
+          <Chip size="small" label="HH highlight: EV ≥ 95 mph" sx={{ mt: 0.5 }} />
           <FormControlLabel
             control={<Switch checked={showFouls} onChange={(e) => setShowFouls(e.target.checked)} />}
             label="Show fouls on scatter"
