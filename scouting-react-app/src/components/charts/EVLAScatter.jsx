@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useRef } from "react";
 import { Scatter } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -54,6 +54,17 @@ const OUT_RESULTS = new Set([
  * showFouls: include fouls as gray points (default true)
  */
 export default function EVLAScatter({ rows = [], showFouls = true, title = "EV vs LA (Sweet Spot)" }) {
+  const chartRef = useRef(null);
+
+  const handleDownload = () => {
+    if (chartRef.current) {
+      const url = chartRef.current.toBase64Image();
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "ev-la-scatter.png";
+      link.click();
+    }
+  };
   const norm = (r, ...keys) => {
     for (const k of keys) if (r?.[k] != null) return r[k];
     return undefined;
@@ -137,5 +148,15 @@ export default function EVLAScatter({ rows = [], showFouls = true, title = "EV v
     }
   }), [title, xMin, xMax, yMin, yMax]);
 
-  return <div style={{ height: 420, width: "100%" }}><Scatter data={data} options={options} /></div>;
+  return (
+    <div style={{ height: 420, width: "100%" }}>
+      <Scatter ref={chartRef} data={data} options={options} />
+      <button
+        style={{ marginTop: "8px", padding: "4px 8px", fontSize: "0.85rem" }}
+        onClick={handleDownload}
+      >
+        Download PNG
+      </button>
+    </div>
+  );
 }
