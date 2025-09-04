@@ -7,6 +7,20 @@ import { computeBattedBallMix, toGroupedBarData } from "../utils/battedBall";
 import { MLB_BATTED_BALL_MIX_P50 } from "../constants/mlbBenchmarks";
 import { LabelList } from "recharts";
 
+// Compact, readable on-bar value label for Player
+function PlayerValueLabel(props) {
+  const { x, y, width, value } = props;
+  if (value == null) return null;
+  const v = Number(value);
+  // Hide labels for very small percentages to reduce clutter
+  if (Number.isNaN(v) || v < 3) return null; // suppress <3%
+  const cx = x + width / 2;
+  const cy = y - 6; // slight upward offset so text sits above bar
+  return (
+    <text x={cx} y={cy} textAnchor="middle" fontSize={11} opacity={0.9}>{`${v}%`}</text>
+  );
+}
+
 export default function BattedBallMixChart({ events = [], title = "Batted Ball Mix vs MLB p50" }) {
   const { data, deltas, totalBIP } = useMemo(() => {
     const { pct, total } = computeBattedBallMix(events);
@@ -36,8 +50,8 @@ export default function BattedBallMixChart({ events = [], title = "Batted Ball M
             <Tooltip formatter={(v) => `${v}%`} />
             <Legend />
             <Bar dataKey="Player" fill="#2563eb">
-              {/* on-bar labels for Player values */}
-              <LabelList dataKey="Player" position="top" formatter={(v) => `${v}%`} />
+              {/* MLB-style: show Player % directly on bars (clean, no clutter) */}
+              <LabelList dataKey="Player" content={<PlayerValueLabel />} />
             </Bar>
             <Bar dataKey="MLB p50" fill="#9ca3af" />
           </BarChart>
