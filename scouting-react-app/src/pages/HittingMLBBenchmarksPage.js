@@ -490,11 +490,16 @@ export default function HittingMLBBenchmarksPage() {
                 ) : null;
                 const delta = (playerVal!=null && r.p50!=null) ? +(playerVal - r.p50).toFixed(1) : null;
                 const pct = (playerVal!=null && Array.isArray(r.range)) ? percentileWithinRange(playerVal, r.range, { inverse: !!m.inverse }) : null;
+                // For MLB level, show p50 for batted-ball mix (GB/LD/FB/PU) from shared constants
+                const bbCode = BB_KEY_TO_CODE[m.key];
+                const p50Display = (selectedLevel === 'MLB' && bbCode)
+                  ? MLB_BATTED_BALL_MIX_P50?.[bbCode]
+                  : r.p50;
                 return (
                   <tr key={`row-${m.key}`}>
                     <th style={styles.td} scope="row">{m.label}</th>
                     <td style={styles.td}>{fmtBand(r.range, u)}</td>
-                    <td style={styles.td}>{fmtVal(r.p50, u)}</td>
+                    <td style={styles.td}>{fmtVal(p50Display, u)}</td>
                     {selectedHitter && <td style={styles.td}>{playerVal!=null ? fmtVal(playerVal, u) : '—'}</td>}
                     {selectedHitter && <td style={styles.td}>{delta!=null ? sign(delta) : '—'}</td>}
                     <td style={styles.td}>{pct!=null ? `${pct}` : '—'}</td>
