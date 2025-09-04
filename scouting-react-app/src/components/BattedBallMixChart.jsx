@@ -5,10 +5,11 @@ import {
 } from "recharts";
 import { computeBattedBallMix, toGroupedBarData } from "../utils/battedBall";
 import { MLB_BATTED_BALL_MIX_P50 } from "../constants/mlbBenchmarks";
+import { LabelList } from "recharts";
 
 export default function BattedBallMixChart({ events = [], title = "Batted Ball Mix vs MLB p50" }) {
-  const { data, deltas } = useMemo(() => {
-    const { pct } = computeBattedBallMix(events);
+  const { data, deltas, totalBIP } = useMemo(() => {
+    const { pct, total } = computeBattedBallMix(events);
     const data = toGroupedBarData(pct, MLB_BATTED_BALL_MIX_P50);
     // Compute neutral deltas (Player − MLB p50), rounded to 1 decimal
     const keys = ["GB", "LD", "FB", "PU"];
@@ -18,7 +19,7 @@ export default function BattedBallMixChart({ events = [], title = "Batted Ball M
         Number(((pct?.[k] ?? 0) - (MLB_BATTED_BALL_MIX_P50?.[k] ?? 0)).toFixed(1)),
       ])
     );
-    return { data, deltas };
+    return { data, deltas, totalBIP: total ?? 0 };
   }, [events]);
 
   const fmtDelta = (v) => (v > 0 ? `+${v}` : `${v}`);
@@ -32,9 +33,12 @@ export default function BattedBallMixChart({ events = [], title = "Batted Ball M
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="type" />
             <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-            <Tooltip formatter={(v, name) => `${v}%`} />
+            <Tooltip formatter={(v) => `${v}%`} />
             <Legend />
-            <Bar dataKey="Player" fill="#2563eb" />
+            <Bar dataKey="Player" fill="#2563eb">
+              {/* on-bar labels for Player values */}
+              <LabelList dataKey="Player" position="top" formatter={(v) => `${v}%`} />
+            </Bar>
             <Bar dataKey="MLB p50" fill="#9ca3af" />
           </BarChart>
         </ResponsiveContainer>
@@ -50,6 +54,20 @@ export default function BattedBallMixChart({ events = [], title = "Batted Ball M
             {k} Δ: {fmtDelta(deltas?.[k] ?? 0)} pp
           </span>
         ))}
+      </div>
+      {/* Sample size + LA bucket caption */}
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-white/70">
+        <span className="rounded-full border border-white/10 px-2 py-0.5">
+          BIP: {totalBIP}
+        </span>
+        {totalBIP < 10 && (
+          <span className="rounded-full border border-white/10 px-2 py-0.5">
+            small sample — interpret cautiously
+          </span>
+        )}
+        <span className="opacity-70">
+          Buckets: GB &lt;10°, LD 10–24.9°, FB 25–49.9°, PU ≥50°
+        </span>
       </div>
     </div>
   );
