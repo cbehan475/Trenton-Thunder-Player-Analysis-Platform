@@ -1,10 +1,12 @@
 // ---- imports (must be first) ----
 import React, { useMemo, useState, useEffect } from 'react';
-import { Box, Typography, useMediaQuery, Button, FormControl, InputLabel, Select, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip } from '@mui/material';
+import { Box, Typography, useMediaQuery, Button, FormControl, InputLabel, Select, MenuItem, Table, TableContainer, TableHead, TableRow, TableCell, TableBody, Tooltip } from '@mui/material';
 import HITTERS_BY_DATE from '../data/logs/hittersByDate';
 import { computeBattedBallMetrics, flattenEventsFromByDateMap } from '../lib/battedBallMetrics';
 import applyBattedBallOverride from '../lib/battedBallOverrides';
 import OVERRIDES from '../data/overrides/battedBallMetricsOverrides';
+import { isBIP } from '../lib/hitLogUtils';
+import BattedBallMixChart from '../components/BattedBallMixChart';
 import './BattedBallProfilePage.css';
 // ---- end imports ----
 
@@ -81,6 +83,14 @@ export default function BattedBallProfilePage() {
   // Aggregation
   const perMapAll = useMemo(() => computeBattedBallMetrics(filteredEvents, { dateRange: [startDate, endDate] }), [filteredEvents, startDate, endDate]);
   const perMapSelected = useMemo(() => computeBattedBallMetrics(filteredEvents, { dateRange: [startDate, endDate], hitter: selectedHitter || undefined }), [filteredEvents, startDate, endDate, selectedHitter]);
+
+  // Events for chart (respect date range and per-hitter toggle), BIP-only
+  const chartEvents = useMemo(() => {
+    const pool = Array.isArray(filteredEvents) ? filteredEvents : [];
+    const sliced = isAllHitters ? pool : pool.filter((e) => (selectedHitter ? e.hitter === selectedHitter : true));
+    return sliced.filter((e) => isBIP(e.result));
+  }, [filteredEvents, isAllHitters, selectedHitter]);
+  const bipCount = chartEvents.length;
 
   // Data rows for All Hitters
   const [orderBy, setOrderBy] = useState('BIP');
@@ -206,6 +216,18 @@ export default function BattedBallProfilePage() {
         <button className={`bb-tab ${!isAllHitters ? 'active' : ''}`} role="tab" aria-selected={!isAllHitters} onClick={() => setTab('per')}>Per Hitter</button>
         <button className={`bb-tab ${isAllHitters ? 'active' : ''}`} role="tab" aria-selected={isAllHitters} onClick={() => setTab('all')}>All Hitters</button>
       </div>
+
+      {/* Mix chart */}
+      <Box sx={{ my: 2 }}>
+        <BattedBallMixChart
+          events={chartEvents}
+          title={
+            !isAllHitters
+              ? `Mix vs MLB p50 — ${selectedHitter || 'Hitter'} (${bipCount} BIP)`
+              : `Mix vs MLB p50 — Team (${bipCount} BIP)`
+          }
+        />
+      </Box>
 
       {/* Summary for Per Hitter */}
       {tab === 'per' && (
