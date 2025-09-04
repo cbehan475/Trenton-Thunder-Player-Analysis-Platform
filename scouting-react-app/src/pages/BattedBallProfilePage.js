@@ -92,6 +92,12 @@ export default function BattedBallProfilePage() {
   }, [filteredEvents, isAllHitters, selectedHitter]);
   const bipCount = chartEvents.length;
 
+  // Team baseline (same window) for toggle comparison
+  const teamEvents = useMemo(() => {
+    const pool = Array.isArray(filteredEvents) ? filteredEvents : [];
+    return pool.filter((e) => isBIP(e.result));
+  }, [filteredEvents]);
+
   // Data rows for All Hitters
   const [orderBy, setOrderBy] = useState('BIP');
   const [order, setOrder] = useState('desc');
@@ -221,6 +227,8 @@ export default function BattedBallProfilePage() {
       <Box sx={{ my: 2 }}>
         <BattedBallMixChart
           events={chartEvents}
+          teamEvents={teamEvents}
+          perHitter={!isAllHitters}
           title={
             !isAllHitters
               ? `Mix vs MLB p50 — ${selectedHitter || 'Hitter'} (${bipCount} BIP)`

@@ -1,5 +1,5 @@
 // src/components/BattedBallMixChart.jsx
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend
 } from "recharts";
@@ -21,26 +21,64 @@ function PlayerValueLabel(props) {
   );
 }
 
-export default function BattedBallMixChart({ events = [], title = "Batted Ball Mix vs MLB p50" }) {
-  const { data, deltas, totalBIP } = useMemo(() => {
-    const { pct, total } = computeBattedBallMix(events);
-    const data = toGroupedBarData(pct, MLB_BATTED_BALL_MIX_P50);
-    // Compute neutral deltas (Player − MLB p50), rounded to 1 decimal
+export default function BattedBallMixChart({
+  events = [],
+  teamEvents = [],
+  perHitter = true,
+  title = "Batted Ball Mix",
+}) {
+  const [compareTarget, setCompareTarget] = useState("MLB"); // "MLB" | "TEAM"
+
+  const { data, deltas, totalBIP, baselineLabel } = useMemo(() => {
+    const { pct: playerPct, total } = computeBattedBallMix(events);
+    const { pct: teamPct } = computeBattedBallMix(teamEvents);
+    const useTeam = compareTarget === "TEAM" && Array.isArray(teamEvents) && teamEvents.length > 0;
+    const baseline = useTeam ? teamPct : MLB_BATTED_BALL_MIX_P50;
+    const baselineLabel = useTeam ? "Team" : "MLB p50";
     const keys = ["GB", "LD", "FB", "PU"];
+    const data = keys.map((k) => ({
+      type: k,
+      Player: Number(((playerPct?.[k] ?? 0)).toFixed(1)),
+      [baselineLabel]: Number(((baseline?.[k] ?? 0)).toFixed(1)),
+    }));
     const deltas = Object.fromEntries(
       keys.map((k) => [
         k,
-        Number(((pct?.[k] ?? 0) - (MLB_BATTED_BALL_MIX_P50?.[k] ?? 0)).toFixed(1)),
+        Number(((playerPct?.[k] ?? 0) - (baseline?.[k] ?? 0)).toFixed(1)),
       ])
     );
-    return { data, deltas, totalBIP: total ?? 0 };
-  }, [events]);
+    return { data, deltas, totalBIP: total ?? 0, baselineLabel };
+  }, [events, teamEvents, compareTarget]);
 
   const fmtDelta = (v) => (v > 0 ? `+${v}` : `${v}`);
 
+  const canCompareToTeam = perHitter && Array.isArray(teamEvents) && teamEvents.length > 0;
+
   return (
     <div className="w-full rounded-xl border border-white/10 bg-white/0 p-3">
-      <div className="text-sm font-semibold mb-2">{title}</div>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="text-sm font-semibold">{title}</div>
+        {canCompareToTeam && (
+          <div className="flex items-center gap-1 text-xs" role="group" aria-label="Comparison baseline">
+            <button
+              type="button"
+              className={`rounded-full px-2 py-1 border ${compareTarget === "MLB" ? "border-white/70" : "border-white/20 opacity-80"}`}
+              onClick={() => setCompareTarget("MLB")}
+              aria-pressed={compareTarget === "MLB"}
+            >
+              vs MLB
+            </button>
+            <button
+              type="button"
+              className={`rounded-full px-2 py-1 border ${compareTarget === "TEAM" ? "border-white/70" : "border-white/20 opacity-80"}`}
+              onClick={() => setCompareTarget("TEAM")}
+              aria-pressed={compareTarget === "TEAM"}
+            >
+              vs Team
+            </button>
+          </div>
+        )}
+      </div>
       <div className="h-56">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
@@ -53,7 +91,7 @@ export default function BattedBallMixChart({ events = [], title = "Batted Ball M
               {/* MLB-style: show Player % directly on bars (clean, no clutter) */}
               <LabelList dataKey="Player" content={<PlayerValueLabel />} />
             </Bar>
-            <Bar dataKey="MLB p50" fill="#9ca3af" />
+            <Bar dataKey={baselineLabel} fill="#9ca3af" />
           </BarChart>
         </ResponsiveContainer>
       </div>
