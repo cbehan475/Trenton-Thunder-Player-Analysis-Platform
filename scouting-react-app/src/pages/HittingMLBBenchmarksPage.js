@@ -5,6 +5,7 @@ import HITTERS_BY_DATE from '../data/logs/hittersByDate';
 import HITTING_BENCHMARKS_BY_LEVEL, { HITTING_BENCHMARKS_VERSION, HITTING_BENCHMARKS_SOURCE } from '../data/hitting/benchmarksByLevel';
 import OVERRIDES from '../data/overrides/battedBallMetricsOverrides';
 import { flattenEventsFromByDateMap } from '../lib/battedBallMetrics';
+import { MLB_BATTED_BALL_MIX_P50 } from '../constants/mlbBenchmarks';
 import { computeHitterCoreP50, computeHitterDecisionP50, computeHitterBattedBallP50 } from '../lib/hittingBenchmarks';
 import { percentileWithinRange } from '../lib/percentiles';
 
@@ -62,6 +63,13 @@ const BB_ROWS = [
   { key: 'BB_PU_PCT', label: 'PU %', unit: '%' },
 ];
 const BARREL_ROW = { key: 'BARREL_PCT', label: 'Barrel % (proxy)', unit: '%' };
+
+const BB_KEY_TO_CODE = {
+  BB_GB_PCT: 'GB',
+  BB_LD_PCT: 'LD',
+  BB_FB_PCT: 'FB',
+  BB_PU_PCT: 'PU',
+};
 
 export default function HittingMLBBenchmarksPage() {
   // Level options and mapping for display
@@ -396,10 +404,12 @@ export default function HittingMLBBenchmarksPage() {
                 ) : null;
                 const delta = (playerVal!=null && row.p50!=null) ? +(playerVal - row.p50).toFixed(1) : null;
                 const pct = (playerVal!=null && Array.isArray(row.range)) ? percentileWithinRange(playerVal, row.range) : null;
+                const bbCode = BB_KEY_TO_CODE[r.key];
+                const p50Display = selectedLevel === 'MLB' && bbCode ? MLB_BATTED_BALL_MIX_P50?.[bbCode] : row.p50;
                 return (
                   <div key={`bb-${r.key}`} style={{ ...styles.cardBodyRow, display:'grid', gridTemplateColumns: 'auto auto auto auto', gap: 8 }}>
                     <span className="lbl" style={{ ...styles.small, fontWeight: 800 }}>{r.label}</span>
-                    <span>{fmtVal(row.p50, r.unit)}</span>
+                    <span>{fmtVal(p50Display, r.unit)}</span>
                     <span>{selectedHitter && playerVal!=null ? fmtVal(playerVal, r.unit) : '—'}</span>
                     <span>
                       {selectedHitter && playerVal!=null && delta!=null && (
