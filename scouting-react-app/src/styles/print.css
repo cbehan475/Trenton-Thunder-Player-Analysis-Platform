@@ -1,0 +1,8 @@
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+  .app-shell { background: #fff !important; }
+  .btn { display: none !important; }
+  .header-chips { display: inline-flex !important; }
+  .card { border-color: #000 !important; }
+  .table th, .table td { border-color: #000 !important; }
+}
