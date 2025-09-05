@@ -12,6 +12,23 @@ const norm = (s) => (s || '').trim().replace(/\s+/g, ' ');
 const normLower = (s) => norm(s).toLowerCase();
 const isName = (v) => typeof v === 'string' && !/^\d+$/.test(v);
 
+// Derive a displayable hitter name from the first event that contains one
+function deriveNameFromEvents(events = []) {
+  for (const e of events) {
+    const name =
+      e?.batter_name ??
+      e?.batterName ??
+      e?.playerName ??
+      e?.hitterName ??
+      e?.hitter?.name ??
+      e?.batter?.name ??
+      e?.name ??
+      null;
+    if (name && String(name).trim()) return String(name).trim();
+  }
+  return null;
+}
+
 export function useHittingReportData() {
   // Build flat events once from the by-date map
   const allEvents = useMemo(() => flattenEventsFromByDateMap(HITTERS_BY_DATE), []);
@@ -85,7 +102,8 @@ export function useHittingReportData() {
   const logsCount = Array.isArray(filteredEvents) ? filteredEvents.length : 0;
   const bipCount = reportEvents.length;
   const perHitter = !isAllHitters;
-  const hitterName = selectedHitter ?? 'Hitter';
+  const fallbackName = deriveNameFromEvents(reportEvents);
+  const hitterName = selectedHitter ?? fallbackName ?? (perHitter ? 'Hitter' : 'All Hitters');
 
   return {
     // state mirrors
