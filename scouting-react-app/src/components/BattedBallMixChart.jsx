@@ -3,7 +3,7 @@ import React, { useMemo, useState } from "react";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend
 } from "recharts";
-import { computeBattedBallMix, toGroupedBarData } from "../utils/battedBall";
+import { computeBattedBallMix } from "../utils/battedBall";
 import { MLB_BATTED_BALL_MIX_P50 } from "../constants/mlbBenchmarks";
 import { LabelList } from "recharts";
 
@@ -101,7 +101,7 @@ export default function BattedBallMixChart({
           <span
             key={k}
             className="rounded-full border border-white/15 px-2 py-1"
-            title={`Player minus MLB p50 for ${k}`}
+            title={`Player minus ${baselineLabel} for ${k}`}
           >
             {k} Δ: {fmtDelta(deltas?.[k] ?? 0)} pp
           </span>
