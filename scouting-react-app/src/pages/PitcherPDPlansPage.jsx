@@ -3,7 +3,7 @@ import {
   Box, Typography, Divider, Grid, Card, CardContent, TextField,
   MenuItem, Button, LinearProgress, Chip, Stack, Paper
 } from '@mui/material';
-import { summarizeUsageAndShape } from '../utils/pitchingLogsAdapter';
+import { summarizeUsageAndShape, listPitchers } from '../utils/pitchingLogsAdapter';
 
 /**
  * Data adapter:
@@ -58,7 +58,21 @@ function usePDData(pitcher) {
   return mock;
 }
 
-const mockPitchers = ["Select a pitcher", "Jude Abbadessa", "Dosie Drakeford", "Isaac Fix"];
+function useQueryParamName() {
+  // minimal query param read/write without new deps
+  const get = () => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('name') || '';
+  };
+  const set = (name) => {
+    const params = new URLSearchParams(window.location.search);
+    if (name) params.set('name', name);
+    else params.delete('name');
+    const url = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState(null, '', url);
+  };
+  return { get, set };
+}
 
 function Section({ title, children }) {
   return (
@@ -83,21 +97,44 @@ function StatTile({ label, value, sub }) {
 }
 
 export default function PitcherPDPlansPage() {
-  const [pitcher, setPitcher] = useState("Jude Abbadessa");
-  const [agg, setAgg] = useState({ usage: [], ivbHb: [], totalPitches: 0, hasData: false });
+  const qp = useQueryParamName();
+  const [allPitchers, setAllPitchers] = useState([]);
+  const [pitcher, setPitcher] = useState(qp.get() || "Jude Abbadessa");
+  const [agg, setAgg] = useState({ usage: [], ivbHb: [], totalPitches: 0, hasData: false, loading: true });
   const data = usePDData(pitcher);
 
   useEffect(() => {
-    if (pitcher && pitcher !== "Select a pitcher") {
+    // Populate pitcher list from logs
+    try {
+      const names = listPitchers();
+      setAllPitchers(names);
+      // If URL name is present but not in list (case mismatch), try to find closest match
+      const fromUrl = qp.get();
+      if (fromUrl && names.length) {
+        const exact = names.find(n => n.toLowerCase() === fromUrl.toLowerCase());
+        if (exact && exact !== pitcher) setPitcher(exact);
+      }
+    } catch (e) {
+      console.error('Failed to list pitchers', e);
+      setAllPitchers([]);
+    }
+    // run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (pitcher) {
+      qp.set(pitcher);
       try {
-        const s = summarizeUsageAndShape(pitcher);
-        setAgg(s);
+        setAgg(a => ({ ...a, loading: true }));
+        const s = summarizeUsageAndShape(pitcher) || { usage: [], ivbHb: [], totalPitches: 0, hasData: false };
+        setAgg({ ...s, loading: false });
       } catch (e) {
         console.error('Failed to summarize logs:', e);
-        setAgg({ usage: [], ivbHb: [], totalPitches: 0, hasData: false });
+        setAgg({ usage: [], ivbHb: [], totalPitches: 0, hasData: false, loading: false });
       }
     } else {
-      setAgg({ usage: [], ivbHb: [], totalPitches: 0, hasData: false });
+      setAgg({ usage: [], ivbHb: [], totalPitches: 0, hasData: false, loading: false });
     }
   }, [pitcher]);
 
@@ -116,7 +153,8 @@ export default function PitcherPDPlansPage() {
         <Grid item xs={12} sm={6} md={4}>
           <TextField select fullWidth label="Pitcher" value={pitcher}
             onChange={(e) => setPitcher(e.target.value)}>
-            {mockPitchers.map((p) => <MenuItem key={p} value={p}>{p}</MenuItem>)}
+            {allPitchers.length === 0 && <MenuItem value={pitcher}>{pitcher}</MenuItem>}
+            {allPitchers.map((p) => <MenuItem key={p} value={p}>{p}</MenuItem>)}
           </TextField>
         </Grid>
         <Grid item xs={6} sm={3} md={2}>
@@ -132,7 +170,9 @@ export default function PitcherPDPlansPage() {
 
       {/* Overview tiles: quick banding */}
       <Section title="Overview Snapshot">
-        {agg.hasData ? (
+        {agg.loading ? (
+          <Typography variant="body2">Loading pitcher summaries…</Typography>
+        ) : agg.hasData ? (
           <Grid container spacing={2}>
             {agg.ivbHb.slice(0,3).map((row) => (
               <Grid item xs={12} sm={4} key={row.pitch}>
@@ -147,7 +187,9 @@ export default function PitcherPDPlansPage() {
 
       {/* Usage bars */}
       <Section title="Usage by Pitch (visual)">
-        {agg.hasData ? (
+        {agg.loading ? (
+          <Typography variant="body2">Calculating usage…</Typography>
+        ) : agg.hasData ? (
           <Grid container spacing={2}>
             {agg.usage.map((u) => (
               <Grid item xs={12} key={u.pitch}>

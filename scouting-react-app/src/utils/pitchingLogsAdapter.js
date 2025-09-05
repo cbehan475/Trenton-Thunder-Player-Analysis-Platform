@@ -125,6 +125,26 @@ export function getPitcherRows(pitcherName) {
   return all.filter(r => r.pitcher && r.pitcher.toLowerCase() === nameLc);
 }
 
+export function listPitchers() {
+  const all = loadAllPitchingLogs();
+  const seen = new Set();
+  const names = [];
+  for (const r of all) {
+    if (!r.pitcher) continue;
+    const key = r.pitcher.trim().toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      names.push(r.pitcher.trim());
+    }
+  }
+  // Sort by last, first if comma present; otherwise by name
+  names.sort((a,b)=>{
+    const na = a.includes(',') ? a.split(',')[0].trim() : a;
+    const nb = b.includes(',') ? b.split(',')[0].trim() : b;
+    return na.localeCompare(nb);
+  });
+  return names;
+}
 export function summarizeUsageAndShape(pitcherName) {
   const rows = getPitcherRows(pitcherName);
   const byPitch = new Map();
