@@ -9,6 +9,7 @@ import { isBIP } from '../lib/hitLogUtils';
 import BattedBallMixChart from '../components/BattedBallMixChart';
 import './BattedBallProfilePage.css';
 import HitterSummary from '../components/HitterSummary';
+import HitterBlurb from '../components/HitterBlurb';
 // ---- end imports ----
 
 // Helpers
@@ -232,6 +233,18 @@ export default function BattedBallProfilePage() {
             !isAllHitters
               ? `Hitter Report — ${selectedHitter || 'Hitter'}`
               : 'Hitter Report — Team'
+          }
+        />
+      </Box>
+
+      {/* Auto-generated scouting blurb from the same sample */}
+      <Box sx={{ mt: 1 }}>
+        <HitterBlurb
+          events={chartEvents}
+          title={
+            !isAllHitters
+              ? `Scouting Summary — ${selectedHitter || 'Hitter'}`
+              : 'Scouting Summary — Team'
           }
         />
       </Box>
