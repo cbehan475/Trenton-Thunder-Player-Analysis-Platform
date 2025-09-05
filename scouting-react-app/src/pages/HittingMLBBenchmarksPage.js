@@ -5,7 +5,13 @@ import HITTERS_BY_DATE from '../data/logs/hittersByDate';
 import HITTING_BENCHMARKS_BY_LEVEL, { HITTING_BENCHMARKS_VERSION, HITTING_BENCHMARKS_SOURCE } from '../data/hitting/benchmarksByLevel';
 import OVERRIDES from '../data/overrides/battedBallMetricsOverrides';
 import { flattenEventsFromByDateMap } from '../lib/battedBallMetrics';
-import { MLB_BATTED_BALL_MIX_P50 } from '../constants/mlbBenchmarks';
+import {
+  MLB_BENCHMARKS_P50,
+  MLB_BATTED_BALL_MIX_P50,
+  MLB_EV_P50,
+  MLB_LA_P50,
+  MLB_HH_PCT_P50,
+} from '../constants/mlbBenchmarks';
 import { computeHitterCoreP50, computeHitterDecisionP50, computeHitterBattedBallP50 } from '../lib/hittingBenchmarks';
 import { percentileWithinRange } from '../lib/percentiles';
 
@@ -322,6 +328,12 @@ export default function HittingMLBBenchmarksPage() {
             ) : null;
             const delta = (playerVal!=null && row.p50!=null) ? +(playerVal - row.p50).toFixed(1) : null;
             const pct = (playerVal!=null && Array.isArray(row.range)) ? percentileWithinRange(playerVal, row.range) : null;
+            // For MLB level, show p50 for EV/LA/HH% from shared constants
+            const p50DisplayImpact = (selectedLevel === 'MLB')
+              ? (m.key === 'EV_AVG' ? MLB_EV_P50 :
+                 m.key === 'LA_AVG' ? MLB_LA_P50 :
+                 m.key === 'HARD_HIT_PCT' ? MLB_HH_PCT_P50 : row.p50)
+              : row.p50;
             return (
               <div key={m.key} style={styles.card()}
                    onMouseEnter={(e)=>{ e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 12px 24px rgba(0,0,0,0.45)'; }}
@@ -331,7 +343,7 @@ export default function HittingMLBBenchmarksPage() {
                   <span style={styles.badge}>{selectedLevel === 'APLUS' ? 'A+' : selectedLevel}</span>
                 </div>
                 <div style={styles.cardBodyRow}><span className="lbl" style={styles.small}>Level Range</span><span>{fmtBand(row.range, u)}</span></div>
-                <div style={styles.cardBodyRow}><span className="lbl" style={styles.small}>Level p50</span><span>{fmtVal(row.p50, u)}</span></div>
+                <div style={styles.cardBodyRow}><span className="lbl" style={styles.small}>Level p50</span><span>{fmtVal(p50DisplayImpact, u)}</span></div>
                 {player && playerVal!=null && (
                   <>
                     <div style={styles.cardBodyRow}><span className="lbl" style={styles.small}>Player (p50)</span><span>{fmtVal(playerVal, u)}</span></div>
@@ -405,7 +417,7 @@ export default function HittingMLBBenchmarksPage() {
                 const delta = (playerVal!=null && row.p50!=null) ? +(playerVal - row.p50).toFixed(1) : null;
                 const pct = (playerVal!=null && Array.isArray(row.range)) ? percentileWithinRange(playerVal, row.range) : null;
                 const bbCode = BB_KEY_TO_CODE[r.key];
-                const p50Display = selectedLevel === 'MLB' && bbCode ? MLB_BATTED_BALL_MIX_P50?.[bbCode] : row.p50;
+                const p50Display = selectedLevel === 'MLB' && bbCode ? (MLB_BENCHMARKS_P50?.BATTED_BALL_MIX?.[bbCode]) : row.p50;
                 return (
                   <div key={`bb-${r.key}`} style={{ ...styles.cardBodyRow, display:'grid', gridTemplateColumns: 'auto auto auto auto', gap: 8 }}>
                     <span className="lbl" style={{ ...styles.small, fontWeight: 800 }}>{r.label}</span>
@@ -492,9 +504,18 @@ export default function HittingMLBBenchmarksPage() {
                 const pct = (playerVal!=null && Array.isArray(r.range)) ? percentileWithinRange(playerVal, r.range, { inverse: !!m.inverse }) : null;
                 // For MLB level, show p50 for batted-ball mix (GB/LD/FB/PU) from shared constants
                 const bbCode = BB_KEY_TO_CODE[m.key];
-                const p50Display = (selectedLevel === 'MLB' && bbCode)
-                  ? MLB_BATTED_BALL_MIX_P50?.[bbCode]
-                  : r.p50;
+                let p50Display = r.p50;
+                if (selectedLevel === 'MLB') {
+                  if (bbCode) {
+                    p50Display = MLB_BATTED_BALL_MIX_P50?.[bbCode];
+                  } else if (m.key === 'EV_AVG') {
+                    p50Display = MLB_EV_P50;
+                  } else if (m.key === 'LA_AVG') {
+                    p50Display = MLB_LA_P50;
+                  } else if (m.key === 'HARD_HIT_PCT') {
+                    p50Display = MLB_HH_PCT_P50;
+                  }
+                }
                 return (
                   <tr key={`row-${m.key}`}>
                     <th style={styles.td} scope="row">{m.label}</th>
