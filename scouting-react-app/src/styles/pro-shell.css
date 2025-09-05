@@ -1,0 +1,72 @@
+/* ---- App shell ---- */
+.app-shell {
+  min-height: 100vh;
+  background: linear-gradient(to bottom, #0a0f1f, #0b1020);
+  color: #e6e8ee;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+.app-container {
+  max-width: 72rem; /* ~6xl */
+  margin: 0 auto;
+  padding: 20px 16px;
+}
+
+/* ---- Header ---- */
+.header-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin-bottom: 16px;
+}
+.header-title {
+  font-size: 24px; font-weight: 600; letter-spacing: -0.01em;
+  margin: 0; padding: 0;
+}
+.header-chips { display: none; gap: 8px; }
+@media (min-width: 768px) { .header-chips { display: flex; } }
+.chip {
+  font-size: 12px; padding: 4px 8px; border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05);
+}
+
+/* ---- Buttons ---- */
+.btn {
+  font-size: 12px; padding: 6px 12px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05);
+  color: #e6e8ee; cursor: pointer;
+}
+.btn + .btn { margin-left: 8px; }
+
+/* ---- Grid ---- */
+.grid-2 {
+  display: grid; grid-template-columns: 1fr; gap: 16px;
+}
+@media (min-width: 768px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+
+/* ---- Cards ---- */
+.card {
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.05);
+  padding: 16px;
+}
+.card-title {
+  font-size: 14px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 8px;
+}
+
+/* ---- Tiles ---- */
+.tile {
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.05);
+  padding: 12px;
+}
+.tiles-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.tile-label { font-size: 11px; opacity: 0.75; }
+.tile-value { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+/* ---- Table ---- */
+.table-wrap { overflow-x: auto; }
+.table { width: 100%; font-size: 14px; border-collapse: collapse; }
+.table thead { font-size: 12px; opacity: 0.75; text-align: left; }
+.table th, .table td { padding: 8px 12px; }
+.table tbody tr + tr td { border-top: 1px solid rgba(255,255,255,0.10); }
+.tabnums { font-variant-numeric: tabular-nums; }

@@ -14,8 +14,8 @@ export default function HitterBlurb({ events = [], title = "Scouting Summary" })
   const text = useMemo(() => buildHitterBlurb({ ...summary, mix }), [summary, mix]);
 
   return (
-    <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-4">
-      <div className="mb-2 text-sm font-semibold tracking-tight">{title}</div>
+    <div className="card w-full rounded-2xl border border-white/10 bg-white/5 p-4">
+      <div className="card-title mb-2 text-sm font-semibold tracking-tight">{title}</div>
       <p className="text-sm leading-6 opacity-95">{text}</p>
     </div>
   );

@@ -27,13 +27,13 @@ export default function TopBattedBalls({ events = [], title = "Top Batted Balls"
   }, [events, limit]);
 
   return (
-    <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-4">
-      <div className="mb-2 text-sm font-semibold tracking-tight">{title}</div>
+    <div className="card w-full rounded-2xl border border-white/10 bg-white/5 p-4">
+      <div className="card-title mb-2 text-sm font-semibold tracking-tight">{title}</div>
       {rows.length === 0 ? (
         <div className="text-sm opacity-70">No batted balls in range.</div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="table-wrap overflow-x-auto">
+          <table className="table w-full text-sm">
             <thead className="text-left text-xs opacity-70">
               <tr>
                 <th className="py-1 pr-3">EV (mph)</th>
@@ -44,8 +44,8 @@ export default function TopBattedBalls({ events = [], title = "Top Batted Balls"
             <tbody className="divide-y divide-white/10">
               {rows.map((r, idx) => (
                 <tr key={idx}>
-                  <td className="py-2 pr-3 tabular-nums">{r.ev.toFixed(1)}</td>
-                  <td className="py-2 pr-3 tabular-nums">{r.la.toFixed(1)}</td>
+                  <td className="py-2 pr-3 tabnums tabular-nums">{r.ev.toFixed(1)}</td>
+                  <td className="py-2 pr-3 tabnums tabular-nums">{r.la.toFixed(1)}</td>
                   <td className="py-2 pr-3">{r.result || "—"}</td>
                 </tr>
               ))}
@@ -56,4 +56,5 @@ export default function TopBattedBalls({ events = [], title = "Top Batted Balls"
     </div>
   );
 }
+
 

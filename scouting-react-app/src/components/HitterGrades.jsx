@@ -6,9 +6,9 @@ import { computeHitterGrades } from "../utils/grades";
 
 function GradeTile({ label, grade }) {
   return (
-    <div className="flex-1 rounded-xl border border-white/10 bg-white/5 p-3">
-      <div className="text-[11px] opacity-70">{label}</div>
-      <div className="text-2xl font-semibold tabular-nums tracking-tight">{grade}</div>
+    <div className="tile flex-1 rounded-xl border border-white/10 bg-white/5 p-3">
+      <div className="tile-label text-[11px] opacity-70">{label}</div>
+      <div className="tile-value text-2xl font-semibold tabular-nums tracking-tight">{grade}</div>
     </div>
   );
 }
@@ -22,9 +22,9 @@ export default function HitterGrades({ events = [], title = "Scouting Grades (Pr
   }, [events]);
 
   return (
-    <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-4">
-      <div className="mb-2 text-sm font-semibold">{title}</div>
-      <div className="grid grid-cols-3 gap-3">
+    <div className="card w-full rounded-2xl border border-white/10 bg-white/5 p-4">
+      <div className="card-title mb-2 text-sm font-semibold">{title}</div>
+      <div className="tiles-3 grid grid-cols-3 gap-3">
         <GradeTile label="Raw Power (EV)" grade={data.rawPower} />
         <GradeTile label="Impact (HH%)" grade={data.impact} />
         <GradeTile label="Game Power" grade={data.gamePower} />
@@ -35,3 +35,4 @@ export default function HitterGrades({ events = [], title = "Scouting Grades (Pr
     </div>
   );
 }
+
