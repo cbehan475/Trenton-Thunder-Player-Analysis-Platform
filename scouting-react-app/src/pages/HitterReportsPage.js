@@ -2,6 +2,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import AppSelect from '../components/ui/AppSelect.jsx';
 import { getAllHitterNames, getHittingMetricsFor, getHittingLogStats, getHitterEntries } from '../data/logs/hittingIndex';
+import HitterSummary from '../components/HitterSummary.jsx';
+import HitterBlurb from '../components/HitterBlurb.jsx';
+import TopBattedBalls from '../components/TopBattedBalls.jsx';
+import { isBIP } from '../lib/hitLogUtils.js';
 
 export default function HitterReportsPage() {
   const [names, setNames] = useState([]);
@@ -68,6 +72,9 @@ export default function HitterReportsPage() {
 
   const reportText = bullets.join('\n');
 
+  // Build the BIP-only set for this window
+  const reportEvents = Array.isArray(entries) ? entries.filter((e) => isBIP(e?.result)) : [];
+
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg,#0e2d56,#0b4a8f 55%,#0b67c7)', padding: '48px 24px' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
@@ -98,48 +105,53 @@ export default function HitterReportsPage() {
           />
         </div>
 
-        {/* metrics */}
-        {metrics && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(160px, 1fr))', gap: 12 }}>
-            <div style={blockStyle}>
-              <div style={labelStyle}>Avg EV</div>
-              <div style={valueStyle}>{Number.isFinite(metrics.avgEV) ? metrics.avgEV.toFixed(1) + ' mph' : '—'}</div>
-            </div>
-            <div style={blockStyle}>
-              <div style={labelStyle}>Avg LA</div>
-              <div style={valueStyle}>{Number.isFinite(metrics.avgLA) ? metrics.avgLA.toFixed(1) + '°' : '—'}</div>
-            </div>
-            <div style={blockStyle}>
-              <div style={labelStyle}>Hard-Hit % (EV ≥ 95)</div>
-              <div style={valueStyle}>{Number.isFinite(metrics.hardHitPct) ? metrics.hardHitPct.toFixed(1) + '%' : '—'}</div>
-            </div>
+        {/* Header with name and counts plus action buttons */}
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <div className="text-xl font-semibold" style={{ color: '#E9EEFF' }}>
+            Hitter Reports — {selected || 'Hitter'}
+            <span className="ml-2 align-middle text-xs opacity-70">
+              {' '}Logs: {Array.isArray(entries) ? entries.length : 0} • BIP: {reportEvents.length}
+            </span>
           </div>
-        )}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => copyToClipboard(reportText)}
+              style={{ padding: '8px 10px', borderRadius: 8, background: '#184d8a', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer' }}
+            >
+              Copy report
+            </button>
+            <button
+              onClick={() => downloadTxt(`${(selected||'hitter').replace(/\s+/g,'_')}_hitter_report.txt`, reportText)}
+              style={{ padding: '8px 10px', borderRadius: 8, background: '#0a7f3f', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer' }}
+            >
+              Download .txt
+            </button>
+          </div>
+        </div>
 
-        {metrics && (
-          <div style={{ marginTop: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <h4 style={{ margin: 0, color: '#cfe8ff' }}>Scouting-style report</h4>
-              <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-                <button
-                  onClick={() => copyToClipboard(reportText)}
-                  style={{ padding: '8px 10px', borderRadius: 8, background: '#184d8a', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer' }}
-                >
-                  Copy report
-                </button>
-                <button
-                  onClick={() => downloadTxt(`${selected.replace(/\s+/g,'_')}_hitter_report.txt`, reportText)}
-                  style={{ padding: '8px 10px', borderRadius: 8, background: '#0a7f3f', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer' }}
-                >
-                  Download .txt
-                </button>
-              </div>
-            </div>
-            <ul style={{ margin: 0, paddingLeft: 18, color: '#bcd7ff' }}>
-              {bullets.map((line, i) => <li key={i} style={{ margin: '6px 0' }}>{line}</li>)}
-            </ul>
+        {/* Grid layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* Left column: key numbers */}
+          <div className="flex flex-col gap-3">
+            <HitterSummary
+              events={reportEvents}
+              title="Summary (Avg EV, Avg LA, HH%)"
+            />
           </div>
-        )}
+
+          {/* Right column: narrative + top batted balls */}
+          <div className="flex flex-col gap-3">
+            <HitterBlurb
+              events={reportEvents}
+              title="Scouting Summary"
+            />
+            <TopBattedBalls
+              events={reportEvents}
+              title="Top Batted Balls (by EV)"
+              limit={5}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
