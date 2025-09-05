@@ -1,14 +1,20 @@
 // ---- imports (must be first) ----
 import React, { useMemo, useState, useEffect } from 'react';
-import { Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import HITTERS_BY_DATE from '../data/logs/hittersByDate';
 import { flattenEventsFromByDateMap } from '../lib/battedBallMetrics';
 import { isBIP } from '../lib/hitLogUtils';
 import './BattedBallProfilePage.css';
-import HitterSummary from '../components/HitterSummary';
-import HitterGrades from '../components/HitterGrades';
-import TopBattedBalls from '../components/TopBattedBalls';
-import HitterScoutingCard from '../components/HitterScoutingCard';
+// New presentational components
+import HitterHeader from '../components/hitterReports/HitterHeader';
+import SummaryTiles from '../components/hitterReports/SummaryTiles';
+import GradesTiles from '../components/hitterReports/GradesTiles';
+import ScoutingBlurb from '../components/hitterReports/ScoutingBlurb';
+import TopBattedBallsTable from '../components/hitterReports/TopBattedBallsTable';
+// Metrics/logic utilities (existing logic)
+import { computeHitterSummary } from '../utils/hitterMetrics';
+import { computeBattedBallMix } from '../utils/battedBall';
+import { computeHitterGrades } from '../utils/grades';
+import { buildHitterBlurb } from '../utils/hitterBlurb';
 // ---- end imports ----
 
 // Helpers
@@ -62,67 +68,76 @@ export default function BattedBallProfilePage() {
   const bipCount = reportEvents.length;
   const headerTitle = selectedHitter || 'Hitter';
 
+  // Build hitter dropdown options
+  const hitterOptions = useMemo(() => (hitterList || []).map((name) => ({ value: name, label: name })), [hitterList]);
+  const selectedOption = useMemo(() => ({ value: selectedHitter || '', label: selectedHitter || '' }), [selectedHitter]);
+  const setSelectedByValue = (val) => setSelectedHitter(val);
+
+  // Summary metrics (existing logic)
+  const { avgEV, avgLA, hhPct } = useMemo(() => computeHitterSummary(reportEvents), [reportEvents]);
+
+  // Grades (existing logic & rounding/caps inside util)
+  const grades = useMemo(() => {
+    const { pct } = computeBattedBallMix(reportEvents);
+    const s = computeHitterSummary(reportEvents);
+    return computeHitterGrades({ avgEV: s.avgEV, hhPct: s.hhPct, mix: pct, bip: s.bip });
+  }, [reportEvents]);
+
+  // Scouting blurb text (existing blurb builder)
+  const scoutingText = useMemo(() => {
+    const s = computeHitterSummary(reportEvents);
+    const { pct } = computeBattedBallMix(reportEvents);
+    return buildHitterBlurb({ ...s, mix: pct });
+  }, [reportEvents]);
+
+  // Top batted balls rows (top 5 by EV)
+  const topBattedBalls = useMemo(() => {
+    const getEV = (e) => Number(e?.ev ?? e?.EV ?? e?.exitVelo ?? NaN);
+    const getLA = (e) => Number(e?.la ?? e?.LA ?? e?.launchAngle ?? NaN);
+    const getResult = (e) => e?.result ?? e?.playResult ?? e?.battedBallType ?? e?.bb_type ?? '';
+    const rows = (reportEvents || [])
+      .map((e) => ({ ev: getEV(e), la: getLA(e), result: getResult(e) }))
+      .filter((r) => Number.isFinite(r.ev) && Number.isFinite(r.la));
+    rows.sort((a, b) => b.ev - a.ev);
+    return rows.slice(0, 5).map((r) => ({ ev: Number(r.ev.toFixed?.(1) ?? r.ev), la: Number(r.la.toFixed?.(1) ?? r.la), result: r.result || '—' }));
+  }, [reportEvents]);
+
   return (
-    <Box className="pageBattedBall" sx={{ width: '100%', minHeight: '100vh', py: 4 }}>
-      {/* Header */}
-      <div className="mx-auto max-w-6xl px-3">
-        <div className="rounded-2xl bg-slate-900/80 ring-1 ring-white/10 px-4 py-4 mb-4 flex items-center justify-between">
-          <div className="text-lg font-semibold tracking-wide">Hitter Reports ⚡</div>
-          <div className="text-xl font-semibold tracking-tight">{headerTitle}</div>
+    <div className="mx-auto max-w-7xl px-6 py-6">
+      <HitterHeader
+        title="Hitter Reports"
+        hitter={selectedOption}
+        onChangeHitter={(val) => setSelectedByValue(val)}
+        hitterOptions={hitterOptions}
+      />
+
+      <div className="grid grid-cols-12 gap-6">
+        <div className="col-span-12 lg:col-span-4">
+          <SummaryTiles
+            avgEV={avgEV}
+            avgLA={avgLA}
+            hhPct={hhPct}
+            sample={`BIP ${bipCount} • HH% uses ≥95 mph`}
+          />
         </div>
 
-        {/* Controls: hitter dropdown at top */}
-        <div className="mb-4 flex items-center gap-3">
-          <FormControl size="small" sx={{ minWidth: 240 }}>
-            <InputLabel id="bb-hitter-label">Hitter</InputLabel>
-            <Select
-              labelId="bb-hitter-label"
-              id="bb-hitter"
-              value={selectedHitter || ''}
-              label="Hitter"
-              onChange={(e) => setSelectedHitter(e.target.value)}
-              MenuProps={{ disableScrollLock: true }}
-            >
-              {hitterList.map((name) => (
-                <MenuItem key={name} value={name}>{name}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+        <div className="col-span-12 lg:col-span-4">
+          <GradesTiles
+            rawPower={grades.rawPower}
+            impact={grades.impact}
+            gamePower={grades.gamePower}
+          />
         </div>
 
-        {/* Content grid: three columns per mockup */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Left column: Summary */}
-          <div className="flex flex-col gap-4">
-            <HitterSummary events={reportEvents} title="SUMMARY" />
-          </div>
-
-          {/* Middle column: Scouting Grades */}
-          <div className="flex flex-col gap-4">
-            <HitterGrades events={reportEvents} title="SCOUTING GRADES (PRESENT)" />
-          </div>
-
-          {/* Right column: Scouting Summary */}
-          <div className="flex flex-col gap-4">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 h-full">
-              <div className="text-sm font-semibold mb-2">SCOUTING SUMMARY</div>
-              <HitterScoutingCard
-                events={reportEvents}
-                logsCount={logsCount}
-                bipCount={bipCount}
-                hitterName={selectedHitter}
-                title=""
-              />
-            </div>
-          </div>
+        <div className="col-span-12 lg:col-span-4">
+          <ScoutingBlurb text={scoutingText} />
         </div>
 
-        {/* Full width: Top Batted Balls */}
-        <div className="mt-4">
-          <TopBattedBalls events={reportEvents} title="Top Batted Balls (By EV)" limit={5} />
+        <div className="col-span-12">
+          <TopBattedBallsTable rows={topBattedBalls} />
         </div>
       </div>
-    </Box>
+    </div>
   );
 }
 
