@@ -9,10 +9,9 @@ import { isBIP } from '../lib/hitLogUtils';
 import BattedBallMixChart from '../components/BattedBallMixChart';
 import './BattedBallProfilePage.css';
 import HitterSummary from '../components/HitterSummary';
-import HitterBlurb from '../components/HitterBlurb';
 import HitterGrades from '../components/HitterGrades';
 import TopBattedBalls from '../components/TopBattedBalls';
-import HitterContextNotes from '../components/HitterContextNotes';
+import HitterScoutingCard from '../components/HitterScoutingCard';
 // ---- end imports ----
 
 // Helpers
@@ -265,16 +264,15 @@ export default function BattedBallProfilePage() {
         </Box>
       )}
 
-      {/* Auto-generated scouting blurb from the same sample */}
+      {/* Unified scouting card (auto blurb + manual notes) */}
       {!scoutingView && (
         <Box sx={{ mt: 1 }}>
-          <HitterBlurb
+          <HitterScoutingCard
             events={chartEvents}
-            title={
-              !isAllHitters
-                ? `Scouting Summary — ${selectedHitter || 'Hitter'}`
-                : 'Scouting Summary — Team'
-            }
+            logsCount={logsCount}
+            bipCount={bipCount}
+            hitterName={selectedHitter}
+            title={!isAllHitters ? `Scouting Summary — ${selectedHitter || 'Hitter'}` : 'Scouting Summary — Team'}
           />
         </Box>
       )}
@@ -303,18 +301,15 @@ export default function BattedBallProfilePage() {
               <HitterGrades events={chartEvents} bipCount={bipCount} />
             </div>
 
-            {/* Right column: Blurb */}
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4" style={{ borderRadius: 16, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', padding: 16 }}>
-              <h3 className="text-sm font-semibold mb-3 opacity-90" style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, opacity: 0.9 }}>Scouting Summary</h3>
-              <HitterBlurb events={chartEvents} logsCount={logsCount} bipCount={bipCount} />
-            </div>
+            {/* Right column: Unified scouting card (auto blurb + manual notes) */}
+            <HitterScoutingCard
+              events={chartEvents}
+              logsCount={logsCount}
+              bipCount={bipCount}
+              hitterName={selectedHitter}
+              title={!isAllHitters ? `Scouting Summary — ${selectedHitter || 'Hitter'}` : 'Scouting Summary — Team'}
+            />
 
-            {/* Full width: Top Batted Balls */}
-            {/* Manual scouting context (speed/defense/arm/build/overall) */}
-            <div className="md:col-span-2 rounded-2xl border border-white/10 bg-white/5 p-4" style={{ gridColumn: '1 / -1', borderRadius: 16, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', padding: 16 }}>
-              <HitterContextNotes hitterName={headerTitle} />
-            </div>
-            
             {/* Full width: Top Batted Balls */}
             <div className="md:col-span-2 rounded-2xl border border-white/10 bg-white/5 p-4" style={{ gridColumn: '1 / -1', borderRadius: 16, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', padding: 16 }}>
               <h3 className="text-sm font-semibold mb-3 opacity-90" style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, opacity: 0.9 }}>Top Batted Balls (by EV)</h3>
