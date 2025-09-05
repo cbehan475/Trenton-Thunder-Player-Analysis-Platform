@@ -4,7 +4,8 @@ import React, { useMemo } from "react";
 // Try common field names defensively
 function getEV(e) { return Number(e?.ev ?? e?.EV ?? e?.exitVelo ?? NaN); }
 function getLA(e) { return Number(e?.la ?? e?.LA ?? e?.launchAngle ?? NaN); }
-function getDate(e) { return e?.date ?? e?.gameDate ?? e?.timestamp ?? ""; }
+// no date column; keep extractor in case you want it later
+function getDate(e) { return ""; }
 function getResult(e) {
   return (
     e?.result ??
@@ -19,7 +20,7 @@ export default function TopBattedBalls({ events = [], title = "Top Batted Balls"
   const rows = useMemo(() => {
     if (!Array.isArray(events)) return [];
     const bips = events
-      .map((e) => ({ e, ev: getEV(e), la: getLA(e), date: getDate(e), result: getResult(e) }))
+      .map((e) => ({ e, ev: getEV(e), la: getLA(e), result: getResult(e) }))
       .filter((r) => Number.isFinite(r.ev) && Number.isFinite(r.la));
     bips.sort((a, b) => b.ev - a.ev);
     return bips.slice(0, limit);
@@ -38,7 +39,6 @@ export default function TopBattedBalls({ events = [], title = "Top Batted Balls"
                 <th className="py-1 pr-3">EV (mph)</th>
                 <th className="py-1 pr-3">LA (°)</th>
                 <th className="py-1 pr-3">Result</th>
-                <th className="py-1">Date</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
@@ -47,7 +47,6 @@ export default function TopBattedBalls({ events = [], title = "Top Batted Balls"
                   <td className="py-2 pr-3 tabular-nums">{r.ev.toFixed(1)}</td>
                   <td className="py-2 pr-3 tabular-nums">{r.la.toFixed(1)}</td>
                   <td className="py-2 pr-3">{r.result || "—"}</td>
-                  <td className="py-2">{r.date ? String(r.date).slice(0,10) : "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -57,3 +56,4 @@ export default function TopBattedBalls({ events = [], title = "Top Batted Balls"
     </div>
   );
 }
+
