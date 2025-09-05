@@ -189,7 +189,7 @@ export default function BattedBallProfilePage() {
     <Box className="pageBattedBall" sx={{ width: '100%', minHeight: '100vh', py: isMobile ? 2 : 5 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: isMobile ? 2 : 3 }}>
         <Typography component="h1" align="left" sx={{ color: 'var(--color-gold)', fontWeight: 800, letterSpacing: 0.5 }}>
-          {`Batted Ball Metrics — ${headerTitle}`}
+          {`Hitter Reports — ${headerTitle}`}
         </Typography>
         <div className="flex items-center" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <label className="text-xs opacity-80" style={{ fontSize: 12, opacity: 0.8, marginRight: 6 }}>Scouting View</label>

@@ -20,7 +20,6 @@ import PitchingMLBBenchmarks from './pages/PitchingMLBBenchmarks';
 import PitcherReportsPage from './pages/PitcherReportsPage';
 import ArsenalsPage from './pages/ArsenalsPage';
 import HittingPerformancePage from './pages/HittingPerformancePage';
-import HittingReportsPage from './pages/HittingReportsPage';
 import BattedBallProfilePage from './pages/BattedBallProfilePage';
 import HittingMLBBenchmarksPage from './pages/HittingMLBBenchmarksPage';
 import { Navigate } from 'react-router-dom';
@@ -201,7 +200,8 @@ export default function App() {
         <Route path="/pitching/pitch-control-movement" element={<Navigate to="/pitching/mlb-benchmarks" replace />} />
         <Route path="/pitching/mlb-benchmarks" element={<PitchingMLBBenchmarks />} />
         <Route path="/pitching/reports" element={<PitcherReportsPage />} />
-        <Route path="/hitting/reports" element={<HittingReportsPage />} />
+        {/* redirect any old links to the unified page */}
+        <Route path="/hitting/reports" element={<Navigate to="/hitting/batted-ball" replace />} />
 
         {/* Hitting */}
         <Route path="/hitting/logs" element={<HittingLogsPage />} />
