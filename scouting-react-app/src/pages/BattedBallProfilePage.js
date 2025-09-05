@@ -10,6 +10,8 @@ import BattedBallMixChart from '../components/BattedBallMixChart';
 import './BattedBallProfilePage.css';
 import HitterSummary from '../components/HitterSummary';
 import HitterBlurb from '../components/HitterBlurb';
+import HitterGrades from '../components/HitterGrades';
+import TopBattedBalls from '../components/TopBattedBalls';
 // ---- end imports ----
 
 // Helpers
@@ -68,6 +70,7 @@ export default function BattedBallProfilePage() {
   const isAllHitters = tab === 'all';
   const [hitterMenuOpen, setHitterMenuOpen] = useState(false);
   const [selectedHitter, setSelectedHitter] = useState(null); // null means 'All'
+  const [scoutingView, setScoutingView] = useState(true);
   useEffect(() => {
     // If selected hitter is no longer in range, clear to All (null)
     if (selectedHitter && !hitterList.includes(selectedHitter)) {
@@ -86,13 +89,27 @@ export default function BattedBallProfilePage() {
   const perMapAll = useMemo(() => computeBattedBallMetrics(filteredEvents, { dateRange: [startDate, endDate] }), [filteredEvents, startDate, endDate]);
   const perMapSelected = useMemo(() => computeBattedBallMetrics(filteredEvents, { dateRange: [startDate, endDate], hitter: selectedHitter || undefined }), [filteredEvents, startDate, endDate, selectedHitter]);
 
+  // Robust per-hitter match (by normalized name)
+  const matchSelected = React.useCallback(
+    (e) => {
+      if (!selectedHitter) return true; // 'All' or when tab is 'all'
+      const en = normLower(e?.hitter || e?.batter_name || e?.batterName || e?.playerName || e?.hitterName || e?.name || '');
+      const sn = normLower(selectedHitter || '');
+      return !!sn && sn === en;
+    },
+    [selectedHitter]
+  );
+
   // Events for chart (respect date range and per-hitter toggle), BIP-only
   const chartEvents = useMemo(() => {
     const pool = Array.isArray(filteredEvents) ? filteredEvents : [];
-    const sliced = isAllHitters ? pool : pool.filter((e) => (selectedHitter ? e.hitter === selectedHitter : true));
+    const sliced = isAllHitters ? pool : pool.filter(matchSelected);
     return sliced.filter((e) => isBIP(e.result));
-  }, [filteredEvents, isAllHitters, selectedHitter]);
+  }, [filteredEvents, isAllHitters, matchSelected]);
   const bipCount = chartEvents.length;
+
+  // simple derived counters for headers
+  const logsCount = Array.isArray(filteredEvents) ? filteredEvents.filter(matchSelected).length : 0;
 
   // Team baseline (same window) for toggle comparison
   const teamEvents = useMemo(() => {
@@ -166,11 +183,19 @@ export default function BattedBallProfilePage() {
     URL.revokeObjectURL(url);
   };
 
+  const headerTitle = isAllHitters ? 'All Hitters' : (selectedHitter || 'Hitter');
+
   return (
     <Box className="pageBattedBall" sx={{ width: '100%', minHeight: '100vh', py: isMobile ? 2 : 5 }}>
-      <Typography component="h1" align="center" sx={{ color: 'var(--color-gold)', fontWeight: 800, mb: isMobile ? 2 : 3, letterSpacing: 0.5 }}>
-        Batted Ball Metrics
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: isMobile ? 2 : 3 }}>
+        <Typography component="h1" align="left" sx={{ color: 'var(--color-gold)', fontWeight: 800, letterSpacing: 0.5 }}>
+          {`Batted Ball Metrics — ${headerTitle}`}
+        </Typography>
+        <div className="flex items-center" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <label className="text-xs opacity-80" style={{ fontSize: 12, opacity: 0.8, marginRight: 6 }}>Scouting View</label>
+          <input type="checkbox" checked={scoutingView} onChange={(e) => setScoutingView(e.target.checked)} />
+        </div>
+      </Box>
 
       {/* Controls bar */}
       <Box className="bb-controls" role="region" aria-label="Filters">
@@ -226,28 +251,32 @@ export default function BattedBallProfilePage() {
       </div>
 
       {/* Compact Hitter Summary (defensive, same filtered BIP events) */}
-      <Box sx={{ my: 1 }}>
-        <HitterSummary
-          events={chartEvents}
-          title={
-            !isAllHitters
-              ? `Hitter Report — ${selectedHitter || 'Hitter'}`
-              : 'Hitter Report — Team'
-          }
-        />
-      </Box>
+      {!scoutingView && (
+        <Box sx={{ my: 1 }}>
+          <HitterSummary
+            events={chartEvents}
+            title={
+              !isAllHitters
+                ? `Hitter Report — ${selectedHitter || 'Hitter'}`
+                : 'Hitter Report — Team'
+            }
+          />
+        </Box>
+      )}
 
       {/* Auto-generated scouting blurb from the same sample */}
-      <Box sx={{ mt: 1 }}>
-        <HitterBlurb
-          events={chartEvents}
-          title={
-            !isAllHitters
-              ? `Scouting Summary — ${selectedHitter || 'Hitter'}`
-              : 'Scouting Summary — Team'
-          }
-        />
-      </Box>
+      {!scoutingView && (
+        <Box sx={{ mt: 1 }}>
+          <HitterBlurb
+            events={chartEvents}
+            title={
+              !isAllHitters
+                ? `Scouting Summary — ${selectedHitter || 'Hitter'}`
+                : 'Scouting Summary — Team'
+            }
+          />
+        </Box>
+      )}
 
       {/* Mix chart */}
       <Box sx={{ my: 2 }}>
@@ -263,8 +292,33 @@ export default function BattedBallProfilePage() {
         />
       </Box>
 
+      {/* Scouting panels under the chart */}
+      {scoutingView && (
+        <div className="mt-4" style={{ marginTop: 16 }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
+            {/* Left column: Summary/Grades */}
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4" style={{ borderRadius: 16, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', padding: 16 }}>
+              <h3 className="text-sm font-semibold mb-3 opacity-90" style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, opacity: 0.9 }}>Scouting Grades (Present)</h3>
+              <HitterGrades events={chartEvents} bipCount={bipCount} />
+            </div>
+
+            {/* Right column: Blurb */}
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4" style={{ borderRadius: 16, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', padding: 16 }}>
+              <h3 className="text-sm font-semibold mb-3 opacity-90" style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, opacity: 0.9 }}>Scouting Summary</h3>
+              <HitterBlurb events={chartEvents} logsCount={logsCount} bipCount={bipCount} />
+            </div>
+
+            {/* Full width: Top Batted Balls */}
+            <div className="md:col-span-2 rounded-2xl border border-white/10 bg-white/5 p-4" style={{ gridColumn: '1 / -1', borderRadius: 16, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', padding: 16 }}>
+              <h3 className="text-sm font-semibold mb-3 opacity-90" style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, opacity: 0.9 }}>Top Batted Balls (by EV)</h3>
+              <TopBattedBalls events={chartEvents} limit={5} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Summary for Per Hitter */}
-      {tab === 'per' && (
+      {tab === 'per' && !scoutingView && (
         <div className="bb-summary" aria-live="polite">
           <span className="bb-pill"><span className="label">BIP</span><span className="value">{showInt(selectedMetrics?.BIP ?? 0)}</span></span>
           <span className="bb-pill"><span className="label">Avg EV</span><span className="value">{showNum1(selectedMetrics?.avgEV)}</span></span>
@@ -347,3 +401,4 @@ export default function BattedBallProfilePage() {
     </Box>
   );
 }
+
