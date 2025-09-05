@@ -6,6 +6,7 @@ import HitterSummary from '../components/HitterSummary.jsx';
 import HitterBlurb from '../components/HitterBlurb.jsx';
 import TopBattedBalls from '../components/TopBattedBalls.jsx';
 import { isBIP } from '../lib/hitLogUtils.js';
+import HitterGrades from '../components/HitterGrades.jsx';
 
 export default function HitterReportsPage() {
   const [names, setNames] = useState([]);
@@ -136,6 +137,10 @@ export default function HitterReportsPage() {
             <HitterSummary
               events={reportEvents}
               title="Summary (Avg EV, Avg LA, HH%)"
+            />
+            <HitterGrades
+              events={reportEvents}
+              title="Scouting Grades (Present)"
             />
           </div>
 
