@@ -1,5 +1,5 @@
 // src/pages/HittingReportsPage.js
-import React, { useMemo, useRef } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import HitterSummary from "../components/HitterSummary.jsx";
 import HitterGrades from "../components/HitterGrades.jsx";
 import HitterBlurb from "../components/HitterBlurb.jsx";
@@ -13,26 +13,76 @@ import { computeBattedBallMix } from "../utils/battedBall.js";
 import { computeHitterGrades } from "../utils/grades.js";
 // Reuse shared select used elsewhere in the app
 import AppSelect from "../components/ui/AppSelect.jsx";
+// Build events from by-date logs like other hitting pages
+import HITTERS_BY_DATE from "../data/logs/hittersByDate";
+import { flattenEventsFromByDateMap } from "../lib/battedBallMetrics";
+
+// --- Helpers to extract id/name from events consistently ---
+function eventHitterId(e) {
+  return (
+    e?.hitterId ?? e?.batterId ?? e?.playerId ?? e?.hitter?.id ?? e?.batter?.id ?? null
+  );
+}
+function eventHitterName(e) {
+  return (
+    e?.batter_name ??
+    e?.batterName ??
+    e?.playerName ??
+    e?.hitterName ??
+    e?.hitter?.name ??
+    e?.batter?.name ??
+    e?.name ??
+    null
+  );
+}
+function asOptionFromEvent(e) {
+  const id = eventHitterId(e);
+  const name = eventHitterName(e);
+  const label = name || (id != null ? String(id) : "Unknown");
+  const value = id != null ? String(id) : String(label).toLowerCase();
+  return { id, name: label, label, value };
+}
+function asAllOption() {
+  return { id: "ALL", name: "All Hitters", label: "All Hitters", value: "__ALL__" };
+}
 
 export default function HittingReportsPage() {
+  // Build base events once (full season scope)
+  const allEvents = useMemo(() => flattenEventsFromByDateMap(HITTERS_BY_DATE), []);
+  const filteredEvents = allEvents; // future: wire date/team filters if needed
+
+  // Local state: per-hitter toggle + selection object { id?, name? }
+  const [perHitter, setPerHitter] = useState(false);
+  const [selectedHitter, setSelectedHitter] = useState(null); // { id?, name? } | null
+
+  // Build options from the events in-range (so names exist); include "All Hitters"
+  const hitterOptions = useMemo(() => {
+    const evs = Array.isArray(filteredEvents) ? filteredEvents : [];
+    const map = new Map(); // key -> option
+    for (const e of evs) {
+      const opt = asOptionFromEvent(e);
+      const key = opt.id != null ? `id:${opt.id}` : `name:${opt.value}`;
+      if (!map.has(key)) map.set(key, opt);
+    }
+    const list = Array.from(map.values()).sort((a, b) =>
+      a.label.localeCompare(b.label, undefined, { sensitivity: "base" })
+    );
+    return [asAllOption(), ...list];
+  }, [filteredEvents]);
+
+  // Build a lookup map for quick value->option resolution
+  const optionByValue = useMemo(() => {
+    const m = new Map();
+    for (const o of hitterOptions) m.set(String(o.value), o);
+    return m;
+  }, [hitterOptions]);
+
   const {
     hitterName,
-    reportEvents,
     logsCount,
     bipCount,
-    // state for hitter selection mirrored from Batted Ball logic via hook
-    selectedHitter,
-    setSelectedHitter,
-    hitterList,
-    tab,
-    setTab,
-  } = useHittingReportData();
-
-  // Build options with an "All Hitters" choice first
-  const hitterOptions = useMemo(() => {
-    const base = Array.isArray(hitterList) ? hitterList : [];
-    return [{ label: "All Hitters", value: "__ALL__" }, ...base.map((n) => ({ label: n, value: n }))];
-  }, [hitterList]);
+    reportEvents,
+  } = useHittingReportData({ selectedHitter, perHitter, filteredEvents });
 
   // Build a shareable/exportable snapshot of the current report window
   const snapshot = useMemo(() => {
@@ -61,11 +111,18 @@ export default function HittingReportsPage() {
     const val = e?.target?.value;
     if (!val || val === "__ALL__") {
       setSelectedHitter(null);
-      setTab("all");
+      setPerHitter(false);
       return;
     }
-    setSelectedHitter(val);
-    if (tab !== "per") setTab("per");
+    const picked = optionByValue.get(String(val));
+    if (picked) {
+      setSelectedHitter({ id: picked.id ?? null, name: picked.name ?? picked.label ?? "" });
+      if (!perHitter) setPerHitter(true);
+      return;
+    }
+    // Fallback: treat as name string
+    setSelectedHitter({ id: null, name: String(val) });
+    if (!perHitter) setPerHitter(true);
   }
 
   function handleDownloadJSON() {
@@ -96,7 +153,15 @@ export default function HittingReportsPage() {
             <div style={{ minWidth: 260 }}>
               <AppSelect
                 id="reports-hitter"
-                value={selectedHitter ?? "__ALL__"}
+                value={
+                  perHitter
+                    ? (selectedHitter
+                        ? (selectedHitter.id != null
+                            ? String(selectedHitter.id)
+                            : String(selectedHitter.name ?? "").toLowerCase())
+                        : "__ALL__")
+                    : "__ALL__"
+                }
                 onChange={handlePick}
                 options={hitterOptions}
                 label=""
