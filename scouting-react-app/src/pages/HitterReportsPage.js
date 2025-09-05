@@ -80,56 +80,64 @@ export default function HitterReportsPage() {
   const bipCount = reportEvents.length;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-4">
-      {/* Page title and chips */}
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <div className="text-2xl font-semibold tracking-tight">
-          Hitter Reports — {hitterName}
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-slate-100">
+      <div className="mx-auto max-w-6xl px-4 py-5">
+        {/* HEADER */}
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-semibold tracking-tight">{hitterName}</h1>
+            <div className="hidden md:flex items-center gap-2 text-xs">
+              <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1">Logs: {logsCount}</span>
+              <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1">BIP: {bipCount}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-xs">
+            {/* mirror pitcher page actions (no-ops for now) */}
+            <button className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5">Save</button>
+            <button className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5">Download JSON</button>
+            <button className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5">Import JSON</button>
+            <button className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5">Export PDF</button>
+          </div>
         </div>
-        <div className="flex items-center gap-2 text-xs">
-          <span className="rounded-full border border-white/15 px-2 py-1">Logs: {logsCount}</span>
-          <span className="rounded-full border border-white/15 px-2 py-1">BIP: {bipCount}</span>
-        </div>
-      </div>
 
-      {/* dropdown */}
-      <div className="mb-4">
-        <label htmlFor="hitterSelect" className="mr-2 text-sm font-semibold">Select Hitter:</label>
-        <AppSelect
-          id="hitterSelect"
-          value={selected}
-          onChange={(e) => setSelected(e.target.value)}
-          options={names}
-          label=""
-          formSx={{ minWidth: 260 }}
-        />
-      </div>
-
-      {/* Grid layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Left column: key numbers */}
-        <div className="flex flex-col gap-4">
-          <HitterSummary
-            events={reportEvents}
-            title="Summary (Avg EV, Avg LA, HH%)"
-          />
-          <HitterGrades
-            events={reportEvents}
-            title="Scouting Grades (Present)"
+        {/* dropdown */}
+        <div className="mb-4">
+          <label htmlFor="hitterSelect" className="mr-2 text-sm font-semibold">Select Hitter:</label>
+          <AppSelect
+            id="hitterSelect"
+            value={selected}
+            onChange={(e) => setSelected(e.target.value)}
+            options={names}
+            label=""
+            formSx={{ minWidth: 260 }}
           />
         </div>
 
-        {/* Right column: narrative + top batted balls */}
-        <div className="flex flex-col gap-4">
-          <HitterBlurb
-            events={reportEvents}
-            title="Scouting Summary"
-          />
-          <TopBattedBalls
-            events={reportEvents}
-            title="Top Batted Balls (by EV)"
-            limit={5}
-          />
+        {/* GRID */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* LEFT: numbers */}
+          <div className="flex flex-col gap-4">
+            <HitterSummary
+              events={reportEvents}
+              title="Summary (Avg EV, Avg LA, HH%)"
+            />
+            <HitterGrades
+              events={reportEvents}
+              title="Scouting Grades (Present)"
+            />
+          </div>
+          {/* RIGHT: words + examples */}
+          <div className="flex flex-col gap-4">
+            <HitterBlurb
+              events={reportEvents}
+              title="Scouting Summary"
+            />
+            <TopBattedBalls
+              events={reportEvents}
+              title="Top Batted Balls (by EV)"
+              limit={5}
+            />
+          </div>
         </div>
       </div>
     </div>
