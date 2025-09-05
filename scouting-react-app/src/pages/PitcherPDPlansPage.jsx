@@ -3,7 +3,7 @@ import {
   Box, Typography, Divider, Grid, Card, CardContent, TextField,
   MenuItem, Button, LinearProgress, Chip, Stack, Paper
 } from '@mui/material';
-import { summarizeUsageAndShape, listPitchers } from '../utils/pitchingLogsAdapter';
+import { summarizeUsageAndShape, listPitchers, summarizeCommandAndMiss } from '../utils/pitchingLogsAdapter';
 
 /**
  * Data adapter:
@@ -101,6 +101,7 @@ export default function PitcherPDPlansPage() {
   const [allPitchers, setAllPitchers] = useState([]);
   const [pitcher, setPitcher] = useState(qp.get() || "Jude Abbadessa");
   const [agg, setAgg] = useState({ usage: [], ivbHb: [], totalPitches: 0, hasData: false, loading: true });
+  const [cmd, setCmd] = useState({ gridPct: [[0,0,0],[0,0,0],[0,0,0]], miss: {up:0,down:0,glove:0,arm:0,sample:0}, hasData:false, inGrid:0, loading:true });
   const data = usePDData(pitcher);
 
   useEffect(() => {
@@ -129,12 +130,17 @@ export default function PitcherPDPlansPage() {
         setAgg(a => ({ ...a, loading: true }));
         const s = summarizeUsageAndShape(pitcher) || { usage: [], ivbHb: [], totalPitches: 0, hasData: false };
         setAgg({ ...s, loading: false });
+        setCmd(c => ({ ...c, loading: true }));
+        const csum = summarizeCommandAndMiss(pitcher) || { gridPct: [[0,0,0],[0,0,0],[0,0,0]], miss:{up:0,down:0,glove:0,arm:0,sample:0}, hasData:false, inGrid:0 };
+        setCmd({ ...csum, loading: false });
       } catch (e) {
         console.error('Failed to summarize logs:', e);
         setAgg({ usage: [], ivbHb: [], totalPitches: 0, hasData: false, loading: false });
+        setCmd({ gridPct: [[0,0,0],[0,0,0],[0,0,0]], miss:{up:0,down:0,glove:0,arm:0,sample:0}, hasData:false, inGrid:0, loading:false });
       }
     } else {
       setAgg({ usage: [], ivbHb: [], totalPitches: 0, hasData: false, loading: false });
+      setCmd({ gridPct: [[0,0,0],[0,0,0],[0,0,0]], miss:{up:0,down:0,glove:0,arm:0,sample:0}, hasData:false, inGrid:0, loading:false });
     }
   }, [pitcher]);
 
@@ -208,21 +214,42 @@ export default function PitcherPDPlansPage() {
         )}
       </Section>
 
-      {/* Command & miss pattern: simple 3x3 style grid */}
+      {/* Command & miss pattern: 3x3 grid + miss chips */}
       <Section title="Command & Miss Pattern">
-        <Typography variant="body2" sx={{ mb: 1, opacity: 0.8 }}>
-          Heuristic view of typical misses (to be replaced with game log zones).
-        </Typography>
-        <Grid container spacing={1}>
-          {data.commandNotes.map((c) => (
-            <Grid item xs={6} sm={4} md={2.4} key={c.label}>
-              <Paper sx={{ p: 1.5, textAlign: 'center' }}>
-                <Typography variant="body2" sx={{ fontWeight: 700 }}>{c.label}</Typography>
-                <Typography variant="body2">{c.val}%</Typography>
-              </Paper>
+        {cmd.loading ? (
+          <Typography variant="body2">Building zone map…</Typography>
+        ) : cmd.hasData ? (
+          <>
+            <Grid container spacing={1} sx={{ mb: 1 }}>
+              {cmd.gridPct.map((row, rIdx) => (
+                <Grid item xs={12} key={rIdx}>
+                  <Grid container spacing={1}>
+                    {row.map((val, cIdx) => (
+                      <Grid item xs={4} key={cIdx}>
+                        <Paper sx={{ p: 1.5, textAlign: 'center' }}>
+                          <Typography variant="h6" sx={{ fontWeight: 700 }}>{val}%</Typography>
+                          <Typography variant="caption" sx={{ opacity: 0.7 }}>zone {rIdx*3 + cIdx + 1}</Typography>
+                        </Paper>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Grid>
+              ))}
             </Grid>
-          ))}
-        </Grid>
+            <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+              <Chip label={`Up ${cmd.miss.up}%`} />
+              <Chip label={`Down ${cmd.miss.down}%`} />
+              <Chip label={`Glove ${cmd.miss.glove}%`} />
+              <Chip label={`Arm ${cmd.miss.arm}%`} />
+              <Chip label={`Samples ${cmd.miss.sample}`} variant="outlined" />
+            </Stack>
+            <Typography variant="caption" sx={{ mt: 1, display: 'block', opacity: 0.7 }}>
+              Note: Arm/Glove estimated via horizontal sign; improves with handedness.
+            </Typography>
+          </>
+        ) : (
+          <Typography variant="body2">No location/zone data found for this pitcher yet.</Typography>
+        )}
       </Section>
 
       {/* Intervention plan */}

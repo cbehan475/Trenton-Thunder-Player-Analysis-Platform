@@ -105,6 +105,9 @@ export function loadAllPitchingLogs() {
 
       const ivb = coerceNum(pluck(r, ['ivb', 'IVB', 'inducedVerticalBreak', 'verticalBreak', 'vb']));
       const hb  = coerceNum(pluck(r, ['hb', 'HB', 'horizontalBreak', 'hbreak', 'hbearing', 'hbearingIn']));
+      const px  = coerceNum(pluck(r, ['px', 'plate_x', 'x']));
+      const pz  = coerceNum(pluck(r, ['pz', 'plate_z', 'z']));
+      const zoneVal = coerceNum(pluck(r, ['zone', 'Zone']));
 
       rows.push({
         date: r.__dateGuess || null,
@@ -113,6 +116,9 @@ export function loadAllPitchingLogs() {
         pitchType,
         ivb,
         hb,
+        px: px ?? null,
+        pz: pz ?? null,
+        zone: Number.isFinite(zoneVal) ? Math.round(zoneVal) : null,
       });
     }
   });
@@ -183,4 +189,76 @@ export function summarizeUsageAndShape(pitcherName) {
   ivbHb.sort((a,b)=> idx(a)-idx(b));
 
   return { usage, ivbHb, totalPitches: rows.length, hasData: rows.length > 0 };
+}
+
+// --- Command & Miss Pattern ---
+// Accepts multiple shapes your logs might use:
+//  - zone: 1..9 (classic 3×3), or 0/10+ for out of zone (ignored in grid)
+//  - px/pz OR plate_x/plate_z OR x/z numeric locations (feet)
+// We approximate Arm/Glove using px sign (positive=glove, negative=arm) — good enough without handedness fields.
+function num(v) { const n = typeof v === 'string' ? parseFloat(v) : v; return Number.isFinite(n) ? n : null; }
+function getPx(obj) { return num(obj.px ?? obj.plate_x ?? obj.x); }
+function getPz(obj) { return num(obj.pz ?? obj.plate_z ?? obj.z); }
+function getZone(obj) { const z = num(obj.zone ?? obj.Zone); return Number.isInteger(z) ? z : null; }
+
+// Map px/pz to a 3x3 bin index (row 0..2 top->bottom, col 0..2 left->right from catcher view)
+// Bounds chosen to be reasonable defaults; adjust if your data uses different scales.
+const X_BOUNDS = [-0.85, -0.28, 0.28, 0.85];
+const Z_BOUNDS = [  3.50,  2.70, 2.30, 1.50]; // top->bottom
+function binFromPxPz(px, pz) {
+  if (px == null || pz == null) return null;
+  const col = px < X_BOUNDS[1] ? 0 : px <= X_BOUNDS[2] ? 1 : 2;
+  const row = pz > Z_BOUNDS[1] ? 0 : pz >= Z_BOUNDS[2] ? 1 : 2;
+  return { row, col };
+}
+
+// Map 1..9 zone codes (1=high in?) into 3x3 indices.
+// We’ll accept the common "1..9 = top-left to bottom-right" mapping:
+// 1 2 3
+// 4 5 6
+// 7 8 9
+function binFromZoneCode(z) {
+  if (!z || z < 1 || z > 9) return null;
+  const row = Math.floor((z - 1) / 3);       // 0..2
+  const col = (z - 1) % 3;                   // 0..2
+  return { row, col };
+}
+
+export function summarizeCommandAndMiss(pitcherName) {
+  const rows = getPitcherRows(pitcherName);
+  const grid = [ [0,0,0], [0,0,0], [0,0,0] ];
+  let totalInGrid = 0;
+  let up=0, down=0, arm=0, glove=0;
+
+  for (const r of rows) {
+    const zc = getZone(r);
+    const px = getPx(r);
+    const pz = getPz(r);
+
+    // 3x3 bin
+    const bin = zc ? binFromZoneCode(zc) : binFromPxPz(px, pz);
+    if (bin) {
+      grid[bin.row][bin.col] += 1;
+      totalInGrid += 1;
+    }
+    // Miss summary (approx): Up/Down via pz; Arm/Glove via px
+    if (pz != null) {
+      if (pz > 2.7) up++; else if (pz < 2.3) down++;
+    }
+    if (px != null) {
+      if (px > 0) glove++; else if (px < 0) arm++;
+    }
+  }
+
+  const pct = (n, d) => d ? Math.round((n / d) * 100) : 0;
+  // Normalize grid to percents (of pitches that landed in 1..9 or computed bins)
+  const gridPct = grid.map(row => row.map(n => pct(n, totalInGrid)));
+  const miss = {
+    up: pct(up, up+down || 1),
+    down: pct(down, up+down || 1),
+    glove: pct(glove, glove+arm || 1),
+    arm: pct(arm, glove+arm || 1),
+    sample: rows.length,
+  };
+  return { gridPct, miss, hasData: rows.length > 0, inGrid: totalInGrid };
 }
