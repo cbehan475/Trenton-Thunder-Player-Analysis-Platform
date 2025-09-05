@@ -4,9 +4,9 @@ import { computeHitterSummary } from "../utils/hitterMetrics";
 
 function StatTile({ label, value, unit }) {
   return (
-    <div className="flex-1 rounded-xl border border-white/10 p-3">
-      <div className="text-xs opacity-70">{label}</div>
-      <div className="text-2xl font-semibold">
+    <div className="flex-1 rounded-xl border border-white/10 bg-white/5 p-3">
+      <div className="text-[11px] opacity-70">{label}</div>
+      <div className="text-2xl font-semibold tabular-nums tracking-tight">
         {value}{unit ? <span className="text-sm opacity-70 ml-1">{unit}</span> : null}
       </div>
     </div>
@@ -20,9 +20,9 @@ export default function HitterSummary({ events = [], title = "Hitter Report" }) 
   );
 
   return (
-    <div className="w-full rounded-2xl border border-white/10 p-3">
-      <div className="mb-2 text-sm font-semibold">{title}</div>
-      <div className="flex gap-3">
+    <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-4">
+      <div className="mb-2 text-sm font-semibold tracking-tight">{title}</div>
+      <div className="grid grid-cols-3 gap-3">
         <StatTile label="Avg EV" value={avgEV} unit="mph" />
         <StatTile label="Avg LA" value={avgLA} unit="°" />
         <StatTile label="Hard-Hit%" value={hhPct} unit="%" />

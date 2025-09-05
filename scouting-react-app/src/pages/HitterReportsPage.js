@@ -75,87 +75,61 @@ export default function HitterReportsPage() {
 
   // Build the BIP-only set for this window
   const reportEvents = Array.isArray(entries) ? entries.filter((e) => isBIP(e?.result)) : [];
+  const hitterName = selected || 'Hitter';
+  const logsCount = Array.isArray(entries) ? entries.length : 0;
+  const bipCount = reportEvents.length;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg,#0e2d56,#0b4a8f 55%,#0b67c7)', padding: '48px 24px' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <h1 style={{ color: '#FFD600', fontWeight: 900, letterSpacing: 0.5, marginBottom: 8 }}>
-          Hitter Reports
-        </h1>
-
-        {/* badge with stats */}
-        <div style={{ display: 'inline-flex', gap: 8, alignItems: 'center', marginBottom: 16 }}>
-          <span style={{ background: '#FFD600', color: '#23272F', fontWeight: 800, borderRadius: 999, padding: '4px 10px', fontSize: 12 }}>
-            Logs: {stats.files}
-          </span>
-          <span style={{ background: 'rgba(0,0,0,0.3)', color: '#E9EEFF', fontWeight: 700, borderRadius: 999, padding: '4px 10px', fontSize: 12 }}>
-            Entries: {stats.entries}
-          </span>
+    <div className="mx-auto max-w-6xl px-4 py-4">
+      {/* Page title and chips */}
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <div className="text-2xl font-semibold tracking-tight">
+          Hitter Reports — {hitterName}
         </div>
+        <div className="flex items-center gap-2 text-xs">
+          <span className="rounded-full border border-white/15 px-2 py-1">Logs: {logsCount}</span>
+          <span className="rounded-full border border-white/15 px-2 py-1">BIP: {bipCount}</span>
+        </div>
+      </div>
 
-        {/* dropdown */}
-        <div style={{ margin: '12px 0 20px' }}>
-          <label htmlFor="hitterSelect" style={{ color: '#E9EEFF', fontWeight: 700, marginRight: 10 }}>Select Hitter:</label>
-          <AppSelect
-            id="hitterSelect"
-            value={selected}
-            onChange={(e) => setSelected(e.target.value)}
-            options={names}
-            label=""
-            formSx={{ minWidth: 260 }}
+      {/* dropdown */}
+      <div className="mb-4">
+        <label htmlFor="hitterSelect" className="mr-2 text-sm font-semibold">Select Hitter:</label>
+        <AppSelect
+          id="hitterSelect"
+          value={selected}
+          onChange={(e) => setSelected(e.target.value)}
+          options={names}
+          label=""
+          formSx={{ minWidth: 260 }}
+        />
+      </div>
+
+      {/* Grid layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Left column: key numbers */}
+        <div className="flex flex-col gap-4">
+          <HitterSummary
+            events={reportEvents}
+            title="Summary (Avg EV, Avg LA, HH%)"
+          />
+          <HitterGrades
+            events={reportEvents}
+            title="Scouting Grades (Present)"
           />
         </div>
 
-        {/* Header with name and counts plus action buttons */}
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <div className="text-xl font-semibold" style={{ color: '#E9EEFF' }}>
-            Hitter Reports — {selected || 'Hitter'}
-            <span className="ml-2 align-middle text-xs opacity-70">
-              {' '}Logs: {Array.isArray(entries) ? entries.length : 0} • BIP: {reportEvents.length}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => copyToClipboard(reportText)}
-              style={{ padding: '8px 10px', borderRadius: 8, background: '#184d8a', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer' }}
-            >
-              Copy report
-            </button>
-            <button
-              onClick={() => downloadTxt(`${(selected||'hitter').replace(/\s+/g,'_')}_hitter_report.txt`, reportText)}
-              style={{ padding: '8px 10px', borderRadius: 8, background: '#0a7f3f', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer' }}
-            >
-              Download .txt
-            </button>
-          </div>
-        </div>
-
-        {/* Grid layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {/* Left column: key numbers */}
-          <div className="flex flex-col gap-3">
-            <HitterSummary
-              events={reportEvents}
-              title="Summary (Avg EV, Avg LA, HH%)"
-            />
-            <HitterGrades
-              events={reportEvents}
-              title="Scouting Grades (Present)"
-            />
-          </div>
-
-          {/* Right column: narrative + top batted balls */}
-          <div className="flex flex-col gap-3">
-            <HitterBlurb
-              events={reportEvents}
-              title="Scouting Summary"
-            />
-            <TopBattedBalls
-              events={reportEvents}
-              title="Top Batted Balls (by EV)"
-              limit={5}
-            />
-          </div>
+        {/* Right column: narrative + top batted balls */}
+        <div className="flex flex-col gap-4">
+          <HitterBlurb
+            events={reportEvents}
+            title="Scouting Summary"
+          />
+          <TopBattedBalls
+            events={reportEvents}
+            title="Top Batted Balls (by EV)"
+            limit={5}
+          />
         </div>
       </div>
     </div>
