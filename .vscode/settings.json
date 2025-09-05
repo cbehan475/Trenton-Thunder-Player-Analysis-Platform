@@ -1,0 +1,10 @@
+{
+  "$schema": "vscode://schemas/settings/default",
+  "css.lint.unknownAtRules": "ignore",
+  "editor.quickSuggestions": {
+    "strings": true
+  },
+  "files.associations": {
+    "*.css": "css"
+  }
+}
