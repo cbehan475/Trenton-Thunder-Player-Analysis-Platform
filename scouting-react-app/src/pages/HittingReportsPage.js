@@ -4,15 +4,10 @@ import HitterSummary from "../components/HitterSummary.jsx";
 import HitterGrades from "../components/HitterGrades.jsx";
 import HitterBlurb from "../components/HitterBlurb.jsx";
 import TopBattedBalls from "../components/TopBattedBalls.jsx";
-import { isBIP } from "../lib/hitLogUtils.js";
+import { useHittingReportData } from "../hooks/useHittingReportData.js";
 
-export default function HittingReportsPage({ selectedHitter, filteredEvents = [] }) {
-  const hitterName = selectedHitter?.name ?? "Hitter";
-  const logsCount = Array.isArray(filteredEvents) ? filteredEvents.length : 0;
-  const reportEvents = Array.isArray(filteredEvents)
-    ? filteredEvents.filter((e) => isBIP(e?.result))
-    : [];
-  const bipCount = reportEvents.length;
+export default function HittingReportsPage() {
+  const { hitterName, reportEvents, logsCount, bipCount } = useHittingReportData();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-slate-100">
