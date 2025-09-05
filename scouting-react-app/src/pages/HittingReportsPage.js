@@ -11,9 +11,28 @@ import "../styles/print.css";
 import { computeHitterSummary } from "../utils/hitterMetrics.js";
 import { computeBattedBallMix } from "../utils/battedBall.js";
 import { computeHitterGrades } from "../utils/grades.js";
+// Reuse shared select used elsewhere in the app
+import AppSelect from "../components/ui/AppSelect.jsx";
 
 export default function HittingReportsPage() {
-  const { hitterName, reportEvents, logsCount, bipCount } = useHittingReportData();
+  const {
+    hitterName,
+    reportEvents,
+    logsCount,
+    bipCount,
+    // state for hitter selection mirrored from Batted Ball logic via hook
+    selectedHitter,
+    setSelectedHitter,
+    hitterList,
+    tab,
+    setTab,
+  } = useHittingReportData();
+
+  // Build options with an "All Hitters" choice first
+  const hitterOptions = useMemo(() => {
+    const base = Array.isArray(hitterList) ? hitterList : [];
+    return [{ label: "All Hitters", value: "__ALL__" }, ...base.map((n) => ({ label: n, value: n }))];
+  }, [hitterList]);
 
   // Build a shareable/exportable snapshot of the current report window
   const snapshot = useMemo(() => {
@@ -36,6 +55,18 @@ export default function HittingReportsPage() {
   }, [reportEvents, hitterName, logsCount, bipCount]);
 
   const blurbRef = useRef(null);
+
+  // Handle selection changes: picking a hitter sets per-hitter mode; choosing All clears
+  function handlePick(e) {
+    const val = e?.target?.value;
+    if (!val || val === "__ALL__") {
+      setSelectedHitter(null);
+      setTab("all");
+      return;
+    }
+    setSelectedHitter(val);
+    if (tab !== "per") setTab("per");
+  }
 
   function handleDownloadJSON() {
     const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: "application/json" });
@@ -61,6 +92,20 @@ export default function HittingReportsPage() {
         <div className="header-row mb-4 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3">
             <h1 className="header-title text-2xl font-semibold tracking-tight">{hitterName}</h1>
+            {/* Hitter dropdown */}
+            <div style={{ minWidth: 260 }}>
+              <AppSelect
+                id="reports-hitter"
+                value={selectedHitter ?? "__ALL__"}
+                onChange={handlePick}
+                options={hitterOptions}
+                label=""
+                placeholder="Select Hitter"
+                clearable
+                onClear={() => handlePick({ target: { value: "__ALL__" } })}
+                formSx={{ minWidth: 260 }}
+              />
+            </div>
             <div className="header-chips hidden md:flex items-center gap-2 text-xs">
               <span className="chip rounded-full border border-white/15 bg-white/5 px-2 py-1">Logs: {logsCount}</span>
               <span className="chip rounded-full border border-white/15 bg-white/5 px-2 py-1">BIP: {bipCount}</span>
