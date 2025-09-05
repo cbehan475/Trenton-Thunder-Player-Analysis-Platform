@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box, Typography, Divider, Grid, Card, CardContent, TextField,
   MenuItem, Button, LinearProgress, Chip, Stack, Paper
 } from '@mui/material';
+import { summarizeUsageAndShape } from '../utils/pitchingLogsAdapter';
 
 /**
  * Data adapter:
@@ -82,8 +83,23 @@ function StatTile({ label, value, sub }) {
 }
 
 export default function PitcherPDPlansPage() {
-  const [pitcher, setPitcher] = useState(mockPitchers[0]);
+  const [pitcher, setPitcher] = useState("Jude Abbadessa");
+  const [agg, setAgg] = useState({ usage: [], ivbHb: [], totalPitches: 0, hasData: false });
   const data = usePDData(pitcher);
+
+  useEffect(() => {
+    if (pitcher && pitcher !== "Select a pitcher") {
+      try {
+        const s = summarizeUsageAndShape(pitcher);
+        setAgg(s);
+      } catch (e) {
+        console.error('Failed to summarize logs:', e);
+        setAgg({ usage: [], ivbHb: [], totalPitches: 0, hasData: false });
+      }
+    } else {
+      setAgg({ usage: [], ivbHb: [], totalPitches: 0, hasData: false });
+    }
+  }, [pitcher]);
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 } }}>
@@ -116,30 +132,38 @@ export default function PitcherPDPlansPage() {
 
       {/* Overview tiles: quick banding */}
       <Section title="Overview Snapshot">
-        <Grid container spacing={2}>
-          {data.ivbHb.slice(0,3).map((row) => (
-            <Grid item xs={12} sm={4} key={row.pitch}>
-              <StatTile label={`${row.pitch} IVB/HB`} value={`${row.ivb}" / ${row.hb}"`} sub="approx bands" />
-            </Grid>
-          ))}
-        </Grid>
+        {agg.hasData ? (
+          <Grid container spacing={2}>
+            {agg.ivbHb.slice(0,3).map((row) => (
+              <Grid item xs={12} sm={4} key={row.pitch}>
+                <StatTile label={`${row.pitch} IVB/HB`} value={`${row.ivb}" / ${row.hb}"`} sub={`${agg.totalPitches} pitches`} />
+              </Grid>
+            ))}
+          </Grid>
+        ) : (
+          <Typography variant="body2">No logs found yet for this pitcher.</Typography>
+        )}
       </Section>
 
       {/* Usage bars */}
       <Section title="Usage by Pitch (visual)">
-        <Grid container spacing={2}>
-          {data.usage.map((u) => (
-            <Grid item xs={12} key={u.pitch}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Chip label={u.pitch} />
-                <Box sx={{ flex: 1 }}>
-                  <LinearProgress variant="determinate" value={Math.max(0, Math.min(100, u.pct))} />
+        {agg.hasData ? (
+          <Grid container spacing={2}>
+            {agg.usage.map((u) => (
+              <Grid item xs={12} key={u.pitch}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Chip label={u.pitch} />
+                  <Box sx={{ flex: 1 }}>
+                    <LinearProgress variant="determinate" value={Math.max(0, Math.min(100, u.pct))} />
+                  </Box>
+                  <Typography variant="body2" sx={{ width: 48, textAlign: 'right' }}>{u.pct}%</Typography>
                 </Box>
-                <Typography variant="body2" sx={{ width: 40, textAlign: 'right' }}>{u.pct}%</Typography>
-              </Box>
-            </Grid>
-          ))}
-        </Grid>
+              </Grid>
+            ))}
+          </Grid>
+        ) : (
+          <Typography variant="body2">No usage yet — select a pitcher with logged pitches.</Typography>
+        )}
       </Section>
 
       {/* Command & miss pattern: simple 3x3 style grid */}
