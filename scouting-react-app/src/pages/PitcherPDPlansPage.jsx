@@ -101,7 +101,7 @@ export default function PitcherPDPlansPage() {
   const [allPitchers, setAllPitchers] = useState([]);
   const [pitcher, setPitcher] = useState(qp.get() || "Jude Abbadessa");
   const [agg, setAgg] = useState({ usage: [], ivbHb: [], totalPitches: 0, hasData: false, loading: true });
-  const [cmd, setCmd] = useState({ gridPct: [[0,0,0],[0,0,0],[0,0,0]], miss: {up:0,down:0,glove:0,arm:0,sample:0}, hasData:false, inGrid:0, loading:true });
+  const [cmd, setCmd] = useState({ gridPct: [[0,0,0],[0,0,0],[0,0,0]], miss: {up:0,down:0,glove:0,arm:0,sample:0}, edgePct:0, inZonePct:0, hasData:false, inGrid:0, loading:true });
   const data = usePDData(pitcher);
 
   useEffect(() => {
@@ -131,16 +131,16 @@ export default function PitcherPDPlansPage() {
         const s = summarizeUsageAndShape(pitcher) || { usage: [], ivbHb: [], totalPitches: 0, hasData: false };
         setAgg({ ...s, loading: false });
         setCmd(c => ({ ...c, loading: true }));
-        const csum = summarizeCommandAndMiss(pitcher) || { gridPct: [[0,0,0],[0,0,0],[0,0,0]], miss:{up:0,down:0,glove:0,arm:0,sample:0}, hasData:false, inGrid:0 };
+        const csum = summarizeCommandAndMiss(pitcher) || { gridPct: [[0,0,0],[0,0,0],[0,0,0]], miss:{up:0,down:0,glove:0,arm:0,sample:0}, edgePct:0, inZonePct:0, hasData:false, inGrid:0 };
         setCmd({ ...csum, loading: false });
       } catch (e) {
         console.error('Failed to summarize logs:', e);
         setAgg({ usage: [], ivbHb: [], totalPitches: 0, hasData: false, loading: false });
-        setCmd({ gridPct: [[0,0,0],[0,0,0],[0,0,0]], miss:{up:0,down:0,glove:0,arm:0,sample:0}, hasData:false, inGrid:0, loading:false });
+        setCmd({ gridPct: [[0,0,0],[0,0,0],[0,0,0]], miss:{up:0,down:0,glove:0,arm:0,sample:0}, edgePct:0, inZonePct:0, hasData:false, inGrid:0, loading:false });
       }
     } else {
       setAgg({ usage: [], ivbHb: [], totalPitches: 0, hasData: false, loading: false });
-      setCmd({ gridPct: [[0,0,0],[0,0,0],[0,0,0]], miss:{up:0,down:0,glove:0,arm:0,sample:0}, hasData:false, inGrid:0, loading:false });
+      setCmd({ gridPct: [[0,0,0],[0,0,0],[0,0,0]], miss:{up:0,down:0,glove:0,arm:0,sample:0}, edgePct:0, inZonePct:0, hasData:false, inGrid:0, loading:false });
     }
   }, [pitcher]);
 
@@ -220,13 +220,34 @@ export default function PitcherPDPlansPage() {
           <Typography variant="body2">Building zone map…</Typography>
         ) : cmd.hasData ? (
           <>
+            {/* Legend */}
+            <Stack direction="row" spacing={2} sx={{ mb: 1, alignItems:'center' }}>
+              <Box sx={{ display:'flex', alignItems:'center', gap:1 }}>
+                <Box sx={{ width:20, height:12, bgcolor:'rgba(0,128,0,0.15)', borderRadius:0.5 }} />
+                <Typography variant="caption">low</Typography>
+              </Box>
+              <Box sx={{ display:'flex', alignItems:'center', gap:1 }}>
+                <Box sx={{ width:20, height:12, bgcolor:'rgba(255,165,0,0.25)', borderRadius:0.5 }} />
+                <Typography variant="caption">med</Typography>
+              </Box>
+              <Box sx={{ display:'flex', alignItems:'center', gap:1 }}>
+                <Box sx={{ width:20, height:12, bgcolor:'rgba(220,20,60,0.35)', borderRadius:0.5 }} />
+                <Typography variant="caption">high</Typography>
+              </Box>
+            </Stack>
+
             <Grid container spacing={1} sx={{ mb: 1 }}>
               {cmd.gridPct.map((row, rIdx) => (
                 <Grid item xs={12} key={rIdx}>
                   <Grid container spacing={1}>
                     {row.map((val, cIdx) => (
                       <Grid item xs={4} key={cIdx}>
-                        <Paper sx={{ p: 1.5, textAlign: 'center' }}>
+                        <Paper sx={{
+                          p: 1.5, textAlign: 'center',
+                          // simple color ramp: 0% greenish -> 50% orange -> 100% crimson
+                          bgcolor: (val>=66 ? 'rgba(220,20,60,0.35)' : val>=33 ? 'rgba(255,165,0,0.25)' : 'rgba(0,128,0,0.15)'),
+                          border: '1px solid rgba(0,0,0,0.05)'
+                        }}>
                           <Typography variant="h6" sx={{ fontWeight: 700 }}>{val}%</Typography>
                           <Typography variant="caption" sx={{ opacity: 0.7 }}>zone {rIdx*3 + cIdx + 1}</Typography>
                         </Paper>
@@ -236,13 +257,23 @@ export default function PitcherPDPlansPage() {
                 </Grid>
               ))}
             </Grid>
-            <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+            <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', mb: 1 }}>
               <Chip label={`Up ${cmd.miss.up}%`} />
               <Chip label={`Down ${cmd.miss.down}%`} />
               <Chip label={`Glove ${cmd.miss.glove}%`} />
               <Chip label={`Arm ${cmd.miss.arm}%`} />
               <Chip label={`Samples ${cmd.miss.sample}`} variant="outlined" />
             </Stack>
+            <Grid container spacing={2} sx={{ mb: 1 }}>
+              <Grid item xs={6} sm={3}><Paper sx={{ p:1.5, textAlign:'center' }}>
+                <Typography variant="h6" sx={{ fontWeight:700 }}>{cmd.edgePct}%</Typography>
+                <Typography variant="caption" sx={{ opacity:0.7 }}>Edge%</Typography>
+              </Paper></Grid>
+              <Grid item xs={6} sm={3}><Paper sx={{ p:1.5, textAlign:'center' }}>
+                <Typography variant="h6" sx={{ fontWeight:700 }}>{cmd.inZonePct}%</Typography>
+                <Typography variant="caption" sx={{ opacity:0.7 }}>In-Zone% (binned)</Typography>
+              </Paper></Grid>
+            </Grid>
             <Typography variant="caption" sx={{ mt: 1, display: 'block', opacity: 0.7 }}>
               Note: Arm/Glove estimated via horizontal sign; improves with handedness.
             </Typography>

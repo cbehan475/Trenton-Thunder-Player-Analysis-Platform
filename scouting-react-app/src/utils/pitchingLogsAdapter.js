@@ -253,6 +253,15 @@ export function summarizeCommandAndMiss(pitcherName) {
   const pct = (n, d) => d ? Math.round((n / d) * 100) : 0;
   // Normalize grid to percents (of pitches that landed in 1..9 or computed bins)
   const gridPct = grid.map(row => row.map(n => pct(n, totalInGrid)));
+  // Edge zones are corners and horizontals: indices (0,0),(0,2),(1,0),(1,2),(2,0),(2,2)
+  let edgeCount = 0;
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 3; c++) {
+      if ((r === 0 && c === 0) || (r === 0 && c === 2) || (r === 1 && c === 0) || (r === 1 && c === 2) || (r === 2 && c === 0) || (r === 2 && c === 2)) {
+        edgeCount += grid[r][c];
+      }
+    }
+  }
   const miss = {
     up: pct(up, up+down || 1),
     down: pct(down, up+down || 1),
@@ -260,5 +269,7 @@ export function summarizeCommandAndMiss(pitcherName) {
     arm: pct(arm, glove+arm || 1),
     sample: rows.length,
   };
-  return { gridPct, miss, hasData: rows.length > 0, inGrid: totalInGrid };
+  const edgePct = pct(edgeCount, totalInGrid);
+  const inZonePct = pct(totalInGrid, rows.length || 1);
+  return { gridPct, miss, edgePct, inZonePct, hasData: rows.length > 0, inGrid: totalInGrid };
 }
