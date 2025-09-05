@@ -17,39 +17,33 @@ import AppSelect from "../components/ui/AppSelect.jsx";
 import HITTERS_BY_DATE from "../data/logs/hittersByDate";
 import { flattenEventsFromByDateMap } from "../lib/battedBallMetrics";
 
-// --- Helpers to extract id/name from events consistently ---
-function eventHitterId(e) {
+// --- robust hitter id/name extractors (cover many event shapes) ---
+function evtId(e) {
   return (
-    e?.hitterId ?? e?.batterId ?? e?.playerId ?? e?.hitter?.id ?? e?.batter?.id ?? null
+    e?.hitterId ?? e?.batterId ?? e?.playerId ??
+    e?.hitter?.id ?? e?.batter?.id ?? e?.player?.id ?? null
   );
 }
-function eventHitterName(e) {
+function evtName(e) {
   return (
-    e?.batter_name ??
-    e?.batterName ??
-    e?.playerName ??
-    e?.hitterName ??
-    e?.hitter?.name ??
-    e?.batter?.name ??
-    e?.name ??
-    null
+    e?.batter_name ?? e?.batterName ?? e?.playerName ?? e?.hitterName ??
+    e?.hitter?.fullName ?? e?.batter?.fullName ?? e?.player?.fullName ??
+    e?.hitter?.name ?? e?.batter?.name ?? e?.player?.name ??
+    e?.name ?? null
   );
 }
-function asOptionFromEvent(e) {
-  const id = eventHitterId(e);
-  const name = eventHitterName(e);
-  const label = name || (id != null ? String(id) : "Unknown");
-  const value = id != null ? String(id) : String(label).toLowerCase();
+function asOption(id, name) {
+  const label = (name && String(name).trim()) || (id != null ? String(id) : "Unknown");
+  const value = id != null ? `id:${String(id)}` : `name:${label.toLowerCase()}`;
   return { id, name: label, label, value };
-}
-function asAllOption() {
-  return { id: "ALL", name: "All Hitters", label: "All Hitters", value: "__ALL__" };
 }
 
 export default function HittingReportsPage() {
-  // Build base events once (full season scope)
-  const allEvents = useMemo(() => flattenEventsFromByDateMap(HITTERS_BY_DATE), []);
-  const filteredEvents = allEvents; // future: wire date/team filters if needed
+  // Build the SAME flattened events used by Batted Ball page (full season scope for now)
+  const eventsInRange = useMemo(() => {
+    const evs = flattenEventsFromByDateMap(HITTERS_BY_DATE);
+    return Array.isArray(evs) ? evs : [];
+  }, []);
 
   // Local state: per-hitter toggle + selection object { id?, name? }
   const [perHitter, setPerHitter] = useState(false);
@@ -57,18 +51,19 @@ export default function HittingReportsPage() {
 
   // Build options from the events in-range (so names exist); include "All Hitters"
   const hitterOptions = useMemo(() => {
-    const evs = Array.isArray(filteredEvents) ? filteredEvents : [];
-    const map = new Map(); // key -> option
+    const evs = Array.isArray(eventsInRange) ? eventsInRange : [];
+    const map = new Map();
     for (const e of evs) {
-      const opt = asOptionFromEvent(e);
-      const key = opt.id != null ? `id:${opt.id}` : `name:${opt.value}`;
-      if (!map.has(key)) map.set(key, opt);
+      const id = evtId(e);
+      const name = evtName(e);
+      const opt = asOption(id, name);
+      if (!map.has(opt.value)) map.set(opt.value, opt);
     }
     const list = Array.from(map.values()).sort((a, b) =>
       a.label.localeCompare(b.label, undefined, { sensitivity: "base" })
     );
-    return [asAllOption(), ...list];
-  }, [filteredEvents]);
+    return [asOption("ALL", "All Hitters"), ...list];
+  }, [eventsInRange]);
 
   // Build a lookup map for quick value->option resolution
   const optionByValue = useMemo(() => {
@@ -82,7 +77,7 @@ export default function HittingReportsPage() {
     logsCount,
     bipCount,
     reportEvents,
-  } = useHittingReportData({ selectedHitter, perHitter, filteredEvents });
+  } = useHittingReportData({ selectedHitter, perHitter, filteredEvents: eventsInRange });
 
   // Build a shareable/exportable snapshot of the current report window
   const snapshot = useMemo(() => {
@@ -109,21 +104,25 @@ export default function HittingReportsPage() {
   // Handle selection changes: picking a hitter sets per-hitter mode; choosing All clears
   function handlePick(e) {
     const val = e?.target?.value;
-    if (!val || val === "__ALL__") {
-      setSelectedHitter(null);
+    if (!val || val === "ALL" || val === "id:ALL" || val === "__ALL__") {
       setPerHitter(false);
+      setSelectedHitter(null);
       return;
     }
     const picked = optionByValue.get(String(val));
     if (picked) {
-      setSelectedHitter({ id: picked.id ?? null, name: picked.name ?? picked.label ?? "" });
-      if (!perHitter) setPerHitter(true);
+      setPerHitter(true);
+      const normalized = { id: picked.id ?? null, name: picked.name ?? picked.label ?? "" };
+      setSelectedHitter(normalized);
       return;
     }
     // Fallback: treat as name string
+    setPerHitter(true);
     setSelectedHitter({ id: null, name: String(val) });
-    if (!perHitter) setPerHitter(true);
   }
+
+  // header title should reflect selection
+  const pageTitle = perHitter && selectedHitter?.name ? selectedHitter.name : (hitterName || "All Hitters");
 
   function handleDownloadJSON() {
     const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: "application/json" });
@@ -148,7 +147,7 @@ export default function HittingReportsPage() {
         {/* Header bar (mirrors pitching) */}
         <div className="header-row mb-4 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3">
-            <h1 className="header-title text-2xl font-semibold tracking-tight">{hitterName}</h1>
+            <h1 className="header-title text-2xl font-semibold tracking-tight">{pageTitle}</h1>
             {/* Hitter dropdown */}
             <div style={{ minWidth: 260 }}>
               <AppSelect
@@ -156,18 +155,16 @@ export default function HittingReportsPage() {
                 value={
                   perHitter
                     ? (selectedHitter
-                        ? (selectedHitter.id != null
-                            ? String(selectedHitter.id)
-                            : String(selectedHitter.name ?? "").toLowerCase())
-                        : "__ALL__")
-                    : "__ALL__"
+                        ? asOption(selectedHitter.id ?? null, selectedHitter.name ?? "").value
+                        : "id:ALL")
+                    : "id:ALL"
                 }
                 onChange={handlePick}
                 options={hitterOptions}
                 label=""
                 placeholder="Select Hitter"
                 clearable
-                onClear={() => handlePick({ target: { value: "__ALL__" } })}
+                onClear={() => handlePick({ target: { value: "id:ALL" } })}
                 formSx={{ minWidth: 260 }}
               />
             </div>
