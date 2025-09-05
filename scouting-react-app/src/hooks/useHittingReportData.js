@@ -2,7 +2,6 @@
 // Use shared hitting store and robust matching for per-hitter filtering
 import { useMemo } from 'react';
 import { isBIP } from '../lib/hitLogUtils';
-import { useHittingStore } from '../state/hittingStore';
 
 // Derive a displayable hitter name from the first event that contains one
 function deriveNameFromEvents(events = []) {
@@ -57,9 +56,12 @@ function matchesSelected(e, selected) {
   return false;
 }
 
-export function useHittingReportData() {
-  // Pull the same state the Batted Ball page uses
-  const { selectedHitter, perHitter, filteredEvents } = useHittingStore();
+// Accept store-derived values from the caller (page)
+export function useHittingReportData({
+  selectedHitter = null,
+  perHitter = false,
+  filteredEvents = [],
+} = {}) {
 
   const reportEvents = useMemo(() => {
     let base = Array.isArray(filteredEvents) ? filteredEvents : [];

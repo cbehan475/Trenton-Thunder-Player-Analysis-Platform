@@ -60,17 +60,17 @@ export default function AppSelect({
   };
 
   const items = Array.isArray(options)
-    ? options.map((opt) => {
+    ? options.map((opt, idx) => {
         if (opt && typeof opt === 'object') {
           const { label: l, value: v, disabled: dis = false } = opt;
           return (
-            <MenuItem key={String(v)} value={v} disabled={dis}>
+            <MenuItem key={`o-${idx}-${String(v)}`} value={v} disabled={dis}>
               {l ?? String(v)}
             </MenuItem>
           );
         }
         return (
-          <MenuItem key={String(opt)} value={opt}>
+          <MenuItem key={`o-${idx}-${String(opt)}`} value={opt}>
             {String(opt)}
           </MenuItem>
         );
