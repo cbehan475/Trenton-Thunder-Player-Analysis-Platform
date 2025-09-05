@@ -1,12 +1,9 @@
 // ---- imports (must be first) ----
 import React, { useMemo, useState, useEffect } from 'react';
-import { Box, Typography, useMediaQuery, Button, FormControl, InputLabel, Select, MenuItem, Table, TableContainer, TableHead, TableRow, TableCell, TableBody, Tooltip } from '@mui/material';
+import { Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import HITTERS_BY_DATE from '../data/logs/hittersByDate';
-import { computeBattedBallMetrics, flattenEventsFromByDateMap } from '../lib/battedBallMetrics';
-import applyBattedBallOverride from '../lib/battedBallOverrides';
-import OVERRIDES from '../data/overrides/battedBallMetricsOverrides';
+import { flattenEventsFromByDateMap } from '../lib/battedBallMetrics';
 import { isBIP } from '../lib/hitLogUtils';
-import BattedBallMixChart from '../components/BattedBallMixChart';
 import './BattedBallProfilePage.css';
 import HitterSummary from '../components/HitterSummary';
 import HitterGrades from '../components/HitterGrades';
@@ -15,390 +12,115 @@ import HitterScoutingCard from '../components/HitterScoutingCard';
 // ---- end imports ----
 
 // Helpers
-const asDate = (s) => s;
 const norm = (s) => (s || '').trim().replace(/\s+/g, ' ');
 const normLower = (s) => norm(s).toLowerCase();
 const isName = (v) => typeof v === 'string' && !/^\d+$/.test(v);
 
-// Display helpers
-const showPct = (v) => (v == null ? '—' : `${v.toFixed(1)}%`);
-const showNum1 = (v) => (v == null ? '—' : v.toFixed(1));
-const showInt = (v) => (v == null ? '—' : String(v));
-
 export default function BattedBallProfilePage() {
-  const isMobile = useMediaQuery('(max-width:600px)');
-
   // Build flat events once from the by-date map
   const allEvents = useMemo(() => flattenEventsFromByDateMap(HITTERS_BY_DATE), []);
   const allDates = useMemo(() => Object.keys(HITTERS_BY_DATE || {}).sort(), []);
-  const defaultStart = allDates[0] || '2025-01-01';
-  const defaultEnd = allDates[allDates.length - 1] || defaultStart;
 
-  const [startDate, setStartDate] = useState(defaultEnd);
-  const [endDate, setEndDate] = useState(defaultEnd);
+  // Fixed dataset: first-half of available dates
+  const firstHalfRange = useMemo(() => {
+    if (allDates.length === 0) return [null, null];
+    const mid = Math.max(1, Math.floor(allDates.length / 2));
+    return [allDates[0], allDates[mid - 1]];
+  }, [allDates]);
 
-  // Build filtered events within range
-  const filteredEvents = useMemo(() => allEvents.filter(e => e.date >= startDate && e.date <= endDate), [allEvents, startDate, endDate]);
+  const filteredEvents = useMemo(() => {
+    const [start, end] = firstHalfRange;
+    if (!start || !end) return [];
+    return allEvents.filter((e) => e.date >= start && e.date <= end);
+  }, [allEvents, firstHalfRange]);
 
-  // Build union of hitters from events and overrides using normalization, but keep canonical display
-  const findCanonical = (name) => {
-    const n = normLower(name);
-    const fromEvents = filteredEvents.find(e => normLower(e.hitter) === n)?.hitter;
-    const fromOverride = Object.keys(OVERRIDES).find(k => normLower(k) === n);
-    return fromEvents ?? fromOverride ?? name;
-  };
-
+  // Hitter list from filtered events
   const hitterList = useMemo(() => {
-    const fromEvents = new Set(filteredEvents.map(e => normLower(e.hitter)));
-    const fromOverrides = new Set(Object.keys(OVERRIDES).map(k => normLower(k)));
-    const union = new Set([...fromEvents, ...fromOverrides]);
-    const canonicals = Array.from(union).map(n => findCanonical(n));
-    // De-dupe canonicals by normalized form and sort by display
-    const seen = new Set();
-    const out = [];
-    for (const c of canonicals) {
-      const key = normLower(c);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push(c);
-    }
-    // Filter to valid names (defensive) and sort
-    return out.filter(isName).sort((a,b) => a.localeCompare(b));
+    const fromEvents = new Set(filteredEvents.map((e) => normLower(e.hitter)));
+    const out = Array.from(fromEvents).map((n) => {
+      const match = filteredEvents.find((e) => normLower(e.hitter) === n);
+      return match?.hitter || n;
+    });
+    return out.filter(isName).sort((a, b) => a.localeCompare(b));
   }, [filteredEvents]);
 
-  const [tab, setTab] = useState('per'); // 'per' | 'all'
-  const isAllHitters = tab === 'all';
-  const [hitterMenuOpen, setHitterMenuOpen] = useState(false);
-  const [selectedHitter, setSelectedHitter] = useState(null); // null means 'All'
-  const [scoutingView, setScoutingView] = useState(true);
+  const [selectedHitter, setSelectedHitter] = useState(hitterList[0] || '');
   useEffect(() => {
-    // If selected hitter is no longer in range, clear to All (null)
-    if (selectedHitter && !hitterList.includes(selectedHitter)) {
-      setSelectedHitter(null);
+    if (!selectedHitter || !hitterList.includes(selectedHitter)) {
+      setSelectedHitter(hitterList[0] || '');
     }
-  }, [hitterList, selectedHitter]);
+  }, [hitterList]);
 
-  // Ensure menu is closed when switching to All Hitters tab or disabling the control
-  useEffect(() => {
-    if (isAllHitters && hitterMenuOpen) {
-      setHitterMenuOpen(false);
-    }
-  }, [isAllHitters, hitterMenuOpen]);
-
-  // Aggregation
-  const perMapAll = useMemo(() => computeBattedBallMetrics(filteredEvents, { dateRange: [startDate, endDate] }), [filteredEvents, startDate, endDate]);
-  const perMapSelected = useMemo(() => computeBattedBallMetrics(filteredEvents, { dateRange: [startDate, endDate], hitter: selectedHitter || undefined }), [filteredEvents, startDate, endDate, selectedHitter]);
-
-  // Robust per-hitter match (by normalized name)
-  const matchSelected = React.useCallback(
-    (e) => {
-      if (!selectedHitter) return true; // 'All' or when tab is 'all'
-      const en = normLower(e?.hitter || e?.batter_name || e?.batterName || e?.playerName || e?.hitterName || e?.name || '');
-      const sn = normLower(selectedHitter || '');
-      return !!sn && sn === en;
-    },
-    [selectedHitter]
-  );
-
-  // Events for chart (respect date range and per-hitter toggle), BIP-only
-  const chartEvents = useMemo(() => {
+  // Events for selected hitter (BIP-only)
+  const reportEvents = useMemo(() => {
     const pool = Array.isArray(filteredEvents) ? filteredEvents : [];
-    const sliced = isAllHitters ? pool : pool.filter(matchSelected);
+    const sliced = selectedHitter ? pool.filter((e) => normLower(e.hitter) === normLower(selectedHitter)) : pool;
     return sliced.filter((e) => isBIP(e.result));
-  }, [filteredEvents, isAllHitters, matchSelected]);
-  const bipCount = chartEvents.length;
+  }, [filteredEvents, selectedHitter]);
 
-  // simple derived counters for headers
-  const logsCount = Array.isArray(filteredEvents) ? filteredEvents.filter(matchSelected).length : 0;
-
-  // Team baseline (same window) for toggle comparison
-  const teamEvents = useMemo(() => {
-    const pool = Array.isArray(filteredEvents) ? filteredEvents : [];
-    return pool.filter((e) => isBIP(e.result));
-  }, [filteredEvents]);
-
-  // Data rows for All Hitters
-  const [orderBy, setOrderBy] = useState('BIP');
-  const [order, setOrder] = useState('desc');
-  const handleSort = (col) => {
-    if (orderBy === col) setOrder(order === 'asc' ? 'desc' : 'asc');
-    else { setOrderBy(col); setOrder('desc'); }
-  };
-  const EMPTY_METRICS = { BIP: 0, GBpct: null, LDpct: null, FBpct: null, PUpct: null, avgEV: null, maxEV: null, avgLA: null, hardHitPct: null };
-  const allRows = useMemo(() => {
-    // Build normalized map of computed metrics by normalized hitter name
-    const normMap = new Map();
-    for (const [key, val] of perMapAll.entries()) {
-      normMap.set(normLower(key), val);
-    }
-    const rows = hitterList.map((display) => {
-      const base = normMap.get(normLower(display)) || EMPTY_METRICS;
-      const merged = applyBattedBallOverride(display, base) || base;
-      return { hitter: display, ...merged };
-    });
-    rows.sort((a, b) => {
-      if (orderBy === 'hitter') return a.hitter.localeCompare(b.hitter) * (order === 'asc' ? 1 : -1);
-      const va = a[orderBy]; const vb = b[orderBy];
-      const na = va == null ? -Infinity : va;
-      const nb = vb == null ? -Infinity : vb;
-      if (na === nb) return a.hitter.localeCompare(b.hitter);
-      return (na > nb ? 1 : -1) * (order === 'asc' ? 1 : -1);
-    });
-    return rows;
-  }, [perMapAll, hitterList, orderBy, order]);
-
-  const selectedMetrics = useMemo(() => {
-    if (!selectedHitter) return null;
-    // Prefer computed metrics if present; else empty metrics
-    const computed = perMapSelected.get(selectedHitter) || EMPTY_METRICS;
-    return applyBattedBallOverride(selectedHitter, computed) || computed;
-  }, [perMapSelected, selectedHitter]);
-
-  const clearFilters = () => {
-    setStartDate(defaultEnd);
-    setEndDate(defaultEnd);
-    setSelectedHitter(null);
-  };
-
-  const exportCsv = () => {
-    const cols = tab === 'all'
-      ? ['Hitter','BIP','GB%','LD%','FB%','PU%','Avg EV','Max EV','Avg LA','Hard-Hit %']
-      : ['BIP','GB%','LD%','FB%','PU%','Avg EV','Max EV','Avg LA','Hard-Hit %'];
-    const esc = (v) => (v == null ? '' : String(v).replace(/"/g, '""'));
-    let rowsOut = [];
-    if (tab === 'all') {
-      rowsOut = allRows.map(r => [r.hitter, r.BIP, r.GBpct, r.LDpct, r.FBpct, r.PUpct, r.avgEV, r.maxEV, r.avgLA, r.hardHitPct]);
-    } else {
-      const m = selectedMetrics || { BIP:0 };
-      rowsOut = [[m.BIP, m.GBpct, m.LDpct, m.FBpct, m.PUpct, m.avgEV, m.maxEV, m.avgLA, m.hardHitPct]];
-    }
-    const header = cols.join(',');
-    const body = rowsOut.map(r => r.map(esc).join(',')).join('\n');
-    const blob = new Blob([header + '\n' + body], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `batted-ball-metrics-${startDate}-${endDate}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const headerTitle = isAllHitters ? 'All Hitters' : (selectedHitter || 'Hitter');
+  const logsCount = useMemo(() => filteredEvents.filter((e) => normLower(e.hitter) === normLower(selectedHitter)).length, [filteredEvents, selectedHitter]);
+  const bipCount = reportEvents.length;
+  const headerTitle = selectedHitter || 'Hitter';
 
   return (
-    <Box className="pageBattedBall" sx={{ width: '100%', minHeight: '100vh', py: isMobile ? 2 : 5 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: isMobile ? 2 : 3 }}>
-        <Typography component="h1" align="left" sx={{ color: 'var(--color-gold)', fontWeight: 800, letterSpacing: 0.5 }}>
-          {`Hitter Reports — ${headerTitle}`}
-        </Typography>
-        <div className="flex items-center" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <label className="text-xs opacity-80" style={{ fontSize: 12, opacity: 0.8, marginRight: 6 }}>Scouting View</label>
-          <input type="checkbox" checked={scoutingView} onChange={(e) => setScoutingView(e.target.checked)} />
+    <Box className="pageBattedBall" sx={{ width: '100%', minHeight: '100vh', py: 4 }}>
+      {/* Header */}
+      <div className="mx-auto max-w-6xl px-3">
+        <div className="rounded-2xl bg-slate-900/80 ring-1 ring-white/10 px-4 py-4 mb-4 flex items-center justify-between">
+          <div className="text-lg font-semibold tracking-wide">Hitter Reports ⚡</div>
+          <div className="text-xl font-semibold tracking-tight">{headerTitle}</div>
         </div>
-      </Box>
 
-      {/* Controls bar */}
-      <Box className="bb-controls" role="region" aria-label="Filters">
-        <div className="field">
-          <label className="gold" htmlFor="bb-start">Start Date</label>
-          <input id="bb-start" type="date" value={asDate(startDate)} max={endDate} onChange={(e) => setStartDate(e.target.value)} />
-        </div>
-        <div className="field">
-          <label className="gold" htmlFor="bb-end">End Date</label>
-          <input id="bb-end" type="date" value={asDate(endDate)} min={startDate} onChange={(e) => setEndDate(e.target.value)} />
-        </div>
-        <div className="field" aria-disabled={isAllHitters}>
-          <label className="gold" htmlFor="bb-hitter">Hitter</label>
-          <FormControl size="small" sx={{ minWidth: 220 }} disabled={isAllHitters}>
+        {/* Controls: hitter dropdown at top */}
+        <div className="mb-4 flex items-center gap-3">
+          <FormControl size="small" sx={{ minWidth: 240 }}>
             <InputLabel id="bb-hitter-label">Hitter</InputLabel>
             <Select
               labelId="bb-hitter-label"
               id="bb-hitter"
-              value={selectedHitter ?? ''}
+              value={selectedHitter || ''}
               label="Hitter"
-              open={hitterMenuOpen}
-              onOpen={() => setHitterMenuOpen(true)}
-              onClose={() => setHitterMenuOpen(false)}
-              onChange={(e) => {
-                const val = e.target.value;
-                setSelectedHitter(typeof val === 'string' && val ? val : null);
-                setHitterMenuOpen(false);
-              }}
-              displayEmpty
-              renderValue={(v) => v || 'All'}
-              MenuProps={{ disableScrollLock: true, slotProps: { paper: { sx: { zIndex: 1600 } } } }}
-           >
+              onChange={(e) => setSelectedHitter(e.target.value)}
+              MenuProps={{ disableScrollLock: true }}
+            >
               {hitterList.map((name) => (
                 <MenuItem key={name} value={name}>{name}</MenuItem>
               ))}
             </Select>
           </FormControl>
         </div>
-        <div className="bb-actions">
-          <Button variant="outlined" size="small" onClick={clearFilters} sx={{ borderColor: 'var(--color-gold)', color: 'var(--color-gold)' }}>Clear</Button>
-          <Tooltip title="Export current view">
-            <span>
-              <Button variant="contained" size="small" onClick={exportCsv} sx={{ backgroundColor: 'var(--color-gold)', color: '#111', '&:hover': { backgroundColor: '#e5a300' } }}>Export CSV</Button>
-            </span>
-          </Tooltip>
-        </div>
-      </Box>
 
-      {/* Tabs */}
-      <div className="bb-tabs" role="tablist" aria-label="View Mode">
-        <button className={`bb-tab ${!isAllHitters ? 'active' : ''}`} role="tab" aria-selected={!isAllHitters} onClick={() => setTab('per')}>Per Hitter</button>
-        <button className={`bb-tab ${isAllHitters ? 'active' : ''}`} role="tab" aria-selected={isAllHitters} onClick={() => setTab('all')}>All Hitters</button>
-      </div>
+        {/* Content grid: three columns per mockup */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Left column: Summary */}
+          <div className="flex flex-col gap-4">
+            <HitterSummary events={reportEvents} title="SUMMARY" />
+          </div>
 
-      {/* Compact Hitter Summary (defensive, same filtered BIP events) */}
-      {!scoutingView && (
-        <Box sx={{ my: 1 }}>
-          <HitterSummary
-            events={chartEvents}
-            title={
-              !isAllHitters
-                ? `Hitter Report — ${selectedHitter || 'Hitter'}`
-                : 'Hitter Report — Team'
-            }
-          />
-        </Box>
-      )}
+          {/* Middle column: Scouting Grades */}
+          <div className="flex flex-col gap-4">
+            <HitterGrades events={reportEvents} title="SCOUTING GRADES (PRESENT)" />
+          </div>
 
-      {/* Unified scouting card (auto blurb + manual notes) */}
-      {!scoutingView && (
-        <Box sx={{ mt: 1 }}>
-          <HitterScoutingCard
-            events={chartEvents}
-            logsCount={logsCount}
-            bipCount={bipCount}
-            hitterName={selectedHitter}
-            title={!isAllHitters ? `Scouting Summary — ${selectedHitter || 'Hitter'}` : 'Scouting Summary — Team'}
-          />
-        </Box>
-      )}
-
-      {/* Mix chart */}
-      <Box sx={{ my: 2 }}>
-        <BattedBallMixChart
-          events={chartEvents}
-          teamEvents={teamEvents}
-          perHitter={!isAllHitters}
-          title={
-            !isAllHitters
-              ? `Mix vs MLB p50 — ${selectedHitter || 'Hitter'} (${bipCount} BIP)`
-              : `Mix vs MLB p50 — Team (${bipCount} BIP)`
-          }
-        />
-      </Box>
-
-      {/* Scouting panels under the chart */}
-      {scoutingView && (
-        <div className="mt-4" style={{ marginTop: 16 }}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
-            {/* Left column: Summary/Grades */}
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4" style={{ borderRadius: 16, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', padding: 16 }}>
-              <h3 className="text-sm font-semibold mb-3 opacity-90" style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, opacity: 0.9 }}>Scouting Grades (Present)</h3>
-              <HitterGrades events={chartEvents} bipCount={bipCount} />
-            </div>
-
-            {/* Right column: Unified scouting card (auto blurb + manual notes) */}
-            <HitterScoutingCard
-              events={chartEvents}
-              logsCount={logsCount}
-              bipCount={bipCount}
-              hitterName={selectedHitter}
-              title={!isAllHitters ? `Scouting Summary — ${selectedHitter || 'Hitter'}` : 'Scouting Summary — Team'}
-            />
-
-            {/* Full width: Top Batted Balls */}
-            <div className="md:col-span-2 rounded-2xl border border-white/10 bg-white/5 p-4" style={{ gridColumn: '1 / -1', borderRadius: 16, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', padding: 16 }}>
-              <h3 className="text-sm font-semibold mb-3 opacity-90" style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, opacity: 0.9 }}>Top Batted Balls (by EV)</h3>
-              <TopBattedBalls events={chartEvents} limit={5} />
+          {/* Right column: Scouting Summary */}
+          <div className="flex flex-col gap-4">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 h-full">
+              <div className="text-sm font-semibold mb-2">SCOUTING SUMMARY</div>
+              <HitterScoutingCard
+                events={reportEvents}
+                logsCount={logsCount}
+                bipCount={bipCount}
+                hitterName={selectedHitter}
+                title=""
+              />
             </div>
           </div>
         </div>
-      )}
 
-      {/* Summary for Per Hitter */}
-      {tab === 'per' && !scoutingView && (
-        <div className="bb-summary" aria-live="polite">
-          <span className="bb-pill"><span className="label">BIP</span><span className="value">{showInt(selectedMetrics?.BIP ?? 0)}</span></span>
-          <span className="bb-pill"><span className="label">Avg EV</span><span className="value">{showNum1(selectedMetrics?.avgEV)}</span></span>
-          <span className="bb-pill"><span className="label">Max EV</span><span className="value">{showNum1(selectedMetrics?.maxEV)}</span></span>
-          <span className="bb-pill"><span className="label">Avg LA</span><span className="value">{showNum1(selectedMetrics?.avgLA)}</span></span>
-          <span className="bb-pill"><span className="label">Hard-Hit %</span><span className="value">{showPct(selectedMetrics?.hardHitPct)}</span></span>
+        {/* Full width: Top Batted Balls */}
+        <div className="mt-4">
+          <TopBattedBalls events={reportEvents} title="Top Batted Balls (By EV)" limit={5} />
         </div>
-      )}
-
-      {/* Tables */}
-      <div className="bb-tableShell" role="region" aria-label="Batted Ball Tables">
-        {isAllHitters ? (
-          <TableContainer>
-            <Table size="small" aria-label="All Hitters Metrics">
-              <TableHead>
-                <TableRow>
-                  <TableCell scope="col" onClick={() => handleSort('hitter')} style={{ cursor: 'pointer' }}>Hitter</TableCell>
-                  <TableCell scope="col" onClick={() => handleSort('BIP')} style={{ cursor: 'pointer' }} className="num">BIP</TableCell>
-                  <TableCell scope="col" onClick={() => handleSort('GBpct')} style={{ cursor: 'pointer' }} className="num">GB%</TableCell>
-                  <TableCell scope="col" onClick={() => handleSort('LDpct')} style={{ cursor: 'pointer' }} className="num">LD%</TableCell>
-                  <TableCell scope="col" onClick={() => handleSort('FBpct')} style={{ cursor: 'pointer' }} className="num">FB%</TableCell>
-                  <TableCell scope="col" onClick={() => handleSort('PUpct')} style={{ cursor: 'pointer' }} className="num">PU%</TableCell>
-                  <TableCell scope="col" onClick={() => handleSort('avgEV')} style={{ cursor: 'pointer' }} className="num">Avg EV</TableCell>
-                  <TableCell scope="col" onClick={() => handleSort('maxEV')} style={{ cursor: 'pointer' }} className="num">Max EV</TableCell>
-                  <TableCell scope="col" onClick={() => handleSort('avgLA')} style={{ cursor: 'pointer' }} className="num">Avg LA</TableCell>
-                  <TableCell scope="col" onClick={() => handleSort('hardHitPct')} style={{ cursor: 'pointer' }} className="num">Hard-Hit %</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {allRows.map((r) => (
-                  <TableRow key={r.hitter} hover>
-                    <TableCell component="th" scope="row">{r.hitter}</TableCell>
-                    <TableCell className="num">{showInt(r.BIP)}</TableCell>
-                    <TableCell className="num">{showPct(r.GBpct)}</TableCell>
-                    <TableCell className="num">{showPct(r.LDpct)}</TableCell>
-                    <TableCell className="num">{showPct(r.FBpct)}</TableCell>
-                    <TableCell className="num">{showPct(r.PUpct)}</TableCell>
-                    <TableCell className="num">{showNum1(r.avgEV)}</TableCell>
-                    <TableCell className="num">{showNum1(r.maxEV)}</TableCell>
-                    <TableCell className="num">{showNum1(r.avgLA)}</TableCell>
-                    <TableCell className="num">{showPct(r.hardHitPct)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        ) : (
-          <TableContainer>
-            <Table size="small" aria-label="Per Hitter Metrics">
-              <TableHead>
-                <TableRow>
-                  <TableCell scope="col" className="num">BIP</TableCell>
-                  <TableCell scope="col" className="num">GB%</TableCell>
-                  <TableCell scope="col" className="num">LD%</TableCell>
-                  <TableCell scope="col" className="num">FB%</TableCell>
-                  <TableCell scope="col" className="num">PU%</TableCell>
-                  <TableCell scope="col" className="num">Avg EV</TableCell>
-                  <TableCell scope="col" className="num">Max EV</TableCell>
-                  <TableCell scope="col" className="num">Avg LA</TableCell>
-                  <TableCell scope="col" className="num">Hard-Hit %</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                <TableRow hover>
-                  <TableCell className="num">{showInt(selectedMetrics?.BIP ?? 0)}</TableCell>
-                  <TableCell className="num">{showPct(selectedMetrics?.GBpct)}</TableCell>
-                  <TableCell className="num">{showPct(selectedMetrics?.LDpct)}</TableCell>
-                  <TableCell className="num">{showPct(selectedMetrics?.FBpct)}</TableCell>
-                  <TableCell className="num">{showPct(selectedMetrics?.PUpct)}</TableCell>
-                  <TableCell className="num">{showNum1(selectedMetrics?.avgEV)}</TableCell>
-                  <TableCell className="num">{showNum1(selectedMetrics?.maxEV)}</TableCell>
-                  <TableCell className="num">{showNum1(selectedMetrics?.avgLA)}</TableCell>
-                  <TableCell className="num">{showPct(selectedMetrics?.hardHitPct)}</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
       </div>
     </Box>
   );
