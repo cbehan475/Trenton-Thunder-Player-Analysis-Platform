@@ -37,8 +37,9 @@ export default function NavBar() {
   // anchors
   const pitchRef = useRef(null);
   const hitRef   = useRef(null);
+  const playersRef = useRef(null);
   const devRef   = useRef(null);
-  const refs = { pitching: pitchRef, hitting: hitRef, pd: devRef };
+  const refs = { pitching: pitchRef, hitting: hitRef, players: playersRef, pd: devRef };
   const navContainerRef = useRef(null);
   const headerRef = useRef(null);
 
@@ -69,6 +70,7 @@ export default function NavBar() {
   const tabs = [
     { id: 'pitching', label: 'Pitching Analysis', hub: '/pitching' },
     { id: 'hitting',   label: 'Hitting Analysis',  hub: '/hitting' },
+    { id: 'players',   label: 'Players', hub: '/players' },
     { id: 'pd',   label: 'Player Development', hub: '/player-development' },
   ];
   const menuItems = {
@@ -84,8 +86,12 @@ export default function NavBar() {
       { label: 'MLB Benchmarks', to: '/hitting/mlb-benchmarks' },
       // removed (page merged into Hitter Reports at /hitting/batted-ball)
     ],
+    players: [
+      { label: 'Roster Hub', to: '/players/roster' },
+      { label: 'Player Profiles', to: '/players/profiles' },
+    ],
     pd: [
-      { label: 'Pitcher Development Plans', to: '/player-development/pitchers' },
+      { label: 'Pitcher PD Plans', to: '/player-development/pitchers' },
       { label: 'Hitter Development Plans', to: '/player-development/hitters' },
       { label: 'Player Comparison Table', to: '/player-development/comparisons' },
     ],

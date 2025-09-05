@@ -12,6 +12,9 @@ import HittingLogsPage from './pages/HittingLogsPage';
 import PitchingLogsPage from './pages/PitchingLogsPage';
 import ComparisonPage from './pages/ComparisonPage';
 import PlayerDevPitchersPage from './pages/PlayerDevPitchersPage';
+import PitcherPDPlansPage from './pages/PitcherPDPlansPage';
+import RosterHubPage from './pages/RosterHubPage';
+import PlayerProfilesPage from './pages/PlayerProfilesPage';
 import PlayerDevHittersPage from './pages/PlayerDevHittersPage';
 import PlayerComparisonTablePage from './pages/PlayerComparisonTablePage';
 // Hub pages removed: routes now redirect directly to primary child pages
@@ -190,6 +193,7 @@ export default function App() {
         {/* Parent paths redirect to primary child pages (clean history) */}
         <Route path="/pitching" element={<Navigate to="/pitching/logs" replace />} />
         <Route path="/hitting" element={<Navigate to="/hitting/logs" replace />} />
+        <Route path="/players" element={<Navigate to="/players/roster" replace />} />
         <Route path="/player-development" element={<Navigate to="/player-development/hitters" replace />} />
 
         {/* Pitching */}
@@ -212,8 +216,13 @@ export default function App() {
         <Route path="/hitting/player-comparisons" element={<ComparisonPage />} />
         <Route path="/hitting/mlb-benchmarks" element={<HittingMLBBenchmarksPage />} />
 
+        {/* Players */}
+        <Route path="/players/roster" element={<RosterHubPage />} />
+        <Route path="/players/profiles" element={<PlayerProfilesPage />} />
+        <Route path="/players/:playerId" element={<PlayerProfilesPage />} />
+
         {/* Player Dev */}
-        <Route path="/player-development/pitchers" element={<PlayerDevPitchersPage />} />
+        <Route path="/player-development/pitchers" element={<PitcherPDPlansPage />} />
         <Route path="/player-development/hitters" element={<PlayerDevHittersPage />} />
         <Route path="/player-development/comparisons" element={<PlayerComparisonTablePage />} />
         <Route path="/player-comparison-table" element={<PlayerComparisonTablePage />} />

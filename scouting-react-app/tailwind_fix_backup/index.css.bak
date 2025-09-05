@@ -1,0 +1,687 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Optional tiny tweaks used across cards */
+.tabular-nums { font-variant-numeric: tabular-nums; }
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Montserrat:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap');
+
+body {
+  margin: 0;
+  font-family: 'Inter', 'Montserrat', 'Roboto', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Layout container */
+.container {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Navbar container: glass bar with gold bottom accent */
+.site-header { position: sticky; top: 0; z-index: 2000; }
+.navbar {
+  /* Yankees-style navy glass bar */
+  background: linear-gradient(
+    180deg,
+    rgba(6, 20, 44, 0.78),   /* deep navy */
+    rgba(6, 20, 44, 0.62)
+  );
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  /* slimmer height */
+  padding: 8px 20px;
+
+  /* thin gold baseline */
+  border-bottom: 1px solid rgba(241, 200, 59, 0.26);
+
+  /* lighter, longer shadow */
+  box-shadow: 0 6px 18px rgba(0,0,0,0.20);
+  margin-bottom: 0;
+}
+.navbar .nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+.navbar .nav-links { gap: 28px; }
+
+.navbar a {
+  color: #FFFFFF;
+  font-size: 1.4rem; /* keep size */
+  font-weight: 600;  /* slightly lighter for polish */
+  letter-spacing: 0.4px;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+.navbar a:hover {
+  color: #F1C83B; /* gold */
+  text-shadow: 0 0 6px rgba(241,200,59,0.65);
+  text-decoration: none; /* remove underline */
+}
+
+/* Enhanced link styling for top-level tabs using NavLink */
+.navbar a.nav-link {
+  color: #FFFFFF;
+  font-size: 16px;
+  font-weight: 750;
+  letter-spacing: 0.5px;
+  margin: 0 18px;
+  position: relative;
+  text-decoration: none;
+  transition: color .18s ease, text-shadow .18s ease;
+}
+.navbar a.nav-link:hover,
+.navbar a.nav-link.active { color: #F1C83B; text-shadow: 0 0 6px rgba(241,200,59,.55); }
+.navbar a.nav-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -5px;            /* closer to text */
+  width: 0;
+  height: 1.5px;           /* slightly thinner */
+  background: #F1C83B;
+  transition: width .18s ease;
+}
+.navbar a.nav-link:hover::after,
+.navbar a.nav-link.active::after { width: 100%; }
+
+/* Dropdown panel polish (MUI Menu) */
+.MuiMenu-paper {
+  box-shadow: 0 18px 36px rgba(0,0,0,.38);
+  transform-origin: top center;
+  animation: menuIn .16s ease;
+  z-index: 2100; /* above hero */
+}
+@keyframes menuIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.MuiMenuItem-root {
+  padding: 10px 16px;
+  color: #FFF; font-weight: 700; letter-spacing: .3px;
+}
+.MuiMenuItem-root:hover,
+.MuiMenuItem-root.Mui-selected {
+  background: rgba(201,162,39,.16) !important;
+}
+.MuiDivider-root { background: rgba(255,255,255,.08); }
+
+/* --- App-wide dropdown styles --- */
+/* Native <select> fallback */
+.app-select {
+  appearance: none;
+  background: linear-gradient(180deg, #0b0f1a 0%, #0a1322 100%);
+  color: #ffffff;
+  border: 1px solid #C9A227;         /* Thunder gold */
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  height: 40px;
+}
+.app-select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(201,162,39,.25);
+  border-color: #C9A227;
+}
+.app-select option {
+  background-color: #0b0f1a;
+  color: #ffffff;
+}
+.app-select option:checked,
+.app-select option:hover {
+  background: rgba(201,162,39,.18);  /* subtle gold hover/selected */
+  color: #ffffff;
+}
+
+/* MUI overrides */
+.MuiOutlinedInput-root {
+  background: linear-gradient(180deg, #0b0f1a 0%, #0a1322 100%);
+  color: #ffffff;
+  border-radius: 8px;
+  min-height: 40px;
+}
+.MuiOutlinedInput-notchedOutline { border-color: #C9A227; }
+.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: #C9A227;
+  box-shadow: 0 0 0 2px rgba(201,162,39,.25);
+}
+
+/* Menu (the dropdown list) */
+.MuiMenu-paper { background: #0b0f1a; }
+.MuiMenuItem-root { color: #ffffff; font-weight: 600; }
+.MuiMenuItem-root.Mui-selected,
+.MuiMenuItem-root:hover {
+  background: rgba(201,162,39,.18) !important;  /* removes yellow bar */
+}
+
+/* Ensure menus sit above tables/headers */
+.MuiPopover-root, .MuiMenu-root { z-index: 1500; }
+
+/* Optional: tidy scrollbars in menus */
+.MuiMenu-paper::-webkit-scrollbar { width: 8px; }
+.MuiMenu-paper::-webkit-scrollbar-thumb { background: rgba(255,255,255,.18); border-radius: 8px; }
+
+/* Hero section: tighten vertical rhythm */
+.hero { margin-top: 0; padding-top: 28px; padding-bottom: 36px; }
+.hero h1 { margin: 8px 0 12px; line-height: 1.08; }
+.hero p { margin: 0 auto 20px; max-width: 820px; line-height: 1.6; word-break: keep-all; hyphens: auto; }
+.season-pill { margin-top: 12px; white-space: nowrap; }
+
+/* Features section: stop clipping and align cards */
+.features { position: relative; padding: 8px 0 48px; overflow: visible; }
+.features::before,
+.features::after { display: none !important; } /* hide any decorative blocks that cut into the cards */
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  align-items: stretch;
+}
+
+@media (max-width: 1024px) { .features-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px)  { .features-grid { grid-template-columns: 1fr; } }
+
+.feature-card {
+  position: relative; z-index: 1;
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px 22px;
+  min-height: 210px;
+  border: 1px solid rgba(0,0,0,.06);
+  box-shadow: 0 10px 24px rgba(0,0,0,.12);
+}
+
+.feature-card h3 { margin: 0 0 10px; letter-spacing: .2px; }
+.feature-card ul { margin: 8px 0 0; padding-left: 18px; line-height: 1.55; }
+.feature-card li { margin: 6px 0; }
+
+/* Z-index sanity so the background never covers card corners */
+.hero, .features { z-index: 0; }
+.feature-card    { z-index: 1; }
+
+/* --- MUI Home Page Layout Fixes --- */
+
+/* Navbar */
+.MuiAppBar-root { margin-bottom: 0; padding-top: 14px; padding-bottom: 6px; }
+
+/* Hero section */
+.MuiContainer-root > .MuiBox-root:first-of-type {
+  margin-top: 0; padding-top: 28px; padding-bottom: 36px;
+}
+.MuiContainer-root > .MuiBox-root:first-of-type h2 {
+  margin: 8px 0 12px; line-height: 1.08;
+}
+.MuiContainer-root > .MuiBox-root:first-of-type p {
+  margin: 0 auto 20px; max-width: 820px; line-height: 1.6; word-break: keep-all; hyphens: auto;
+}
+
+/* Features grid and cards */
+.MuiGrid-container {
+  position: relative;
+  padding: 8px 0 48px;
+  overflow: visible;
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  align-items: stretch;
+}
+@media (max-width:1024px){ .MuiGrid-container{ grid-template-columns:repeat(2,1fr); } }
+@media (max-width:640px){  .MuiGrid-container{ grid-template-columns:1fr; } }
+
+.MuiGrid-item > .MuiBox-root {
+  position: relative; z-index: 1;
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px 22px;
+  min-height: 210px;
+  border: 1px solid rgba(0,0,0,.06);
+  box-shadow: 0 10px 24px rgba(0,0,0,.12);
+}
+.MuiGrid-item > .MuiBox-root h6 { margin: 0 0 10px; letter-spacing: .2px; }
+.MuiGrid-item > .MuiBox-root ul { margin: 8px 0 0; padding-left: 18px; line-height: 1.55; }
+.MuiGrid-item > .MuiBox-root li { margin: 6px 0; }
+
+/* Z-index sanity */
+.MuiContainer-root > .MuiBox-root:first-of-type, .MuiGrid-container { z-index: 0; }
+.MuiGrid-item > .MuiBox-root { z-index: 1; }
+
+/* General: avoid stray gaps */
+body { margin: 0; overflow-x: hidden; }
+main, .page, .home { margin-top: 0; }
+
+/* Default (desktop) tidy */
+.hero { padding-top: 20px; padding-bottom: 24px; }
+.hero h1 { margin: 6px 0 10px; line-height: 1.05; }
+.hero p  { margin: 0 auto 14px; max-width: 820px; line-height: 1.5; }
+.season-pill { margin-top: 8px; }
+
+.features { padding-top: 12px; padding-bottom: 28px; }
+.features-grid { gap: 16px; }
+.feature-card { padding: 16px 18px; min-height: 180px; }
+
+/* If navbar is fixed/sticky, make sure it isn't injecting extra space */
+.navbar { margin-bottom: 0; padding-top: 10px; padding-bottom: 4px; }
+
+/* Compact mode for small-height laptops (1366×768 and similar) */
+@media (max-height: 820px) and (min-width: 900px) {
+  .hero { padding-top: 12px; padding-bottom: 16px; }
+  .hero h1 { font-size: clamp(32px, 5vw, 56px); }
+  .hero p  { margin-bottom: 10px; }
+  .season-pill { margin-top: 6px; }
+
+  .features { padding-top: 8px; padding-bottom: 20px; }
+  .features-grid { gap: 14px; }
+  .feature-card { padding: 14px 16px; min-height: 168px; }
+}
+
+/* Ensure background layers never overlap the card corners */
+.features::before,
+.features::after { display: none !important; }
+.hero, .features { z-index: 0; }
+.feature-card    { z-index: 1; }
+
+/* 1) Default tidy (desktop) */
+.navbar { margin-bottom: 0; padding-top: 8px; padding-bottom: 4px; }
+
+.hero { padding-top: 14px; padding-bottom: 18px; margin-top: 0; }
+.hero h1 { margin: 4px 0 8px; line-height: 1.05; }
+.hero p  { margin: 0 auto 12px; max-width: 820px; line-height: 1.45; }
+
+.features { padding-top: 8px; padding-bottom: 20px; }
+.features-grid { gap: 14px; }
+.feature-card { padding: 14px 16px; min-height: 168px; }
+.feature-card h3 { margin: 0 0 8px; }
+.feature-card ul { margin: 6px 0 0; }
+.feature-card li { margin: 4px 0; }
+
+/* 2) Compact mode for short screens (laptops 1366x768, etc.) */
+@media (max-height: 770px) {
+  .hero { padding-top: 8px; padding-bottom: 12px; }
+  .hero h1 { font-size: clamp(28px, 4.2vw, 52px); margin: 2px 0 6px; }
+  .hero p  { font-size: 15.5px; margin-bottom: 8px; }
+  .season-pill { margin-top: 6px; }
+
+  .features { padding-top: 6px; padding-bottom: 12px; }
+  .features-grid { gap: 12px; }
+  .feature-card { padding: 12px 14px; min-height: 156px; }
+}
+
+/* Ensure nothing clips the cards */
+.features::before, .features::after { display: none !important; }
+
+:root { --nav-h: 56px; --container: 1120px; }
+
+body { margin: 0; overflow-x: hidden; }
+
+/* Nav height (adjust if your nav is taller) */
+.navbar { height: var(--nav-h); display: flex; align-items: center; padding: 0 24px; margin: 0; }
+
+/* Home uses the remaining viewport height under the nav */
+.home { min-height: calc(100vh - var(--nav-h)); display: grid; grid-template-rows: auto 1fr; align-content: start; }
+
+/* Container */
+.container { max-width: var(--container); margin: 0 auto; padding: 0 24px; }
+
+/* Hero: tighter */
+.hero { padding-top: 10px; padding-bottom: 12px; }
+.hero h1 { margin: 4px 0 8px; line-height: 1.05; }
+.hero p  { margin: 0 auto 10px; max-width: 820px; line-height: 1.45; }
+.season-pill { margin-top: 6px; white-space: nowrap; }
+
+/* Features/cards: compact and never clipped */
+.features { padding: 8px 0 12px; position: relative; overflow: visible; }
+.features::before, .features::after { display: none !important; }
+
+.features-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; align-items: stretch; }
+.feature-card {
+  background:#fff; border-radius:14px; padding:12px 14px; min-height:156px;
+  border:1px solid rgba(0,0,0,.06); box-shadow:0 8px 18px rgba(0,0,0,.12); z-index:1; position:relative;
+}
+.feature-card h3 { margin:0 0 8px; }
+.feature-card ul { margin:6px 0 0; padding-left:18px; line-height:1.5; }
+.feature-card li { margin:4px 0; }
+
+/* Short-screen mode (1366×768 laptops) */
+@media (max-height: 770px) and (min-width: 900px) {
+  .hero { padding-top: 6px; padding-bottom: 8px; }
+  .hero h1 { font-size: clamp(28px, 4.2vw, 52px); margin: 2px 0 6px; }
+  .hero p  { font-size: 15.5px; margin-bottom: 8px; }
+  .features { padding-top: 6px; padding-bottom: 8px; }
+  .features-grid { gap: 10px; }
+  .feature-card { padding: 10px 12px; min-height: 148px; }
+}
+
+/* Responsive columns */
+@media (max-width: 1024px) { .features-grid { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 640px)  { .features-grid { grid-template-columns: 1fr; } }
+
+/* If present, kill demo styles */
+.App-header { min-height: auto !important; background: transparent !important; padding: 0 !important; }
+
+/* Make the bolt sit inline with the first letter */
+.hero-title {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.bolt-icon {
+  color: #ffb300;
+  transform: translateY(2px);
+}
+
+/* Pull the pill and cards up */
+.hero { padding-top: 6px; padding-bottom: 8px; }
+.hero p { margin-bottom: 8px; }
+.season-pill { margin-top: 6px; margin-bottom: 6px; }
+
+/* Reduce gap above cards */
+.features { margin-top: 6px; padding-top: 6px; padding-bottom: 12px; }
+
+/* Slightly denser grid + cards so everything sits higher */
+.features-grid { gap: 12px; }
+.feature-card { padding: 12px 14px; min-height: 150px; }
+
+/* Short-screen refinement (1366×768) */
+@media (max-height: 770px) {
+  .hero { padding-top: 4px; padding-bottom: 6px; }
+  .hero-title { gap: 8px; }
+  .season-pill { margin-top: 4px; margin-bottom: 6px; }
+  .features { padding-top: 4px; padding-bottom: 8px; }
+  .features-grid { gap: 10px; }
+  .feature-card { padding: 10px 12px; min-height: 144px; }
+}
+
+/* --- Global Gold Text Theme for Dark UI --- */
+/* Expose gold via CSS variable mapping to existing app token if present */
+:root {
+  /* Map to existing app gold token if defined; fallback to standard app gold */
+  --color-gold: var(--app-gold, #d4af37);
+}
+
+/* Tables: headers and cells (MUI DataGrid + native tables) */
+table, th, td,
+.data-table, .data-table th, .data-table td,
+.MuiTableCell-root, .MuiTableCell-head, .MuiTableCell-body,
+.MuiDataGrid-root, .MuiDataGrid-cell, .MuiDataGrid-columnHeaderTitle,
+.MuiDataGrid-columnHeader, .MuiDataGrid-cellContent {
+  color: var(--color-gold) !important;
+}
+
+/* Native selects and common dropdown libs (MUI, React-Select, AntD) */
+select, option,
+.dropdown, .dropdown *,
+.Select__control, .Select__single-value, .Select__option,
+.MuiSelect-select, .MuiMenuItem-root, .MuiListItemButton-root,
+.MuiOutlinedInput-input, .MuiInputBase-input,
+.ant-select-selector, .ant-select-item-option-content {
+  color: var(--color-gold) !important;
+}
+
+/* Generic metric/value spans and chips */
+.stat-value, .metric-value, .badge--stat, .pill--stat,
+.chip--stat, .stat-chip, .metric-chip, .MuiChip-label {
+  color: var(--color-gold) !important;
+}
+
+/* Optional: pages/components that use CSS vars for text can hook into this */
+.preset-pro-dark {
+  --text: var(--color-gold);
+  --muted: var(--color-gold);
+}
+
+/* --- Home page: no vertical scroll, fits exactly one viewport --- */
+.home-page {
+  min-height: 100vh;          /* allow content to size naturally */
+  display: grid;
+  grid-template-rows: auto 1fr;  /* hero, then cards fill */
+  overflow: hidden;           /* no scrollbar on typical laptop heights */
+}
+
+/* Hero block */
+.home-hero {
+  padding: 24px 32px 8px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Cards row: stable 3-column grid with good spacing */
+.home-cards {
+  max-width: 1200px;
+  width: 100%;
+  margin: 8px auto 24px;
+  padding: 0 32px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(280px, 1fr));
+  gap: 24px;
+  align-content: start;       /* don’t stretch tall */
+}
+
+.home-cards .card,
+.home-cards > * {
+  box-sizing: border-box;
+  margin: 0;                  /* prevent extra height */
+}
+
+/* If the viewport is short, allow a gentle scroll so cards don't squish */
+@media (max-height: 760px) {
+  .home-page { overflow-y: auto; }
+}
+
+/* If the viewport is narrow, drop to 2 then 1 column cleanly */
+@media (max-width: 1100px) {
+  .home-cards { grid-template-columns: repeat(2, minmax(280px, 1fr)); }
+}
+@media (max-width: 720px) {
+  .home-cards { grid-template-columns: 1fr; }
+}
+
+/* --- Header/Nav: sticky and high z-index; rock-solid hover --- */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 2000; /* above hero/cards */
+}
+.navbar { position: relative; }
+
+/* Top items: slight horizontal padding; hover bridge that doesn't trap clicks */
+.navbar .top-item { position: relative; padding: 0 10px; }
+.navbar .top-item::after {
+  content: "";
+  position: absolute;
+  left: -10px; right: -10px;
+  top: 100%;
+  height: 14px;            /* spans the gap to the menu */
+  pointer-events: none;     /* preserve hover, don’t block clicks */
+}
+
+/* Ensure menus sit above page content */
+.navbar .MuiMenu-paper { z-index: 2100; }
+
+/* ===== Home Visual Polish (semantic containers + tokens) ===== */
+/* Container */
+.home {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+/* Hero */
+.home-hero {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 48px 32px;
+  text-align: center;
+}
+.home-hero h1 {
+  font-size: 44px;
+  line-height: 1.1;
+  margin: 8px 0 12px;
+  letter-spacing: 0.5px; /* subtle spacing */
+  display: flex;
+  justify-content: center;
+  color: #FFFFFF;         /* pure white */
+  font-weight: 800;       /* extra bold */
+  text-shadow: 0 0 12px rgba(0,0,0,0.35); /* soft glow for clarity */
+}
+.home-hero .subtitle {
+  color: rgba(255,255,255,.82);
+  font-size: 16px;
+  line-height: 1.6;
+  max-width: 860px;
+  margin: 0 auto 20px;
+}
+.home-hero .cta {
+  display: inline-block;
+  padding: 10px 18px;
+  background: #F1C83B;
+  color: #12213A;
+  border-radius: 999px;
+  font-weight: 800;
+  letter-spacing: .3px;
+  box-shadow: 0 6px 20px rgba(241,200,59,.18);
+  transition: transform .12s ease, box-shadow .12s ease;
+  margin: 0 auto;
+}
+.home-hero .cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 28px rgba(241,200,59,.25);
+}
+
+/* Cards */
+.home-cards {
+  max-width: 1200px;
+  margin: 8px auto 40px;
+  padding: 0 32px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(280px, 1fr));
+  gap: 28px;
+  align-content: start;
+}
+.home-cards .card {
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 10px; /* sharper corners */
+  padding: 18px 18px 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.25);
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+  backdrop-filter: blur(2px);
+}
+.home-cards .card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(0,0,0,.32);
+  border-color: rgba(201,162,39,.35);
+}
+.home-cards .card h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  margin: 0 0 8px;
+  color: #F1C83B;
+  font-weight: 700;
+  transition: transform .15s ease, text-shadow .15s ease;
+}
+.home-cards .card h3:hover {
+  transform: translateY(-2px);
+  text-shadow: 0 0 8px rgba(241,200,59,.55);
+}
+.home-cards .card ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+.home-cards .card,
+.home-cards .card p,
+.home-cards .card li {
+  color: #FFFFFF;    /* white text on dark background */
+  font-weight: 500;  /* slightly stronger */
+}
+.home-cards .card li { margin: 6px 0; line-height: 1.5; }
+
+/* Icons tint */
+.card .icon { color: #C9A227; font-size: 18px; }
+
+/* Responsiveness */
+@media (max-width: 1100px) {
+  .home-hero { padding-top: 40px; }
+  .home-cards { grid-template-columns: repeat(2, minmax(260px, 1fr)); }
+}
+@media (max-width: 720px) {
+  .home-hero { padding: 32px 20px 12px; }
+  .home-hero h1 { font-size: 34px; }
+  .home-cards { padding: 0 20px; grid-template-columns: 1fr; gap: 20px; }
+}
+
+/* Keep header and menus above */
+.site-header { position: sticky; top: 0; z-index: 2000; }
+.MuiMenu-paper { z-index: 2100; }
+
+/* ===== Nav + Menu hard overrides to ensure visual polish takes effect ===== */
+.navbar .nav-link {
+  font-size: 16px !important;
+  font-weight: 750 !important;
+  color: #fff !important;
+  margin: 0 18px !important;
+  position: relative !important;
+  letter-spacing: .5px !important;
+  transition: color .18s ease, text-shadow .18s ease !important;
+}
+
+.navbar .nav-link::after {
+  content: "" !important;
+  position: absolute !important;
+  bottom: -5px !important;
+  height: 1.5px !important;
+  width: 0 !important;
+  background: #F1C83B !important; /* crisp gold */
+  transition: width .18s ease !important;
+}
+
+.navbar .nav-link:hover::after,
+.navbar .nav-link:active::after {
+  width: 100% !important;
+}
+
+/* Optional: ensure gold hover glow is applied */
+.navbar .nav-link:hover,
+.navbar .nav-link.active {
+  color: #F1C83B !important;
+  text-shadow: 0 0 5px rgba(241,200,59,.5) !important;
+}
+
+.MuiMenu-paper {
+  background: linear-gradient(180deg, rgba(10,22,52,.95), rgba(10,22,52,.85)) !important;
+  border: 1px solid rgba(241,200,59,.25) !important;
+  border-radius: 10px !important;
+  backdrop-filter: blur(6px) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.35) !important;
+  padding: 8px 12px !important;
+  transform-origin: top center !important;
+  animation: menuIn .16s ease !important;
+}
+
+.MuiMenu-paper .MuiMenuItem-root {
+  color: #fff !important;
+  font-weight: 700 !important;
+  letter-spacing: .3px !important;
+  padding: 10px 16px !important;
+}
+.MuiMenu-paper .MuiMenuItem-root:hover,
+.MuiMenu-paper .MuiMenuItem-root.Mui-selected {
+  background: rgba(241,200,59,.16) !important;
+  color: #F1C83B !important;
+}
