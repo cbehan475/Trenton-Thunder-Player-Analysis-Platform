@@ -8,6 +8,7 @@ import OVERRIDES from '../data/overrides/battedBallMetricsOverrides';
 import { isBIP } from '../lib/hitLogUtils';
 import BattedBallMixChart from '../components/BattedBallMixChart';
 import './BattedBallProfilePage.css';
+import HitterSummary from '../components/HitterSummary';
 // ---- end imports ----
 
 // Helpers
@@ -222,6 +223,18 @@ export default function BattedBallProfilePage() {
         <button className={`bb-tab ${!isAllHitters ? 'active' : ''}`} role="tab" aria-selected={!isAllHitters} onClick={() => setTab('per')}>Per Hitter</button>
         <button className={`bb-tab ${isAllHitters ? 'active' : ''}`} role="tab" aria-selected={isAllHitters} onClick={() => setTab('all')}>All Hitters</button>
       </div>
+
+      {/* Compact Hitter Summary (defensive, same filtered BIP events) */}
+      <Box sx={{ my: 1 }}>
+        <HitterSummary
+          events={chartEvents}
+          title={
+            !isAllHitters
+              ? `Hitter Report — ${selectedHitter || 'Hitter'}`
+              : 'Hitter Report — Team'
+          }
+        />
+      </Box>
 
       {/* Mix chart */}
       <Box sx={{ my: 2 }}>
