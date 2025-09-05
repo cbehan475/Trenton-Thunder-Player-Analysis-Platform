@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import AppSelect from '../components/ui/AppSelect.jsx';
 import { getAllHitterNames, getHittingMetricsFor, getHittingLogStats, getHitterEntries } from '../data/logs/hittingIndex';
 import HitterSummary from '../components/HitterSummary.jsx';
-import HitterBlurb from '../components/HitterBlurb.jsx';
+import HitterScoutingCard from '../components/HitterScoutingCard.jsx';
 import TopBattedBalls from '../components/TopBattedBalls.jsx';
 import { isBIP } from '../lib/hitLogUtils.js';
 import HitterGrades from '../components/HitterGrades.jsx';
@@ -128,8 +128,11 @@ export default function HitterReportsPage() {
           </div>
           {/* RIGHT: words + examples */}
           <div className="flex flex-col gap-4">
-            <HitterBlurb
+            <HitterScoutingCard
               events={reportEvents}
+              logsCount={logsCount}
+              bipCount={bipCount}
+              hitterName={selected}
               title="Scouting Summary"
             />
             <TopBattedBalls

@@ -2,7 +2,7 @@
 import React, { useMemo, useRef, useState } from "react";
 import HitterSummary from "../components/HitterSummary.jsx";
 import HitterGrades from "../components/HitterGrades.jsx";
-import HitterBlurb from "../components/HitterBlurb.jsx";
+import HitterScoutingCard from "../components/HitterScoutingCard.jsx";
 import TopBattedBalls from "../components/TopBattedBalls.jsx";
 import { useHittingReportData } from "../hooks/useHittingReportData.js";
 import "../styles/pro-shell.css";
@@ -193,7 +193,13 @@ export default function HittingReportsPage() {
           </div>
           <div className="flex flex-col gap-4">
             <div ref={blurbRef}>
-              <HitterBlurb events={reportEvents} title="Scouting Summary" />
+              <HitterScoutingCard
+                events={reportEvents}
+                logsCount={logsCount}
+                bipCount={bipCount}
+                hitterName={perHitter ? (selectedHitter?.name ?? null) : undefined}
+                title="Scouting Summary"
+              />
             </div>
             <TopBattedBalls events={reportEvents} title="Top Batted Balls (by EV)" limit={5} />
           </div>
