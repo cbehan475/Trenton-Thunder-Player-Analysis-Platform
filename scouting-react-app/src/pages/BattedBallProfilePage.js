@@ -103,38 +103,38 @@ export default function BattedBallProfilePage() {
   }, [reportEvents]);
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-6">
+    <div className="pro-container">
       <HitterHeader
         title="Hitter Reports"
         hitter={selectedOption}
-        onChangeHitter={(val) => setSelectedByValue(val)}
-        hitterOptions={hitterOptions}
+        onChangeHitter={(val) => setSelectedByValue(val)}   // use your existing setter
+        hitterOptions={hitterOptions}                       // [{value,label}] you already build
       />
 
-      <div className="grid grid-cols-12 gap-6">
-        <div className="col-span-12 lg:col-span-4">
+      <div className="row">
+        <div className="col-4">
           <SummaryTiles
-            avgEV={avgEV}
-            avgLA={avgLA}
-            hhPct={hhPct}
-            sample={`BIP ${bipCount} • HH% uses ≥95 mph`}
+            avgEV={avgEV}                 // use existing number
+            avgLA={avgLA}                 // existing number
+            hhPct={hhPct}                 // existing number
+            sample={`BIP ${bipCount} • HH% uses ≥95 mph`}  // existing bipCount
           />
         </div>
 
-        <div className="col-span-12 lg:col-span-4">
+        <div className="col-4">
           <GradesTiles
-            rawPower={grades.rawPower}
+            rawPower={grades.rawPower}    // existing present grade
             impact={grades.impact}
             gamePower={grades.gamePower}
           />
         </div>
 
-        <div className="col-span-12 lg:col-span-4">
-          <ScoutingBlurb text={scoutingText} />
+        <div className="col-4">
+          <ScoutingBlurb text={scoutingText} />  {/* existing blurb string */}
         </div>
 
-        <div className="col-span-12">
-          <TopBattedBallsTable rows={topBattedBalls} />
+        <div className="col-12">
+          <TopBattedBallsTable rows={topBattedBalls} />     {/* existing top-5 list */}
         </div>
       </div>
     </div>
