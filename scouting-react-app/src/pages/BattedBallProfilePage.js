@@ -12,6 +12,7 @@ import HitterSummary from '../components/HitterSummary';
 import HitterBlurb from '../components/HitterBlurb';
 import HitterGrades from '../components/HitterGrades';
 import TopBattedBalls from '../components/TopBattedBalls';
+import HitterContextNotes from '../components/HitterContextNotes';
 // ---- end imports ----
 
 // Helpers
@@ -308,6 +309,12 @@ export default function BattedBallProfilePage() {
               <HitterBlurb events={chartEvents} logsCount={logsCount} bipCount={bipCount} />
             </div>
 
+            {/* Full width: Top Batted Balls */}
+            {/* Manual scouting context (speed/defense/arm/build/overall) */}
+            <div className="md:col-span-2 rounded-2xl border border-white/10 bg-white/5 p-4" style={{ gridColumn: '1 / -1', borderRadius: 16, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', padding: 16 }}>
+              <HitterContextNotes hitterName={headerTitle} />
+            </div>
+            
             {/* Full width: Top Batted Balls */}
             <div className="md:col-span-2 rounded-2xl border border-white/10 bg-white/5 p-4" style={{ gridColumn: '1 / -1', borderRadius: 16, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', padding: 16 }}>
               <h3 className="text-sm font-semibold mb-3 opacity-90" style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, opacity: 0.9 }}>Top Batted Balls (by EV)</h3>
