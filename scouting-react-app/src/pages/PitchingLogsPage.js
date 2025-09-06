@@ -1,8 +1,10 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { Box, Grid, Card, CardContent, Typography, Divider, Paper, Chip, LinearProgress, Button } from '@mui/material';
 import { seedLogsByDate, getPitchersForDate, getInningsFor, getLogs } from '../data/logs/pitchingIndex.js';
 import './PitchingLogsPage.css';
 import AppSelect from '../components/ui/AppSelect.jsx';
 import { getBench, delta, BENCH_LEVEL, FEATURE_BENCHMARK_BADGES } from '../lib/benchmarks.js';
+import { getLogs as getAggLogs, summarizeSession as summarizeAggSession } from '../utils/pitchingAggregates';
 import dataFirstHalf from '../data/arsenals/firstHalf.json';
 import { buildArsenalMap } from '../lib/arsenalMap.js';
 import { mapPitchLabel, normalizePitchLabel } from '../lib/pitchLabel.js';
@@ -103,6 +105,46 @@ const Tooltip = ({ content, children }) => {
     </span>
   );
 };
+
+ // --- Pro layout helpers (cards/tiles/sparkline) ---
+ function Section({ title, right, children }) {
+   return (
+     <Card style={{ marginBottom: 12 }}>
+       <CardContent>
+         <Box display="flex" justifyContent="space-between" alignItems="center" marginBottom={1}>
+           <Typography variant="h6" style={{ fontWeight: 700 }}>{title}</Typography>
+           {right}
+         </Box>
+         <Divider style={{ marginBottom: 12 }} />
+         {children}
+       </CardContent>
+     </Card>
+   );
+ }
+ function Tile({ label, value, sub }) {
+   return (
+     <Paper elevation={1} style={{ padding: 12, textAlign: 'center' }}>
+       <Typography variant="h6" style={{ fontWeight: 700 }}>{value ?? '—'}</Typography>
+       <Typography variant="body2" style={{ opacity: 0.8 }}>{label}</Typography>
+       {sub && <Typography variant="caption" style={{ opacity: 0.7 }}>{sub}</Typography>}
+     </Paper>
+   );
+ }
+ function Sparkline({ data, width=240, height=48 }) {
+   const pts = (data||[]).filter(d=>d.v!=null);
+   if (!pts.length) return <Typography variant="caption" style={{opacity:.7}}>no velo trend</Typography>;
+   const xMin = Math.min(...pts.map(d=>d.inning)), xMax = Math.max(...pts.map(d=>d.inning));
+   const yMin = Math.min(...pts.map(d=>d.v)), yMax = Math.max(...pts.map(d=>d.v));
+   const sx = (x) => xMax===xMin ? width/2 : ((x - xMin) / (xMax - xMin)) * (width-8) + 4;
+   const sy = (y) => yMax===yMin ? height/2 : height - ((y - yMin) / (yMax - yMin)) * (height-8) - 4;
+   const path = pts.map((p,i)=> `${i?'L':'M'}${sx(p.inning)},${sy(p.v)}`).join(' ');
+   return (
+     <svg width={width} height={height} role="img" aria-label="Average velo by inning">
+       <path d={path} fill="none" stroke="currentColor" strokeWidth="2" />
+       {pts.map((p,i)=> <circle key={i} cx={sx(p.inning)} cy={sy(p.v)} r="2"/>) }
+     </svg>
+   );
+ }
 
 const GAME_DATES = [
   '2025-06-04',
@@ -249,6 +291,12 @@ export default function PitchingLogsPage() {
   // Rows from single source of truth
   const rawRows = useMemo(() => getLogs(dateStr, pitcher, inning), [dateStr, pitcher, inning]);
   const rowsCount = rawRows.length;
+
+  // --- Pro summary from dependency-free aggregator ---
+  const aggRows = useMemo(() => (dateStr && pitcher ? getAggLogs(dateStr, pitcher, inning) : []), [dateStr, pitcher, inning]);
+  const aggSum = useMemo(() => (aggRows.length ? summarizeAggSession(aggRows) : null), [aggRows]);
+  const usage = aggSum?.usage || [];
+  const PrintButton = <Button variant="outlined" onClick={()=>window.print()}>Print Report</Button>;
 
   // Build arsenal map and name->playerId lookup
   const arsenalRows = dataFirstHalf;
@@ -529,6 +577,55 @@ export default function PitchingLogsPage() {
           {pitcher || '—'} • {dateStr || '—'} • {inning && inning !== 'All' ? `Inning ${inning}` : 'All innings'}
         </div>
         <div className="ctx-right">Pitches: {rowsCount}</div>
+      </div>
+
+      {/* Pro summary cards */}
+      <div className="pro-summary-cards" style={{ marginBottom: 16 }}>
+        <Section title="Session Snapshot" right={PrintButton}>
+          {aggSum ? (
+            <Grid container spacing={2}>
+              <Grid item xs={6} sm={4} md={2}><Tile label="Total Pitches" value={aggSum.totalPitches} /></Grid>
+              <Grid item xs={6} sm={4} md={2}><Tile label="Strike%" value={typeof aggSum.strikePct === 'number' ? `${aggSum.strikePct}%` : '—'} /></Grid>
+              <Grid item xs={6} sm={4} md={2}><Tile label="Whiff%" value={typeof aggSum.whiffPct === 'number' ? `${aggSum.whiffPct}%` : '—'} /></Grid>
+              <Grid item xs={6} sm={4} md={2}><Tile label="FB Avg" value={aggSum.fbAvg != null ? `${aggSum.fbAvg} mph` : '—'} /></Grid>
+              <Grid item xs={6} sm={4} md={2}><Tile label="FB Peak" value={aggSum.fbPeak != null ? `${aggSum.fbPeak} mph` : '—'} /></Grid>
+              <Grid item xs={6} sm={4} md={2}><Tile label="Velo μ/σ" value={(aggSum.meanVelo!=null && aggSum.sdVelo!=null) ? `${aggSum.meanVelo}/${aggSum.sdVelo}` : '—'} sub="mph" /></Grid>
+            </Grid>
+          ) : (
+            <Typography variant="body2">Pick a date and pitcher to view the session.</Typography>
+          )}
+        </Section>
+
+        <Section title="Usage by Pitch">
+          {usage.length ? (
+            <Grid container spacing={2}>
+              {usage.map(u => (
+                <Grid item xs={12} key={u.type}>
+                  <Box sx={{ display:'flex', alignItems:'center', gap:2 }}>
+                    <Chip label={u.type} />
+                    <Box sx={{ flex:1 }}>
+                      <LinearProgress variant="determinate" value={Math.max(0, Math.min(100, u.pct))} />
+                    </Box>
+                    <Typography variant="body2" sx={{ width: 56, textAlign:'right' }}>{u.pct}%</Typography>
+                    <Typography variant="caption" sx={{ opacity:.7, width: 80, textAlign:'right' }}>
+                      {u.vAvg!=null ? `${u.vAvg} mph` : ''}
+                    </Typography>
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
+          ) : (
+            <Typography variant="body2">No pitch-type usage computed.</Typography>
+          )}
+        </Section>
+
+        <Section title="Average Velo by Inning">
+          {aggSum?.veloTrend?.length ? (
+            <Sparkline data={aggSum.veloTrend} />
+          ) : (
+            <Typography variant="body2">No inning-level velo trend.</Typography>
+          )}
+        </Section>
       </div>
 
       <div className="plogs-layout">
